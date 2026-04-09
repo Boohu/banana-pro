@@ -303,7 +303,7 @@ export const ImagePreview = React.memo(function ImagePreview({
             hideHeader={true} 
             className="max-w-[95vw] md:max-w-7xl h-[90vh] md:h-[90vh] flex flex-col pointer-events-none p-0 overflow-visible"
         >
-            <div className="bg-white rounded-xl shadow-2xl overflow-hidden w-full h-full flex flex-col md:flex-row pointer-events-auto relative">
+            <div className="bg-surface-secondary rounded-xl shadow-2xl overflow-hidden w-full h-full flex flex-col md:flex-row pointer-events-auto relative">
                 
                 {/* 侧边导航按钮 - 左 */}
                 {hasPrev && (
@@ -346,7 +346,7 @@ export const ImagePreview = React.memo(function ImagePreview({
                 {/* 左侧：图片展示区 (移动端改为 50% 高度或自适应) */}
                 <div 
                     ref={containerRef}
-                    className="flex-1 bg-slate-50 relative min-h-[50vh] md:min-h-full overflow-hidden cursor-grab active:cursor-grabbing"
+                    className="flex-1 bg-surface-tertiary relative min-h-[50vh] md:min-h-full overflow-hidden cursor-grab active:cursor-grabbing"
                     onWheel={handleWheel}
                     onMouseDown={handleMouseDown}
                     onMouseMove={handleMouseMove}
@@ -360,15 +360,15 @@ export const ImagePreview = React.memo(function ImagePreview({
                             className="w-full h-full object-cover opacity-30 blur-3xl scale-110"
                             decoding="async"
                         />
-                        <div className="absolute inset-0 bg-white/10" />
+                        <div className="absolute inset-0 bg-surface-secondary/10" />
                     </div>
 
-                    <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1 p-1.5 bg-white/90 backdrop-blur-xl border border-white/50 rounded-2xl shadow-2xl">
-                        <button onClick={() => performZoom(Math.max(0.25, scale - 0.25))} className="p-2.5 hover:bg-white rounded-xl transition-all text-slate-600"><ZoomOut className="w-4 h-4" /></button>
-                        <div className="w-px h-4 bg-slate-200 mx-1" />
-                        <button onClick={handleReset} className="px-4 py-1.5 hover:bg-white rounded-xl transition-all text-slate-700 text-[11px] font-black">{Math.round(scale * 100)}%</button>
-                        <div className="w-px h-4 bg-slate-200 mx-1" />
-                        <button onClick={() => performZoom(Math.min(10, scale + 0.25))} className="p-2.5 hover:bg-white rounded-xl transition-all text-slate-600"><ZoomIn className="w-4 h-4" /></button>
+                    <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1 p-1.5 bg-surface-secondary/90 backdrop-blur-xl border border-border rounded-2xl shadow-2xl">
+                        <button onClick={() => performZoom(Math.max(0.25, scale - 0.25))} className="p-2.5 hover:bg-surface-secondary rounded-xl transition-all text-fg-secondary"><ZoomOut className="w-4 h-4" /></button>
+                        <div className="w-px h-4 bg-surface-tertiary mx-1" />
+                        <button onClick={handleReset} className="px-4 py-1.5 hover:bg-surface-secondary rounded-xl transition-all text-fg-secondary text-[11px] font-black">{Math.round(scale * 100)}%</button>
+                        <div className="w-px h-4 bg-surface-tertiary mx-1" />
+                        <button onClick={() => performZoom(Math.min(10, scale + 0.25))} className="p-2.5 hover:bg-surface-secondary rounded-xl transition-all text-fg-secondary"><ZoomIn className="w-4 h-4" /></button>
                     </div>
 
                     <div
@@ -391,11 +391,11 @@ export const ImagePreview = React.memo(function ImagePreview({
                 </div>
 
                 {/* 右侧：信息详情区 */}
-                <div className="w-full md:w-[400px] flex-shrink-0 bg-white border-l border-slate-100 flex flex-col h-full relative z-20">
+                <div className="w-full md:w-[400px] flex-shrink-0 bg-surface-secondary border-l border-border flex flex-col h-full relative z-20">
                     <div className="flex-1 flex flex-col min-h-0 p-8 pb-4">
                         {/* 标题和按钮行 */}
                         <div className="flex items-center justify-between mb-6 flex-shrink-0 gap-4">
-                            <h2 className="text-xl font-black text-slate-900 leading-none">{t('preview.title')}</h2>
+                            <h2 className="text-xl font-black text-fg-primary leading-none">{t('preview.title')}</h2>
                             <div className="flex items-center gap-2 flex-shrink-0">
                                 {/* 删除按钮 */}
                                 <button
@@ -406,7 +406,7 @@ export const ImagePreview = React.memo(function ImagePreview({
                                         px-4 py-2 text-sm leading-none
                                         ${showDeleteConfirm
                                             ? 'bg-red-600 text-white hover:bg-red-700 shadow-md shadow-red-200'
-                                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200 shadow-sm'
+                                            : 'bg-surface-tertiary text-fg-secondary hover:bg-surface-tertiary shadow-sm'
                                         }
                                         active:scale-95
                                         ${isDeleting ? 'opacity-50 cursor-not-allowed' : ''}
@@ -436,31 +436,31 @@ export const ImagePreview = React.memo(function ImagePreview({
                                 {showDeleteConfirm && (
                                     <button
                                         onClick={handleCancelDelete}
-                                        className="inline-flex items-center justify-center rounded-2xl font-bold transition-all duration-200 px-4 py-2 text-sm leading-none bg-slate-100 text-slate-700 hover:bg-slate-200 shadow-sm active:scale-95"
+                                        className="inline-flex items-center justify-center rounded-2xl font-bold transition-all duration-200 px-4 py-2 text-sm leading-none bg-surface-tertiary text-fg-secondary hover:bg-surface-tertiary shadow-sm active:scale-95"
                                         title={t('common.cancel')}
                                     >
                                         {t('common.cancel')}
                                     </button>
                                 )}
                                 {/* 关闭按钮 */}
-                                <button onClick={onClose} className="text-slate-400 hover:text-slate-900 p-1 transition-colors">
+                                <button onClick={onClose} className="text-fg-muted hover:text-fg-primary p-1 transition-colors">
                                     <X className="w-6 h-6" />
                                 </button>
                             </div>
                         </div>
                         <div className="flex-1 flex flex-col min-h-0">
                             <div className="flex items-center justify-between mb-3 flex-shrink-0">
-                                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">{t('preview.prompt.label')}</h3>
+                                <h3 className="text-xs font-bold text-fg-muted uppercase tracking-widest">{t('preview.prompt.label')}</h3>
                                 <button
                                     onClick={handleCopyPrompt}
                                     disabled={!image.prompt}
                                     className={`
                                         text-xs font-bold flex items-center gap-1.5 py-1 px-2 rounded-lg transition-all
                                         ${!image.prompt
-                                            ? 'text-slate-400 cursor-not-allowed bg-slate-50'
+                                            ? 'text-fg-muted cursor-not-allowed bg-surface-tertiary'
                                             : copySuccess
-                                                ? 'text-green-600 bg-green-50'
-                                                : 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+                                                ? 'text-success bg-green-50'
+                                                : 'text-primary hover:text-blue-700 hover:bg-primary/10'
                                         }
                                     `}
                                 >
@@ -475,30 +475,30 @@ export const ImagePreview = React.memo(function ImagePreview({
                                     )}
                                 </button>
                             </div>
-                            <div className="flex-1 bg-slate-50 p-5 rounded-2xl border border-slate-100 text-sm text-slate-700 leading-relaxed whitespace-pre-wrap overflow-y-auto scrollbar-thin">
+                            <div className="flex-1 bg-surface-tertiary p-5 rounded-2xl border border-border text-sm text-fg-secondary leading-relaxed whitespace-pre-wrap overflow-y-auto scrollbar-thin">
                                 {image.prompt || t('preview.prompt.empty')}
                             </div>
                         </div>
                     </div>
 
                     <div className="flex-shrink-0">
-                        <div className="px-8 py-5 space-y-4 border-t border-slate-50 bg-white">
+                        <div className="px-8 py-5 space-y-4 border-t border-slate-50 bg-surface-secondary">
                             <div className="flex items-center justify-between text-sm">
-                                <span className="text-slate-400 font-medium flex items-center gap-2.5"><Box className="w-4 h-4" /> {t('preview.meta.model')}</span>
-                                <span className="font-bold text-slate-900 truncate max-w-[200px]">{image.model || t('preview.meta.unknown')}</span>
+                                <span className="text-fg-muted font-medium flex items-center gap-2.5"><Box className="w-4 h-4" /> {t('preview.meta.model')}</span>
+                                <span className="font-bold text-fg-primary truncate max-w-[200px]">{image.model || t('preview.meta.unknown')}</span>
                             </div>
                             <div className="flex items-center justify-between text-sm">
-                                <span className="text-slate-400 font-medium flex items-center gap-2.5"><Maximize2 className="w-4 h-4" /> {t('preview.meta.size')}</span>
-                                <span className="font-bold text-slate-900 font-mono">{image.width || 0} × {image.height || 0}</span>
+                                <span className="text-fg-muted font-medium flex items-center gap-2.5"><Maximize2 className="w-4 h-4" /> {t('preview.meta.size')}</span>
+                                <span className="font-bold text-fg-primary font-mono">{image.width || 0} × {image.height || 0}</span>
                             </div>
                             <div className="flex items-center justify-between text-sm">
-                                <span className="text-slate-400 font-medium flex items-center gap-2.5"><Calendar className="w-4 h-4" /> {t('preview.meta.time')}</span>
-                                <span className="font-bold text-slate-900">{formatDateTime(image.createdAt || '')}</span>
+                                <span className="text-fg-muted font-medium flex items-center gap-2.5"><Calendar className="w-4 h-4" /> {t('preview.meta.time')}</span>
+                                <span className="font-bold text-fg-primary">{formatDateTime(image.createdAt || '')}</span>
                             </div>
                         </div>
                         <div className="p-8 pt-3">
-                            <Button className="w-full h-14 bg-slate-900 hover:bg-black text-white" onClick={() => window.location.href = getImageDownloadUrl(image.id)}>
-                                <Download className="w-5 h-5 mr-3" /> {t('preview.downloadOriginal')}
+                            <Button className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg" onClick={() => window.location.href = getImageDownloadUrl(image.id)}>
+                                <Download className="w-4 h-4 mr-2" /> {t('preview.downloadOriginal')}
                             </Button>
                         </div>
                     </div>

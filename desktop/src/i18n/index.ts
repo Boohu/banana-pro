@@ -54,12 +54,6 @@ const updateDocumentLanguage = (lang: string) => {
     document.documentElement.lang = lang;
     document.title = i18n.t('app.title');
   }
-
-  if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
-    import('@tauri-apps/api/window')
-      .then(({ getCurrentWindow }) => getCurrentWindow().setTitle(i18n.t('app.title')))
-      .catch(() => undefined);
-  }
 };
 
 export const initI18n = async (): Promise<SupportedLanguage> => {

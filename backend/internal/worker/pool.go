@@ -349,6 +349,10 @@ func (wp *WorkerPool) processTask(task *Task) {
 				now.Format(time.RFC3339Nano),
 			)
 		}
+		// 更新批次聚合状态
+		if task.TaskModel.BatchID != "" {
+			model.RecomputeBatchStatus(model.DB, task.TaskModel.BatchID)
+		}
 	} else {
 		wp.failTask(task, fmt.Errorf("未生成任何图片"))
 	}
@@ -473,6 +477,10 @@ func (wp *WorkerPool) failTask(task *Task, err error) {
 		"error_message": err.Error(),
 	}); dbResult.Error != nil {
 		log.Printf("任务 %s 写入失败状态到数据库时出错: %v", taskModel.TaskID, dbResult.Error)
+	}
+	// 更新批次聚合状态
+	if taskModel.BatchID != "" {
+		model.RecomputeBatchStatus(model.DB, taskModel.BatchID)
 	}
 }
 

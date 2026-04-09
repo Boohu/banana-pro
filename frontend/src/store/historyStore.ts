@@ -16,6 +16,7 @@ interface HistoryState {
   page: number;
   total: number;
   searchKeyword: string;
+  selectedFolderId: string | null;
   lastLoadedAt: number | null;
   viewMode: 'timeline' | 'album';
   folders: Folder[];
@@ -24,6 +25,7 @@ interface HistoryState {
   loadHistory: (reset?: boolean, options?: { silent?: boolean }) => Promise<void>;
   loadMore: () => Promise<void>;
   setSearchKeyword: (keyword: string) => void;
+  setSelectedFolderId: (id: string | null) => void;
   deleteItem: (id: string) => Promise<void>;
   deleteItems: (ids: string[]) => Promise<void>;
   deleteImage: (image: GeneratedImage, options?: { source?: 'generate' | 'history' | 'preview' }) => Promise<void>;
@@ -109,6 +111,7 @@ export const useHistoryStore = create<HistoryState>()(
   page: 1,
   total: 0,
   searchKeyword: '',
+  selectedFolderId: null,
   lastLoadedAt: null,
   viewMode: 'timeline',
   folders: [],
@@ -118,22 +121,16 @@ export const useHistoryStore = create<HistoryState>()(
     // 请求序号：防止慢请求覆盖快请求（搜索/翻页/重置时常见）
     const requestId = ++latestHistoryRequestId;
 
-    const { page, searchKeyword } = get();
+    const { page, searchKeyword, selectedFolderId } = get();
     const currentPage = reset ? 1 : page;
 
     set({ loading: true });
 
     try {
-        const response = searchKeyword
-            ? await searchHistory({
-                page: currentPage,
-                pageSize: 10,
-                keyword: searchKeyword
-              })
-            : await getHistory({
-                page: currentPage,
-                pageSize: 10
-              });
+        const params: any = { page: currentPage, pageSize: 10 };
+        if (searchKeyword) params.keyword = searchKeyword;
+        if (selectedFolderId) params.folder_id = selectedFolderId;
+        const response = await getHistory(params);
 
         // 如果已经有更新的请求在进行/完成，忽略当前结果
         if (latestHistoryRequestId !== requestId) {
@@ -228,6 +225,10 @@ export const useHistoryStore = create<HistoryState>()(
   setSearchKeyword: (searchKeyword) => {
       set({ searchKeyword });
       get().loadHistory(true, { silent: true }); // 搜索时重置并重新加载
+  },
+  setSelectedFolderId: (selectedFolderId) => {
+      set({ selectedFolderId });
+      get().loadHistory(true, { silent: true }); // 切换文件夹时重新加载
   },
 
   deleteItem: async (id) => {

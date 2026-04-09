@@ -1,5 +1,5 @@
 import api, { ApiRequestConfig } from './api';
-import { HistoryQueryParams, GenerationTask, BackendHistoryResponse, BackendTask } from '../types';
+import { HistoryQueryParams, BackendHistoryResponse, BackendTask } from '../types';
 
 export interface ExportImagesResult {
   blob: Blob;
@@ -14,7 +14,7 @@ export interface HealthCheckResponse {
 
 // 获取历史列表 (支持关键词搜索和分页)
 // 后端统一使用 /images 接口，通过 keyword 参数过滤
-// 注意：API 拦截器已解包 response.data，所以返回的是实际数据类型
+// 注意：API 拦截器已解包 response.data，返回的是实际数据类型
 export const getHistory = (params: HistoryQueryParams) =>
   api.get<BackendHistoryResponse>('/images', { params });
 

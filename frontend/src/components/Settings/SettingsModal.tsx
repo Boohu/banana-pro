@@ -368,7 +368,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     const isActive = activeTab === tab;
     return [
       'w-full flex items-center gap-2 rounded-2xl px-3 py-2 text-sm font-semibold transition-all',
-      isActive ? 'bg-slate-900 text-white shadow-sm' : 'bg-white/70 text-slate-600 hover:bg-white'
+      isActive ? 'bg-slate-900 text-white shadow-sm' : 'bg-surface-secondary/70 text-fg-secondary hover:bg-surface-secondary'
     ].join(' ');
   };
 
@@ -410,21 +410,21 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
           <div className="flex flex-col gap-6 min-w-0 h-full min-h-0 relative">
             {fetching && (
-              <div className="absolute inset-0 bg-white/60 z-10 flex items-center justify-center rounded-3xl backdrop-blur-[1px]">
-                <Loader2 className="w-6 h-6 text-blue-600 animate-spin" />
+              <div className="absolute inset-0 bg-surface-secondary/60 z-10 flex items-center justify-center rounded-3xl backdrop-blur-[1px]">
+                <Loader2 className="w-6 h-6 text-primary animate-spin" />
               </div>
             )}
             <div className="space-y-5 flex-1 min-h-0 overflow-y-auto pr-2">
               {activeTab === 'language' && (
                 <div className="space-y-3">
-                  <label className="text-[13px] font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2 px-1">
-                    <Languages className="w-4 h-4 text-blue-600" />
+                  <label className="text-[13px] font-bold text-fg-secondary uppercase tracking-wide flex items-center gap-2 px-1">
+                    <Languages className="w-4 h-4 text-primary" />
                     {t('settings.language.label')}
                   </label>
                   <Select
                     value={language || i18n.language}
                     onChange={handleLanguageChange}
-                    className="h-10 bg-slate-100 text-slate-900 font-bold rounded-2xl text-sm px-5 focus:bg-white border border-slate-200 transition-all shadow-none"
+                    className="h-10 bg-surface-tertiary text-fg-primary font-bold rounded-2xl text-sm px-5 focus:bg-surface-secondary border border-border transition-all shadow-none"
                   >
                     <option value="system">{t('language.system')}</option>
                     <option value="zh-CN">{t('language.zhCN')}</option>
@@ -432,7 +432,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     <option value="ja-JP">{t('language.jaJP')}</option>
                     <option value="ko-KR">{t('language.koKR')}</option>
                   </Select>
-                  <p className="text-xs text-slate-500 px-1">
+                  <p className="text-xs text-fg-muted px-1">
                     {t('settings.language.hint')}
                   </p>
                 </div>
@@ -442,14 +442,14 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 <>
             {/* Provider Selection */}
             <div className="space-y-3">
-              <label className="text-[13px] font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2 px-1">
-                <Box className="w-4 h-4 text-blue-600" />
+              <label className="text-[13px] font-bold text-fg-secondary uppercase tracking-wide flex items-center gap-2 px-1">
+                <Box className="w-4 h-4 text-primary" />
                 {t('settings.provider.label')}
               </label>
               <Select
                 value={imageProvider}
                 onChange={handleProviderChange}
-                className="h-10 bg-slate-100 text-slate-900 font-bold rounded-2xl text-sm px-5 focus:bg-white border border-slate-200 transition-all shadow-none"
+                className="h-10 bg-surface-tertiary text-fg-primary font-bold rounded-2xl text-sm px-5 focus:bg-surface-secondary border border-border transition-all shadow-none"
               >
                 <option value="gemini">Gemini(/v1beta)</option>
                 <option value="openai">OpenAI(/v1)</option>
@@ -460,17 +460,17 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             {/* API Base URL */}
             <div className="space-y-3">
             <div className="flex items-center justify-between px-1">
-              <label className="text-[13px] font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2">
-                <Globe className="w-4 h-4 text-blue-600" />
+              <label className="text-[13px] font-bold text-fg-secondary uppercase tracking-wide flex items-center gap-2">
+                <Globe className="w-4 h-4 text-primary" />
                 Base URL
               </label>
-              <span className="text-xs text-slate-500">
+              <span className="text-xs text-fg-muted">
                 {t('settings.provider.recommended')}
                 <a
                   href="https://yunwu.ai/register?aff=i4hh"
                   target="_blank"
                   rel="noreferrer"
-                  className="text-blue-600 hover:text-blue-700 underline underline-offset-2"
+                  className="text-primary hover:text-blue-700 underline underline-offset-2"
                 >
                   {t('settings.provider.yunwu')}
                 </a>
@@ -481,20 +481,20 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 value={imageApiBaseUrl || ''}
                 onChange={(e) => setImageApiBaseUrl(e.target.value)}
                 placeholder="https://generativelanguage.googleapis.com"
-                className="h-10 bg-slate-100 text-slate-900 font-medium rounded-2xl text-sm px-5 focus:bg-white border border-slate-200 transition-all shadow-none"
+                className="h-10 bg-surface-tertiary text-fg-primary font-medium rounded-2xl text-sm px-5 focus:bg-surface-secondary border border-border transition-all shadow-none"
               />
               {imageBaseWarn && (
-                <p className="text-xs text-amber-600 px-1">{t('settings.provider.geminiBasePathHint')}</p>
+                <p className="text-xs text-warning px-1">{t('settings.provider.geminiBasePathHint')}</p>
               )}
               {imageProvider === 'openai' && (
-                <p className="text-xs text-red-500 px-1">{t('settings.provider.openaiImageLimit')}</p>
+                <p className="text-xs text-error px-1">{t('settings.provider.openaiImageLimit')}</p>
               )}
             </div>
 
             {/* API Key */}
             <div className="space-y-3">
-              <label className="text-[13px] font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2 px-1">
-                <Key className="w-4 h-4 text-blue-600" />
+              <label className="text-[13px] font-bold text-fg-secondary uppercase tracking-wide flex items-center gap-2 px-1">
+                <Key className="w-4 h-4 text-primary" />
                 API Key
               </label>
               <div className="relative">
@@ -503,12 +503,12 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   value={imageApiKey || ''}
                   onChange={(e) => setImageApiKey(e.target.value)}
                   placeholder="sk-******************"
-                  className="h-10 bg-slate-100 text-slate-900 font-medium rounded-2xl text-sm px-5 pr-14 focus:bg-white border border-slate-200 transition-all shadow-none"
+                  className="h-10 bg-surface-tertiary text-fg-primary font-medium rounded-2xl text-sm px-5 pr-14 focus:bg-surface-secondary border border-border transition-all shadow-none"
                 />
                 <button
                   type="button"
                   onClick={() => setShowImageKey(!showImageKey)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 p-2 text-slate-500 hover:text-blue-600 transition-colors bg-white/80 rounded-xl shadow-sm"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 p-2 text-fg-muted hover:text-primary transition-colors bg-surface-secondary/80 rounded-xl shadow-sm"
                 >
                   {showImageKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -517,14 +517,14 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
             {/* Model Name */}
             <div className="space-y-3">
-              <label className="text-[13px] font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2 px-1">
-                <Box className="w-4 h-4 text-blue-600" />
+              <label className="text-[13px] font-bold text-fg-secondary uppercase tracking-wide flex items-center gap-2 px-1">
+                <Box className="w-4 h-4 text-primary" />
                 {t('settings.model.default')}
               </label>
               <Select
                 value={imageModelSelect}
                 onChange={handleImageModelSelectChange}
-                className="h-10 bg-slate-100 text-slate-900 font-bold rounded-2xl text-sm px-5 focus:bg-white border border-slate-200 transition-all shadow-none"
+                className="h-10 bg-surface-tertiary text-fg-primary font-bold rounded-2xl text-sm px-5 focus:bg-surface-secondary border border-border transition-all shadow-none"
               >
                 {IMAGE_MODEL_OPTIONS.map(opt => (
                   <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -537,15 +537,15 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   value={imageModel}
                   onChange={(e) => setImageModel(e.target.value)}
                   placeholder={t('settings.model.customPlaceholder')}
-                  className="h-10 bg-slate-100 text-slate-900 font-medium rounded-2xl text-sm px-5 focus:bg-white border border-slate-200 transition-all shadow-none mt-2"
+                  className="h-10 bg-surface-tertiary text-fg-primary font-medium rounded-2xl text-sm px-5 focus:bg-surface-secondary border border-border transition-all shadow-none mt-2"
                 />
               )}
             </div>
 
             {/* 参考图压缩设置 */}
             <div className="space-y-3">
-              <label className="text-[13px] font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2 px-1">
-                <ImageIcon className="w-4 h-4 text-blue-600" />
+              <label className="text-[13px] font-bold text-fg-secondary uppercase tracking-wide flex items-center gap-2 px-1">
+                <ImageIcon className="w-4 h-4 text-primary" />
                 {t('settings.refImageCompression.label')}
               </label>
               <div className="flex items-center gap-3 px-1">
@@ -556,10 +556,10 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   }}
                 />
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-sm text-slate-600">
+                  <span className="text-sm text-fg-secondary">
                     {draftEnableRefImageCompression ? t('common.enabled') : t('common.disabled')}
                   </span>
-                  <span className="text-xs text-slate-500">
+                  <span className="text-xs text-fg-muted">
                     {t('settings.refImageCompression.speedHint')}
                   </span>
                 </div>
@@ -567,14 +567,14 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             </div>
             {/* 识图配置 */}
             <div className="space-y-3">
-              <label className="text-[13px] font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2 px-1">
-                <ScanEye className="w-4 h-4 text-blue-600" />
+              <label className="text-[13px] font-bold text-fg-secondary uppercase tracking-wide flex items-center gap-2 px-1">
+                <ScanEye className="w-4 h-4 text-primary" />
                 {t('settings.vision.title')}
               </label>
               <Select
                 value={visionProvider}
                 onChange={(e) => setVisionProvider(e.target.value)}
-                className="h-10 bg-slate-100 text-slate-900 font-bold rounded-2xl text-sm px-5 focus:bg-white border border-slate-200 transition-all shadow-none"
+                className="h-10 bg-surface-tertiary text-fg-primary font-bold rounded-2xl text-sm px-5 focus:bg-surface-secondary border border-border transition-all shadow-none"
               >
                 <option value="gemini-chat">Gemini</option>
                 <option value="openai-chat">OpenAI</option>
@@ -585,28 +585,28 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 value={visionApiBaseUrl}
                 onChange={(e) => setVisionApiBaseUrl(e.target.value)}
                 placeholder={t('settings.apiBaseUrl.placeholder')}
-                className="h-10 bg-slate-100 text-slate-900 font-medium rounded-2xl text-sm px-5 focus:bg-white border border-slate-200 transition-all shadow-none"
+                className="h-10 bg-surface-tertiary text-fg-primary font-medium rounded-2xl text-sm px-5 focus:bg-surface-secondary border border-border transition-all shadow-none"
               />
               <Input
                 type="password"
                 value={visionApiKey}
                 onChange={(e) => setVisionApiKey(e.target.value)}
                 placeholder={t('settings.apiKey.placeholder')}
-                className="h-10 bg-slate-100 text-slate-900 font-medium rounded-2xl text-sm px-5 focus:bg-white border border-slate-200 transition-all shadow-none"
+                className="h-10 bg-surface-tertiary text-fg-primary font-medium rounded-2xl text-sm px-5 focus:bg-surface-secondary border border-border transition-all shadow-none"
               />
               <Input
                 type="text"
                 value={visionModel}
                 onChange={(e) => setVisionModel(e.target.value)}
                 placeholder={t('settings.model.placeholder')}
-                className="h-10 bg-slate-100 text-slate-900 font-medium rounded-2xl text-sm px-5 focus:bg-white border border-slate-200 transition-all shadow-none"
+                className="h-10 bg-surface-tertiary text-fg-primary font-medium rounded-2xl text-sm px-5 focus:bg-surface-secondary border border-border transition-all shadow-none"
               />
             </div>
 
             {/* Timeout */}
             <div className="space-y-3">
-              <label className="text-[13px] font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2 px-1">
-                <Box className="w-4 h-4 text-blue-600" />
+              <label className="text-[13px] font-bold text-fg-secondary uppercase tracking-wide flex items-center gap-2 px-1">
+                <Box className="w-4 h-4 text-primary" />
                 {t('settings.timeout.image')}
               </label>
               <Input
@@ -615,7 +615,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 step={1}
                 value={imageTimeoutSeconds}
                 onChange={(e) => setImageTimeoutSeconds(parseTimeoutInput(e.target.value, imageTimeoutSeconds))}
-                className="h-10 bg-slate-100 text-slate-900 font-medium rounded-2xl text-sm px-5 focus:bg-white border border-slate-200 transition-all shadow-none"
+                className="h-10 bg-surface-tertiary text-fg-primary font-medium rounded-2xl text-sm px-5 focus:bg-surface-secondary border border-border transition-all shadow-none"
               />
             </div>
             </>
@@ -625,14 +625,14 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 <>
             {/* Provider Selection */}
             <div className="space-y-3">
-              <label className="text-[13px] font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2 px-1">
-                <Box className="w-4 h-4 text-blue-600" />
+              <label className="text-[13px] font-bold text-fg-secondary uppercase tracking-wide flex items-center gap-2 px-1">
+                <Box className="w-4 h-4 text-primary" />
                 {t('settings.provider.label')}
               </label>
               <Select
                 value={chatProvider}
                 onChange={handleChatProviderChange}
-                className="h-10 bg-slate-100 text-slate-900 font-bold rounded-2xl text-sm px-5 focus:bg-white border border-slate-200 transition-all shadow-none"
+                className="h-10 bg-surface-tertiary text-fg-primary font-bold rounded-2xl text-sm px-5 focus:bg-surface-secondary border border-border transition-all shadow-none"
               >
                 {CHAT_PROVIDER_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -645,17 +645,17 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             {/* API Base URL */}
             <div className="space-y-3">
               <div className="flex items-center justify-between px-1">
-                <label className="text-[13px] font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2">
-                  <Globe className="w-4 h-4 text-blue-600" />
+                <label className="text-[13px] font-bold text-fg-secondary uppercase tracking-wide flex items-center gap-2">
+                  <Globe className="w-4 h-4 text-primary" />
                   Base URL
                 </label>
-                <span className="text-xs text-slate-500">
+                <span className="text-xs text-fg-muted">
                   {t('settings.provider.recommended')}
                   <a
                     href="https://yunwu.ai/register?aff=i4hh"
                     target="_blank"
                     rel="noreferrer"
-                    className="text-blue-600 hover:text-blue-700 underline underline-offset-2"
+                    className="text-primary hover:text-blue-700 underline underline-offset-2"
                   >
                     {t('settings.provider.yunwu')}
                   </a>
@@ -670,17 +670,17 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     ? 'https://generativelanguage.googleapis.com'
                     : 'https://api.openai.com/v1'
                 }
-                className="h-10 bg-slate-100 text-slate-900 font-medium rounded-2xl text-sm px-5 focus:bg-white border border-slate-200 transition-all shadow-none"
+                className="h-10 bg-surface-tertiary text-fg-primary font-medium rounded-2xl text-sm px-5 focus:bg-surface-secondary border border-border transition-all shadow-none"
               />
               {chatBaseWarn && (
-                <p className="text-xs text-amber-600 px-1">{t('settings.provider.geminiBasePathHint')}</p>
+                <p className="text-xs text-warning px-1">{t('settings.provider.geminiBasePathHint')}</p>
               )}
             </div>
 
             {/* API Key */}
             <div className="space-y-3">
-              <label className="text-[13px] font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2 px-1">
-                <Key className="w-4 h-4 text-blue-600" />
+              <label className="text-[13px] font-bold text-fg-secondary uppercase tracking-wide flex items-center gap-2 px-1">
+                <Key className="w-4 h-4 text-primary" />
                 API Key
               </label>
               <div className="relative">
@@ -689,12 +689,12 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   value={chatApiKey || ''}
                   onChange={(e) => setChatApiKey(e.target.value)}
                   placeholder="sk-******************"
-                  className="h-10 bg-slate-100 text-slate-900 font-medium rounded-2xl text-sm px-5 pr-14 focus:bg-white border border-slate-200 transition-all shadow-none"
+                  className="h-10 bg-surface-tertiary text-fg-primary font-medium rounded-2xl text-sm px-5 pr-14 focus:bg-surface-secondary border border-border transition-all shadow-none"
                 />
                 <button
                   type="button"
                   onClick={() => setShowChatKey(!showChatKey)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 p-2 text-slate-500 hover:text-blue-600 transition-colors bg-white/80 rounded-xl shadow-sm"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 p-2 text-fg-muted hover:text-primary transition-colors bg-surface-secondary/80 rounded-xl shadow-sm"
                 >
                   {showChatKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -703,8 +703,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
             {/* Chat Model */}
             <div className="space-y-3">
-              <label className="text-[13px] font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2 px-1">
-                <Box className="w-4 h-4 text-blue-600" />
+              <label className="text-[13px] font-bold text-fg-secondary uppercase tracking-wide flex items-center gap-2 px-1">
+                <Box className="w-4 h-4 text-primary" />
                 {t('settings.model.chat')}
               </label>
               <Input
@@ -712,14 +712,14 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 value={chatModel}
                 onChange={(e) => setChatModel(e.target.value)}
                 placeholder="gemini-3-flash-preview"
-                className="h-10 bg-slate-100 text-slate-900 font-medium rounded-2xl text-sm px-5 focus:bg-white border border-slate-200 transition-all shadow-none"
+                className="h-10 bg-surface-tertiary text-fg-primary font-medium rounded-2xl text-sm px-5 focus:bg-surface-secondary border border-border transition-all shadow-none"
               />
             </div>
 
             {/* Timeout */}
             <div className="space-y-3">
-              <label className="text-[13px] font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2 px-1">
-                <Box className="w-4 h-4 text-blue-600" />
+              <label className="text-[13px] font-bold text-fg-secondary uppercase tracking-wide flex items-center gap-2 px-1">
+                <Box className="w-4 h-4 text-primary" />
                 {t('settings.timeout.chat')}
               </label>
               <Input
@@ -728,7 +728,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 step={1}
                 value={chatTimeoutSeconds}
                 onChange={(e) => setChatTimeoutSeconds(parseTimeoutInput(e.target.value, chatTimeoutSeconds))}
-                className="h-10 bg-slate-100 text-slate-900 font-medium rounded-2xl text-sm px-5 focus:bg-white border border-slate-200 transition-all shadow-none"
+                className="h-10 bg-surface-tertiary text-fg-primary font-medium rounded-2xl text-sm px-5 focus:bg-surface-secondary border border-border transition-all shadow-none"
               />
             </div>
             </>
@@ -739,7 +739,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               <Button
                 onClick={handleSave}
                 disabled={loading}
-                className="w-full h-12 text-base bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black rounded-2xl shadow-xl shadow-blue-200/50 border-none transition-all duration-300"
+                className="w-full h-12 text-base bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black rounded-2xl shadow-xl shadow-primary/50 border-none transition-all duration-300"
               >
                 {loading ? (
                   <Loader2 className="w-5 h-5 animate-spin" />

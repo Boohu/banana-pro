@@ -35,12 +35,12 @@ export function SearchBar() {
 
   return (
     <div className="relative">
-      <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+      <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-fg-muted" />
       <Input
         value={localValue}
         onChange={(e) => setLocalValue(e.target.value)}
         placeholder={t('history.searchPlaceholder')}
-        className="pl-11 bg-slate-50 border-none rounded-2xl h-12 focus:bg-white transition-all shadow-sm"
+        className="pl-11 bg-surface-tertiary border-none rounded-2xl h-12 focus:bg-surface-secondary transition-all shadow-sm"
       />
     </div>
   );

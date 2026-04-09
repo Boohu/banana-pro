@@ -87,15 +87,15 @@ export default function HistoryPanel({ isActive }: HistoryPanelProps) {
   }, [isActive, loadHistory]); // 只依赖 isActive，不依赖 items.length
 
   return (
-    <div className="h-full bg-gray-50 flex flex-col">
-      <div className="p-4 bg-white border-b border-gray-200 shadow-sm z-10">
+    <div className="h-full bg-surface-tertiary flex flex-col">
+      <div className="p-4 bg-surface-secondary border-b border-border shadow-sm z-10">
         <div className="flex items-center justify-between gap-4">
           <SearchBar />
           <div className="flex items-center gap-2">
             {viewMode === 'album' && (
               <button
                 onClick={() => setIsCreateFolderDialogOpen(true)}
-                className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-primary bg-primary/10 hover:bg-primary/15 rounded-lg transition-colors"
               >
                 <FolderPlus className="w-4 h-4" />
                 {t('history.folder.create')}

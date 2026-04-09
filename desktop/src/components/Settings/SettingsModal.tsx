@@ -1,22 +1,16 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Eye, EyeOff, Key, Globe, Box, Save, Loader2, FileText, FolderOpen, Copy, RefreshCw, Languages, MessageSquare, Github, ScanEye, HelpCircle, Image as ImageIcon, Bell } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Eye, EyeOff, Key, Globe, Box, Save, Loader2, Languages, MessageSquare, Image as ImageIcon, ScanEye } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useConfigStore } from '../../store/configStore';
+import { useConfigStore, IMAGE_MODEL_OPTIONS, CUSTOM_MODEL_VALUE } from '../../store/configStore';
 import { Input } from '../common/Input';
 import { Select } from '../common/Select';
 import { Button } from '../common/Button';
-import { Modal } from '../common/Modal';
 import { ToggleSwitch } from '../common/ToggleSwitch';
+import { Modal } from '../common/Modal';
 import { getProviders, updateProviderConfig, ProviderConfig } from '../../services/providerApi';
 import { toast } from '../../store/toastStore';
-import { getDiagnosticVerbose, setDiagnosticVerbose } from '../../utils/diagnosticLogger';
-import { useUpdaterStore } from '../../store/updaterStore';
 import i18n, { DEFAULT_LANGUAGE } from '../../i18n';
 import { getSystemLocale } from '../../i18n/systemLocale';
-import appIcon from '../../assets/app-icon.png';
-import { IMAGE_MODEL_OPTIONS, VISION_MODEL_OPTIONS, CUSTOM_MODEL_VALUE } from '../../store/configStore';
-import { getPromptOptimizeConfigIssue } from '../../utils/promptOptimizeConfig';
-import { ensureNotificationPermission, sendTestSystemNotification } from '../../hooks/useGenerationNotifications';
 
 const CHAT_PROVIDER_OPTIONS = [
   { value: 'gemini-chat', label: 'Gemini(/v1beta)', defaultBase: 'https://generativelanguage.googleapis.com' },
@@ -24,7 +18,7 @@ const CHAT_PROVIDER_OPTIONS = [
 ];
 const DEFAULT_CHAT_PROVIDER = 'openai-chat';
 
-type SettingsTab = 'language' | 'image' | 'vision' | 'chat' | 'notifications' | 'update' | 'logs';
+type SettingsTab = 'language' | 'image' | 'chat';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -77,10 +71,11 @@ const hasGeminiBasePathWarning = (baseUrl: string) => {
   try {
     pathname = new URL(raw).pathname.toLowerCase();
   } catch {
-    // 处理像 'yunwu.ai/v1' 这样不完整的 URL
-    const pathPart = raw.split(/[?#]/)[0];
-    const firstSlashIndex = pathPart.indexOf('/');
-    pathname = firstSlashIndex === -1 ? '/' : pathPart.substring(firstSlashIndex);
+    const withoutOrigin = raw
+      .replace(/^[a-z]+:\/\/[^/]+/i, '')
+      .split(/[?#]/)[0]
+      .toLowerCase();
+    pathname = withoutOrigin;
   }
 
   const path = pathname.replace(/\/+$/, '');
@@ -95,57 +90,6 @@ const hasGeminiBasePathWarning = (baseUrl: string) => {
   );
 };
 
-
-// 检测 yunwu.ai URL 格式是否正确
-// Gemini 类型：应该是 https://yunwu.ai（不带路径）
-// OpenAI 类型：应该是 https://yunwu.ai/v1（必须带 /v1）
-const hasYunwuUrlWarning = (baseUrl: string, providerType: 'gemini' | 'openai'): { hasWarning: boolean; warningType: 'extra_path' | 'missing_v1' | null } => {
-  const raw = String(baseUrl || '').trim().toLowerCase();
-  if (!raw) return { hasWarning: false, warningType: null };
-  if (!raw.includes('yunwu.ai')) return { hasWarning: false, warningType: null };
-
-  let pathname = '';
-  try {
-    pathname = new URL(raw).pathname.toLowerCase();
-  } catch {
-    const withoutOrigin = raw
-      .replace(/^[a-z]+:\/\/[^/]+/i, '')
-      .split(/[?#]/)[0]
-      .toLowerCase();
-    pathname = withoutOrigin;
-  }
-
-  const path = pathname.replace(/\/+$/, '');
-
-  if (providerType === 'gemini') {
-    // Gemini 类型：不应该带路径
-    if (path && path !== '/') {
-      return { hasWarning: true, warningType: 'extra_path' };
-    }
-  } else {
-    // OpenAI 类型：必须带 /v1
-    if (!path || path === '/') {
-      return { hasWarning: true, warningType: 'missing_v1' };
-    }
-    if (path !== '/v1') {
-      return { hasWarning: true, warningType: 'extra_path' };
-    }
-  }
-
-  return { hasWarning: false, warningType: null };
-};
-// Base URL 警告提示组件
-const BaseUrlWarning = ({ yunwuWarn }: { yunwuWarn: ReturnType<typeof hasYunwuUrlWarning> }) => {
-  const { t } = useTranslation();
-  const message = yunwuWarn.hasWarning
-    ? (yunwuWarn.warningType === 'missing_v1'
-        ? t('settings.provider.yunwuMissingV1Hint')
-        : t('settings.provider.yunwuExtraPathHint'))
-    : t('settings.provider.geminiBasePathHint');
-
-  return <p className="text-xs text-amber-600 px-1">{message}</p>;
-};
-
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const { t } = useTranslation();
   const {
@@ -154,163 +98,72 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     imageApiBaseUrl, setImageApiBaseUrl,
     imageModel, setImageModel,
     imageTimeoutSeconds, setImageTimeoutSeconds,
-    imageMaxRetries, setImageMaxRetries,
-    enableRefImageCompression, setEnableRefImageCompression,
     visionProvider, setVisionProvider,
-    visionApiBaseUrl, setVisionApiBaseUrl,
     visionApiKey, setVisionApiKey,
+    visionApiBaseUrl, setVisionApiBaseUrl,
     visionModel, setVisionModel,
     visionTimeoutSeconds, setVisionTimeoutSeconds,
-    visionMaxRetries, setVisionMaxRetries,
     setVisionSyncedConfig,
+    enableRefImageCompression, setEnableRefImageCompression,
     chatProvider, setChatProvider,
     chatApiBaseUrl, setChatApiBaseUrl,
     chatApiKey, setChatApiKey,
     chatModel, setChatModel,
     chatTimeoutSeconds, setChatTimeoutSeconds,
-    chatMaxRetries, setChatMaxRetries,
     setChatSyncedConfig,
-    defaultPromptOptimizeMode,
-    setDefaultPromptOptimizeMode,
-    enableSystemNotifications,
-    setEnableSystemNotifications,
-    notifyOnlyWhenBackground,
-    setNotifyOnlyWhenBackground,
-    notifyOnFailure,
-    setNotifyOnFailure,
     language,
     languageResolved,
     setLanguage,
-    setLanguageResolved,
-    setShowOnboarding
+    setLanguageResolved
   } = useConfigStore();
 
   const [activeTab, setActiveTab] = useState<SettingsTab>('image');
   const [showImageKey, setShowImageKey] = useState(false);
-  const [showVisionKey, setShowVisionKey] = useState(false);
   const [showChatKey, setShowChatKey] = useState(false);
   const [loading, setLoading] = useState(false);
   const [providers, setProviders] = useState<ProviderConfig[]>([]);
   const [fetching, setFetching] = useState(false);
   const [draftEnableRefImageCompression, setDraftEnableRefImageCompression] = useState(enableRefImageCompression);
-  const [draftPromptOptimizeMode, setDraftPromptOptimizeMode] = useState(defaultPromptOptimizeMode);
-  const imageYunwuWarn = hasYunwuUrlWarning(imageApiBaseUrl, imageProvider === 'gemini' ? 'gemini' : 'openai');
-  const imageBaseWarn = (isGeminiProvider(imageProvider) && hasGeminiBasePathWarning(imageApiBaseUrl)) || imageYunwuWarn.hasWarning;
-
-  const visionYunwuWarn = hasYunwuUrlWarning(visionApiBaseUrl, visionProvider === 'gemini-chat' ? 'gemini' : 'openai');
-  const visionBaseWarn = (isGeminiProvider(visionProvider) && hasGeminiBasePathWarning(visionApiBaseUrl)) || visionYunwuWarn.hasWarning;
-
-  const chatYunwuWarn = hasYunwuUrlWarning(chatApiBaseUrl, chatProvider === 'gemini-chat' ? 'gemini' : 'openai');
-  const chatBaseWarn = (isGeminiProvider(chatProvider) && hasGeminiBasePathWarning(chatApiBaseUrl)) || chatYunwuWarn.hasWarning;
-  const [verboseLogs, setVerboseLogs] = useState(getDiagnosticVerbose());
-  const [draftEnableSystemNotifications, setDraftEnableSystemNotifications] = useState(enableSystemNotifications);
-  const [draftNotifyOnlyWhenBackground, setDraftNotifyOnlyWhenBackground] = useState(notifyOnlyWhenBackground);
-  const [draftNotifyOnFailure, setDraftNotifyOnFailure] = useState(notifyOnFailure);
-  const [appVersion, setAppVersion] = useState('');
-  const checkForUpdates = useUpdaterStore((s) => s.checkForUpdates);
-  const openUpdater = useUpdaterStore((s) => s.open);
-  const update = useUpdaterStore((s) => s.update);
-  const updaterStatus = useUpdaterStore((s) => s.status);
-  const updaterError = useUpdaterStore((s) => s.error);
-  const [updateHint, setUpdateHint] = useState<{ type: 'checking' | 'latest' | 'available' | 'error'; message: string } | null>(null);
-  const [isCheckingUpdates, setIsCheckingUpdates] = useState(false);
-  const [showOnboardingConfirm, setShowOnboardingConfirm] = useState(false);
-  // Model Select state for UI - 'custom' when value not in preset
   const [imageModelSelect, setImageModelSelect] = useState<string>(() => {
-    const isPreset = IMAGE_MODEL_OPTIONS.some(o => o.value === imageModel);
-    return isPreset ? imageModel : CUSTOM_MODEL_VALUE;
+    const current = imageModel;
+    if (IMAGE_MODEL_OPTIONS.some(opt => opt.value === current)) {
+      return current;
+    }
+    return CUSTOM_MODEL_VALUE;
   });
-
-  const [visionModelSelect, setVisionModelSelect] = useState<string>(() => {
-    const isPreset = VISION_MODEL_OPTIONS.some(o => o.value === visionModel);
-    return isPreset ? visionModel : CUSTOM_MODEL_VALUE;
-  });
-
   // 同步 imageModelSelect：当 imageModel 被外部更新时（如 fetchConfigs、切换 Provider）保持下拉框一致
   useEffect(() => {
     const isPreset = IMAGE_MODEL_OPTIONS.some(o => o.value === imageModel);
     setImageModelSelect(isPreset ? imageModel : CUSTOM_MODEL_VALUE);
   }, [imageModel]);
+  const imageBaseWarn = isGeminiProvider(imageProvider) && hasGeminiBasePathWarning(imageApiBaseUrl);
+  const chatBaseWarn = isGeminiProvider(chatProvider) && hasGeminiBasePathWarning(chatApiBaseUrl);
 
-  // 同步 visionModelSelect：当 visionModel 被外部更新时保持下拉框一致
-  useEffect(() => {
-    const isPreset = VISION_MODEL_OPTIONS.some(o => o.value === visionModel);
-    setVisionModelSelect(isPreset ? visionModel : CUSTOM_MODEL_VALUE);
-  }, [visionModel]);
-  const repoUrl = import.meta.env.VITE_GITHUB_REPO_URL || 'https://github.com/ShellMonster/Nano_Banana_Pro_Web';
   const normalizeTimeout = (value?: number | null, fallback = 150) => {
     if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) return fallback;
     return Math.round(value);
   };
-  const parseTimeoutInput = (value: string) => {
-    // 允许空值，返回 0 表示未填写
-    if (!value.trim()) return 0;
+  const parseTimeoutInput = (value: string, fallback: number) => {
     const parsed = Number(value);
-    if (!Number.isFinite(parsed)) return 0;
-    return Math.round(parsed);
+    if (!Number.isFinite(parsed)) return fallback;
+    return Math.max(5, Math.round(parsed));
   };
-  const normalizeRetryCount = (value?: number | null, fallback = 1) => {
-    if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) return fallback;
-    return Math.round(value);
-  };
-  const parseRetryInput = (value: string) => {
-    if (!value.trim()) return 0;
-    const parsed = Number(value);
-    if (!Number.isFinite(parsed) || parsed < 0) return 0;
-    return Math.round(parsed);
-  };
-  const MIN_TIMEOUT = 50; // 最小超时时间
 
   // 当弹窗打开时，从后端获取最新的配置
   useEffect(() => {
     if (isOpen) {
       setActiveTab('image');
       setShowImageKey(false);
-      setShowVisionKey(false);
       setShowChatKey(false);
       fetchConfigs();
-      setUpdateHint(null);
     }
   }, [isOpen]);
 
   useEffect(() => {
     if (isOpen) {
       setDraftEnableRefImageCompression(enableRefImageCompression);
-      setDraftPromptOptimizeMode(defaultPromptOptimizeMode);
-      setDraftEnableSystemNotifications(enableSystemNotifications);
-      setDraftNotifyOnlyWhenBackground(notifyOnlyWhenBackground);
-      setDraftNotifyOnFailure(notifyOnFailure);
     }
-  }, [isOpen, enableRefImageCompression, defaultPromptOptimizeMode, enableSystemNotifications, notifyOnlyWhenBackground, notifyOnFailure]);
-
-  useEffect(() => {
-    let canceled = false;
-    const loadVersion = async () => {
-      try {
-        if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
-          const { getVersion } = await import('@tauri-apps/api/app');
-          const v = await getVersion();
-          if (!canceled) setAppVersion(v);
-          return;
-        }
-      } catch {}
-
-      if (!canceled) setAppVersion(import.meta.env.DEV ? 'dev' : '');
-    };
-
-    loadVersion();
-    return () => {
-      canceled = true;
-    };
-  }, []);
-
-  const updateHintStyle = useMemo(() => {
-    if (!updateHint) return 'text-slate-500';
-    if (updateHint.type === 'checking') return 'text-blue-600';
-    if (updateHint.type === 'available') return 'text-amber-600';
-    if (updateHint.type === 'error') return 'text-red-600';
-    return 'text-emerald-600';
-  }, [updateHint]);
+  }, [isOpen, enableRefImageCompression]);
 
   const fetchConfigs = async () => {
     setFetching(true);
@@ -327,44 +180,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           setImageModel(modelFromConfig);
         }
         setImageTimeoutSeconds(normalizeTimeout(imageConfig.timeout_seconds, 500));
-        setImageMaxRetries(normalizeRetryCount(imageConfig.max_retries, 1));
       } else {
         setImageTimeoutSeconds(500);
-        setImageMaxRetries(1);
-      }
-
-      // 识图配置：先尝试从后端加载，如果没有则继承生图配置
-      const visionConfig = data.find((p) => p.provider_name === visionProvider);
-      if (visionConfig && visionConfig.api_key) {
-        setVisionApiBaseUrl(visionConfig.api_base);
-        setVisionApiKey(visionConfig.api_key);
-        const modelFromConfig = getDefaultModelId(visionConfig.models);
-        if (modelFromConfig) {
-          setVisionModel(modelFromConfig);
-        }
-        setVisionTimeoutSeconds(normalizeTimeout(visionConfig.timeout_seconds));
-        setVisionMaxRetries(normalizeRetryCount(visionConfig.max_retries, 1));
-        setVisionSyncedConfig({
-          apiBaseUrl: visionConfig.api_base || '',
-          apiKey: visionConfig.api_key || '',
-          model: modelFromConfig || '',
-          timeoutSeconds: normalizeTimeout(visionConfig.timeout_seconds)
-        });
-      } else {
-        // 如果没有独立的识图配置，默认继承生图配置的 base URL、key 和 model
-        const imageCfg = imageConfig || data.find((p) => p.provider_name === imageProvider);
-        if (imageCfg) {
-          setVisionApiBaseUrl(imageCfg.api_base);
-          setVisionApiKey(imageCfg.api_key);
-          // 继承生图配置的模型
-          const modelFromConfig = getDefaultModelId(imageCfg.models);
-          if (modelFromConfig) {
-            setVisionModel(modelFromConfig);
-          }
-        }
-        setVisionTimeoutSeconds(150);
-        setVisionMaxRetries(1);
-        setVisionSyncedConfig(null);
       }
 
       const chatConfig = data.find((p) => p.provider_name === chatProvider);
@@ -376,7 +193,6 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           setChatModel(modelFromConfig);
         }
         setChatTimeoutSeconds(normalizeTimeout(chatConfig.timeout_seconds));
-        setChatMaxRetries(normalizeRetryCount(chatConfig.max_retries, 1));
         setChatSyncedConfig({
           apiBaseUrl: chatConfig.api_base || '',
           apiKey: chatConfig.api_key || '',
@@ -388,7 +204,6 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         setChatApiBaseUrl(defaults.baseUrl);
         setChatModel(defaults.model);
         setChatTimeoutSeconds(150);
-        setChatMaxRetries(1);
         setChatSyncedConfig(null);
       }
     } catch (error) {
@@ -404,28 +219,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     const imageKey = imageApiKey.trim();
     const imageModelValue = imageModel.trim();
     const imageTimeoutValue = normalizeTimeout(imageTimeoutSeconds, 500);
-    const imageMaxRetriesValue = normalizeRetryCount(imageMaxRetries, 1);
     if (!imageBase || !imageKey || !imageModelValue) {
       toast.error(t('settings.toast.imageConfigIncomplete'));
-      return;
-    }
-
-    // 校验超时时间
-    if (imageTimeoutSeconds > 0 && imageTimeoutSeconds < MIN_TIMEOUT) {
-      toast.error(t('settings.toast.timeoutTooSmall', { min: MIN_TIMEOUT }));
-      return;
-    }
-
-    // 识图配置：如果没有单独设置，则使用生图配置
-    const visionBase = visionApiBaseUrl.trim() || imageBase;
-    const visionKey = visionApiKey.trim() || imageKey;
-    const visionModelValue = visionModel.trim() || 'gemini-3-flash-preview';
-    const visionTimeoutValue = normalizeTimeout(visionTimeoutSeconds, 150);
-    const visionMaxRetriesValue = normalizeRetryCount(visionMaxRetries, 1);
-
-    // 校验识图超时时间
-    if (visionTimeoutSeconds > 0 && visionTimeoutSeconds < MIN_TIMEOUT) {
-      toast.error(t('settings.toast.timeoutTooSmall', { min: MIN_TIMEOUT }));
       return;
     }
 
@@ -433,39 +228,22 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     const chatKey = chatApiKey.trim();
     const chatModelValue = chatModel.trim();
     const chatTimeoutValue = normalizeTimeout(chatTimeoutSeconds);
-    const chatMaxRetriesValue = normalizeRetryCount(chatMaxRetries, 1);
-    const promptOptimizeConfigIssue = getPromptOptimizeConfigIssue({
-      mode: draftPromptOptimizeMode,
-      chatProvider,
-      chatApiBaseUrl: chatBase,
-      chatApiKey: chatKey,
-      chatModel: chatModelValue,
-      chatTimeoutSeconds
-    });
-    const promptOptimizeRequiresChat = draftPromptOptimizeMode !== 'off';
-    const wantsChat = Boolean(chatKey) || promptOptimizeRequiresChat;
-
-    // 校验对话超时时间
-    if (wantsChat && chatTimeoutSeconds > 0 && chatTimeoutSeconds < MIN_TIMEOUT) {
-      toast.error(t('settings.toast.timeoutTooSmall', { min: MIN_TIMEOUT }));
-      return;
-    }
+    const wantsChat = Boolean(chatKey);
     const imageSaveWarn = isGeminiProvider(imageProvider) && hasGeminiBasePathWarning(imageBase);
-    const visionSaveWarn = isGeminiProvider(visionProvider) && hasGeminiBasePathWarning(visionBase);
     const chatSaveWarn = wantsChat && isGeminiProvider(chatProvider) && hasGeminiBasePathWarning(chatBase);
-    if (promptOptimizeConfigIssue === 'missing' || (wantsChat && (!chatBase || !chatModelValue))) {
+    if (wantsChat && (!chatBase || !chatModelValue)) {
       toast.error(t('settings.toast.chatConfigIncomplete'));
       return;
     }
-    if (imageSaveWarn || visionSaveWarn || chatSaveWarn) {
+    if (imageSaveWarn || chatSaveWarn) {
       toast.warning(t('settings.toast.geminiBasePathWarning'));
     }
-    if (promptOptimizeConfigIssue === 'unsupported' || (
+    if (
       wantsChat &&
       chatProvider === DEFAULT_CHAT_PROVIDER &&
       chatModelValue.toLowerCase().startsWith('gemini') &&
       chatBase.includes('api.openai.com')
-    )) {
+    ) {
       toast.error(t('settings.toast.openaiGeminiUnsupported'));
       return;
     }
@@ -479,22 +257,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         api_key: imageKey,
         enabled: true,
         model_id: imageModelValue,
-        timeout_seconds: imageTimeoutValue,
-        max_retries: imageMaxRetriesValue
+        timeout_seconds: imageTimeoutValue
       });
-
-      // 保存识图配置
-      await updateProviderConfig({
-        provider_name: visionProvider,
-        display_name: visionProvider,
-        api_base: visionBase,
-        api_key: visionKey,
-        enabled: false,
-        model_id: visionModelValue,
-        timeout_seconds: visionTimeoutValue,
-        max_retries: visionMaxRetriesValue
-      });
-      setVisionSyncedConfig({ apiBaseUrl: visionBase, apiKey: visionKey, model: visionModelValue, timeoutSeconds: visionTimeoutValue });
 
       if (wantsChat) {
         await updateProviderConfig({
@@ -504,8 +268,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           api_key: chatKey,
           enabled: false,
           model_id: chatModelValue,
-          timeout_seconds: chatTimeoutValue,
-          max_retries: chatMaxRetriesValue
+          timeout_seconds: chatTimeoutValue
         });
         setChatSyncedConfig({ apiBaseUrl: chatBase, apiKey: chatKey, model: chatModelValue, timeoutSeconds: chatTimeoutValue });
       } else {
@@ -513,26 +276,11 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       }
 
       setEnableRefImageCompression(draftEnableRefImageCompression);
-      setDefaultPromptOptimizeMode(draftPromptOptimizeMode);
-      setEnableSystemNotifications(draftEnableSystemNotifications);
-      setNotifyOnlyWhenBackground(draftNotifyOnlyWhenBackground);
-      setNotifyOnFailure(draftNotifyOnFailure);
       toast.success(t('settings.toast.saveSuccess'));
       onClose();
-    } catch (error: unknown) {
+    } catch (error) {
       console.error('Save failed:', error);
-      let msg = t('settings.toast.checkNetwork');
-      if (error instanceof Error) {
-        msg = error.message;
-      }
-      // 处理 AxiosError 类型的响应错误
-      if (typeof error === 'object' && error !== null && 'response' in error) {
-        const axiosError = error as { response?: { data?: { message?: string } } };
-        if (axiosError.response?.data?.message) {
-          msg = axiosError.response.data.message;
-        }
-      }
-      toast.error(t('settings.toast.saveFailed', { msg }));
+      toast.error(t('settings.toast.saveFailed', { msg: t('settings.toast.checkNetwork') }));
     } finally {
       setLoading(false);
     }
@@ -552,41 +300,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         setImageModel(modelFromConfig);
       }
       setImageTimeoutSeconds(normalizeTimeout(config.timeout_seconds, 500));
-      setImageMaxRetries(normalizeRetryCount(config.max_retries, 1));
     } else {
       setImageTimeoutSeconds(500);
-      setImageMaxRetries(1);
-    }
-  };
-
-  const handleVisionProviderChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newProvider = e.target.value;
-    setVisionProvider(newProvider);
-
-    const config = providers.find(p => p.provider_name === newProvider);
-    if (config) {
-      setVisionApiBaseUrl(config.api_base);
-      setVisionApiKey(config.api_key);
-      const modelFromConfig = getDefaultModelId(config.models);
-      if (modelFromConfig) {
-        setVisionModel(modelFromConfig);
-      }
-      setVisionTimeoutSeconds(normalizeTimeout(config.timeout_seconds));
-      setVisionMaxRetries(normalizeRetryCount(config.max_retries, 1));
-      setVisionSyncedConfig({
-        apiBaseUrl: config.api_base || '',
-        apiKey: config.api_key || '',
-        model: modelFromConfig || '',
-        timeoutSeconds: normalizeTimeout(config.timeout_seconds)
-      });
-    } else {
-      const defaults = getChatProviderDefaults(newProvider);
-      setVisionApiBaseUrl(defaults.baseUrl);
-      setVisionApiKey('');
-      setVisionModel(defaults.model);
-      setVisionTimeoutSeconds(150);
-      setVisionMaxRetries(1);
-      setVisionSyncedConfig(null);
     }
   };
 
@@ -625,7 +340,6 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         setChatModel(modelFromConfig);
       }
       setChatTimeoutSeconds(normalizeTimeout(config.timeout_seconds));
-      setChatMaxRetries(normalizeRetryCount(config.max_retries, 1));
       setChatSyncedConfig({
         apiBaseUrl: config.api_base || '',
         apiKey: config.api_key || '',
@@ -638,213 +352,30 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       setChatApiKey('');
       setChatModel(defaults.model);
       setChatTimeoutSeconds(150);
-      setChatMaxRetries(1);
       setChatSyncedConfig(null);
     }
   };
 
-  const getLogDir = async () => {
-    const isTauri = typeof window !== 'undefined' && Boolean((window as any).__TAURI_INTERNALS__);
-    if (!isTauri) return '';
-    const { invoke } = await import('@tauri-apps/api/core');
-    return await invoke<string>('get_log_dir');
-  };
-
-  const copyText = async (text: string) => {
-    if (!text) return false;
-    try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(text);
-        return true;
-      }
-    } catch {}
-
-    try {
-      const ta = document.createElement('textarea');
-      ta.value = text;
-      ta.style.position = 'fixed';
-      ta.style.left = '-9999px';
-      document.body.appendChild(ta);
-      ta.focus();
-      ta.select();
-      const ok = document.execCommand('copy');
-      document.body.removeChild(ta);
-      return ok;
-    } catch {
-      return false;
-    }
-  };
-
-  const handleOpenLogDir = async () => {
-    try {
-      const dir = await getLogDir();
-      if (!dir) {
-        toast.info(t('settings.toast.logDirDesktopOnly'));
-        return;
-      }
-      try {
-        const { invoke } = await import('@tauri-apps/api/core');
-        await invoke('open_log_dir');
-        return;
-      } catch (err) {
-        console.warn('open_log_dir failed:', err);
-      }
-      try {
-        const { openPath } = await import('@tauri-apps/plugin-opener');
-        await openPath(dir);
-        return;
-      } catch (err) {
-        console.warn('openPath failed:', err);
-      }
-
-      try {
-        const { open } = await import('@tauri-apps/plugin-shell');
-        await open(dir);
-        return;
-      } catch (err) {
-        console.warn('shell open failed:', err);
-      }
-
-      toast.error(t('settings.toast.logDirOpenFailed'));
-    } catch (err) {
-      console.error('Open log folder failed:', err);
-      toast.error(t('settings.toast.logDirOpenFailed'));
-    }
-  };
-
-  const handleCopyLogDir = async () => {
-    try {
-      const dir = await getLogDir();
-      if (!dir) {
-        toast.info(t('settings.toast.logDirDesktopOnly'));
-        return;
-      }
-      const isTauri = typeof window !== 'undefined' && Boolean((window as any).__TAURI_INTERNALS__);
-      if (isTauri) {
-        try {
-          const { invoke } = await import('@tauri-apps/api/core');
-          await invoke('copy_text_to_clipboard', { text: dir });
-          toast.success(t('settings.toast.logDirCopied'));
-          return;
-        } catch (err) {
-          console.warn('tauri clipboard failed:', err);
-        }
-      }
-
-      const ok = await copyText(dir);
-      if (ok) toast.success(t('settings.toast.logDirCopied'));
-      else toast.error(t('settings.toast.logDirCopyFailedManual'));
-    } catch (err) {
-      console.error('Copy log path failed:', err);
-      toast.error(t('settings.toast.logDirCopyFailed'));
-    }
-  };
-
-  const handleToggleVerboseLogs = (next: boolean) => {
-    setVerboseLogs(next);
-    setDiagnosticVerbose(next);
-    toast.success(next ? t('settings.toast.verboseEnabled') : t('settings.toast.verboseDisabled'));
-  };
-
-  const handleOpenYunwu = async () => {
-    const url = 'https://yunwu.ai/register?aff=i4hh';
-    try {
-      const isTauri = typeof window !== 'undefined' && Boolean((window as any).__TAURI_INTERNALS__);
-      if (isTauri) {
-        const { openUrl } = await import('@tauri-apps/plugin-opener');
-        await openUrl(url);
-        return;
-      }
-      window.open(url, '_blank', 'noopener,noreferrer');
-    } catch (err) {
-      console.error('Open Yunwu link failed:', err);
-      toast.error(t('settings.toast.openLinkFailed'));
-    }
-  };
   const handleImageModelSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const val = e.target.value;
-    setImageModelSelect(val);
-    if (val !== CUSTOM_MODEL_VALUE) {
-      setImageModel(val); // Preset value - save directly
+    const selected = e.target.value;
+    setImageModelSelect(selected);
+    if (selected !== CUSTOM_MODEL_VALUE) {
+      setImageModel(selected);
     }
-    // If custom, wait for user to type in the Input
-  };
-
-  const handleVisionModelSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const val = e.target.value;
-    setVisionModelSelect(val);
-    if (val !== CUSTOM_MODEL_VALUE) {
-      setVisionModel(val);
-    }
-  };
-
-  const handleOpenRepo = async () => {
-    if (!repoUrl) return;
-    try {
-      const isTauri = typeof window !== 'undefined' && Boolean((window as any).__TAURI_INTERNALS__);
-      if (isTauri) {
-        const { openUrl } = await import('@tauri-apps/plugin-opener');
-        await openUrl(repoUrl);
-        return;
-      }
-      window.open(repoUrl, '_blank', 'noopener,noreferrer');
-    } catch (err) {
-      console.error('Open repo failed:', err);
-      toast.error(t('settings.toast.openLinkFailed'));
-    }
-  };
-
-  const handleCheckUpdates = async () => {
-    if (isCheckingUpdates) return;
-    const isTauri = typeof window !== 'undefined' && Boolean((window as any).__TAURI_INTERNALS__);
-    if (!isTauri) {
-      setUpdateHint({ type: 'error', message: t('settings.update.desktopOnly') });
-      return;
-    }
-
-    setIsCheckingUpdates(true);
-    setUpdateHint({ type: 'checking', message: t('settings.update.checking') });
-
-    try {
-      await checkForUpdates({ silent: true, openIfAvailable: false });
-    } catch {}
-
-    const latest = useUpdaterStore.getState();
-    if (latest.status === 'available' && latest.update) {
-      setUpdateHint({ type: 'available', message: t('settings.update.available', { version: latest.update.version }) });
-    } else if (latest.status === 'error') {
-      const msg = latest.error
-        ? t('settings.update.failedWith', { error: latest.error })
-        : t('settings.update.failed');
-      setUpdateHint({ type: 'error', message: msg });
-    } else {
-      setUpdateHint({ type: 'latest', message: t('settings.update.latest') });
-    }
-
-    setIsCheckingUpdates(false);
-  };
-
-  const handleOpenUpdater = () => {
-    openUpdater();
-    onClose();
   };
 
   const tabClass = (tab: SettingsTab) => {
     const isActive = activeTab === tab;
     return [
       'w-full flex items-center gap-2 rounded-2xl px-3 py-2 text-sm font-semibold transition-all',
-      isActive ? 'bg-slate-900 text-white shadow-sm' : 'bg-white/70 text-slate-600 hover:bg-white'
+      isActive ? 'bg-slate-900 text-white shadow-sm' : 'bg-surface-secondary/70 text-fg-secondary hover:bg-surface-secondary'
     ].join(' ');
   };
 
   const menuItems = [
     { id: 'language' as const, label: t('settings.language.label'), icon: Languages },
     { id: 'image' as const, label: t('settings.tabs.image'), icon: Box },
-    { id: 'vision' as const, label: t('settings.tabs.vision'), icon: ScanEye },
-    { id: 'chat' as const, label: t('settings.tabs.chat'), icon: MessageSquare },
-    { id: 'notifications' as const, label: t('settings.tabs.notifications'), icon: Bell },
-    { id: 'update' as const, label: t('settings.update.title'), icon: RefreshCw },
-    { id: 'logs' as const, label: t('settings.logs.title'), icon: FileText }
+    { id: 'chat' as const, label: t('settings.tabs.chat'), icon: MessageSquare }
   ];
 
   return (
@@ -857,7 +388,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       contentScrollable={false}
       contentClassName="h-full min-h-0"
     >
-      <div className="relative h-full min-h-0" data-onboarding="settings-modal">
+      <div className="relative h-full min-h-0">
         <div className="grid grid-cols-[220px_minmax(0,1fr)] gap-8 h-full min-h-0">
           <div className="space-y-2">
             {menuItems.map((item) => {
@@ -879,21 +410,21 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
           <div className="flex flex-col gap-6 min-w-0 h-full min-h-0 relative">
             {fetching && (
-              <div className="absolute inset-0 bg-white/60 z-10 flex items-center justify-center rounded-3xl backdrop-blur-[1px]">
-                <Loader2 className="w-6 h-6 text-blue-600 animate-spin" />
+              <div className="absolute inset-0 bg-surface-secondary/60 z-10 flex items-center justify-center rounded-3xl backdrop-blur-[1px]">
+                <Loader2 className="w-6 h-6 text-primary animate-spin" />
               </div>
             )}
             <div className="space-y-5 flex-1 min-h-0 overflow-y-auto pr-2">
               {activeTab === 'language' && (
                 <div className="space-y-3">
-                  <label className="text-[13px] font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2 px-1">
-                    <Languages className="w-4 h-4 text-blue-600" />
+                  <label className="text-[13px] font-bold text-fg-secondary uppercase tracking-wide flex items-center gap-2 px-1">
+                    <Languages className="w-4 h-4 text-primary" />
                     {t('settings.language.label')}
                   </label>
                   <Select
                     value={language || i18n.language}
                     onChange={handleLanguageChange}
-                    className="h-10 bg-slate-100 text-slate-900 font-bold rounded-2xl text-sm px-5 focus:bg-white border border-slate-200 transition-all shadow-none"
+                    className="h-10 bg-surface-tertiary text-fg-primary font-bold rounded-2xl text-sm px-5 focus:bg-surface-secondary border border-border transition-all shadow-none"
                   >
                     <option value="system">{t('language.system')}</option>
                     <option value="zh-CN">{t('language.zhCN')}</option>
@@ -901,136 +432,9 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     <option value="ja-JP">{t('language.jaJP')}</option>
                     <option value="ko-KR">{t('language.koKR')}</option>
                   </Select>
-                  <p className="text-xs text-slate-500 px-1">
+                  <p className="text-xs text-fg-muted px-1">
                     {t('settings.language.hint')}
                   </p>
-
-                  {/* 新手引导开关 */}
-                  <div className="pt-4 border-t border-slate-200 space-y-3">
-                    <label className="text-[13px] font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2 px-1">
-                      <HelpCircle className="w-4 h-4 text-blue-600" />
-                      {t('settings.onboarding.label')}
-                    </label>
-                    <p className="text-xs text-slate-500 px-1">
-                      {t('settings.onboarding.hint')}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => setShowOnboardingConfirm(true)}
-                      className="w-full h-10 bg-blue-50 hover:bg-blue-100 text-blue-600 font-semibold rounded-2xl text-sm transition-all border border-blue-200"
-                    >
-                      {t('settings.onboarding.restart')}
-                    </button>
-                  </div>
-
-                  {/* 新手引导确认弹窗 */}
-                  <Modal
-                    isOpen={showOnboardingConfirm}
-                    onClose={() => setShowOnboardingConfirm(false)}
-                    title={t('settings.onboarding.confirmTitle')}
-                    className="max-w-sm"
-                    density="compact"
-                  >
-                    <div className="space-y-4">
-                      <p className="text-sm text-slate-600">
-                        {t('settings.onboarding.confirmHint')}
-                      </p>
-                      <div className="flex gap-3 justify-end">
-                        <Button
-                          variant="ghost"
-                          onClick={() => setShowOnboardingConfirm(false)}
-                        >
-                          {t('common.cancel')}
-                        </Button>
-                        <Button
-                          variant="primary"
-                          onClick={() => {
-                            setShowOnboardingConfirm(false);
-                            onClose(); // 关闭设置界面
-                            // 延迟启动引导，确保设置界面完全关闭
-                            setTimeout(() => {
-                              setShowOnboarding(true);
-                            }, 100);
-                          }}
-                        >
-                          {t('settings.onboarding.confirmStart')}
-                        </Button>
-                      </div>
-                    </div>
-                  </Modal>
-                </div>
-              )}
-
-              {activeTab === 'notifications' && (
-                <div className="space-y-5">
-                  <div className="space-y-3">
-                    <label className="text-[13px] font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2 px-1">
-                      <Bell className="w-4 h-4 text-blue-600" />
-                      {t('settings.notifications.title')}
-                    </label>
-                    <p className="text-xs text-slate-500 px-1">
-                      {t('settings.notifications.hint')}
-                    </p>
-                  </div>
-
-                  <div className="rounded-3xl border border-slate-200 bg-white/70 p-4 space-y-4">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="space-y-1">
-                        <p className="text-sm font-semibold text-slate-800">{t('settings.notifications.enable')}</p>
-                        <p className="text-xs text-slate-500">{t('settings.notifications.enableHint')}</p>
-                      </div>
-                      <ToggleSwitch
-                        checked={draftEnableSystemNotifications}
-                        onChange={(checked) => {
-                          setDraftEnableSystemNotifications(checked);
-                          if (!checked) return;
-                          void ensureNotificationPermission(t, {
-                            showDeniedToast: true,
-                            source: 'settings'
-                          });
-                        }}
-                      />
-                    </div>
-
-                    <div className={`flex items-start justify-between gap-4 ${!draftEnableSystemNotifications ? 'opacity-50' : ''}`}>
-                      <div className="space-y-1">
-                        <p className="text-sm font-semibold text-slate-800">{t('settings.notifications.backgroundOnly')}</p>
-                        <p className="text-xs text-slate-500">{t('settings.notifications.backgroundOnlyHint')}</p>
-                      </div>
-                      <ToggleSwitch
-                        checked={draftNotifyOnlyWhenBackground}
-                        disabled={!draftEnableSystemNotifications}
-                        onChange={setDraftNotifyOnlyWhenBackground}
-                      />
-                    </div>
-
-                    <div className={`flex items-start justify-between gap-4 ${!draftEnableSystemNotifications ? 'opacity-50' : ''}`}>
-                      <div className="space-y-1">
-                        <p className="text-sm font-semibold text-slate-800">{t('settings.notifications.failure')}</p>
-                        <p className="text-xs text-slate-500">{t('settings.notifications.failureHint')}</p>
-                      </div>
-                      <ToggleSwitch
-                        checked={draftNotifyOnFailure}
-                        disabled={!draftEnableSystemNotifications}
-                        onChange={setDraftNotifyOnFailure}
-                      />
-                    </div>
-
-                    <div className="pt-2 border-t border-slate-200 space-y-2">
-                      <p className="text-xs text-slate-500">{t('settings.notifications.testHint')}</p>
-                      <Button
-                        variant="ghost"
-                        disabled={!draftEnableSystemNotifications}
-                        onClick={() => {
-                          if (!draftEnableSystemNotifications) return;
-                          void sendTestSystemNotification(t);
-                        }}
-                        className="w-full"
-                      >
-                        {t('settings.notifications.testButton')}
-                      </Button>
-                    </div>
-                  </div>
                 </div>
               )}
 
@@ -1038,14 +442,14 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 <>
             {/* Provider Selection */}
             <div className="space-y-3">
-              <label className="text-[13px] font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2 px-1">
-                <Box className="w-4 h-4 text-blue-600" />
+              <label className="text-[13px] font-bold text-fg-secondary uppercase tracking-wide flex items-center gap-2 px-1">
+                <Box className="w-4 h-4 text-primary" />
                 {t('settings.provider.label')}
               </label>
               <Select
                 value={imageProvider}
                 onChange={handleProviderChange}
-                className="h-10 bg-slate-100 text-slate-900 font-bold rounded-2xl text-sm px-5 focus:bg-white border border-slate-200 transition-all shadow-none"
+                className="h-10 bg-surface-tertiary text-fg-primary font-bold rounded-2xl text-sm px-5 focus:bg-surface-secondary border border-border transition-all shadow-none"
               >
                 <option value="gemini">Gemini(/v1beta)</option>
                 <option value="openai">OpenAI(/v1)</option>
@@ -1056,19 +460,20 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             {/* API Base URL */}
             <div className="space-y-3">
             <div className="flex items-center justify-between px-1">
-              <label className="text-[13px] font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2">
-                <Globe className="w-4 h-4 text-blue-600" />
+              <label className="text-[13px] font-bold text-fg-secondary uppercase tracking-wide flex items-center gap-2">
+                <Globe className="w-4 h-4 text-primary" />
                 Base URL
               </label>
-              <span className="text-xs text-slate-500">
+              <span className="text-xs text-fg-muted">
                 {t('settings.provider.recommended')}
-                <button
-                  type="button"
-                  onClick={handleOpenYunwu}
-                  className="text-blue-600 hover:text-blue-700 underline underline-offset-2"
+                <a
+                  href="https://yunwu.ai/register?aff=i4hh"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-primary hover:text-blue-700 underline underline-offset-2"
                 >
                   {t('settings.provider.yunwu')}
-                </button>
+                </a>
               </span>
             </div>
               <Input
@@ -1076,18 +481,20 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 value={imageApiBaseUrl || ''}
                 onChange={(e) => setImageApiBaseUrl(e.target.value)}
                 placeholder="https://generativelanguage.googleapis.com"
-                className="h-10 bg-slate-100 text-slate-900 font-medium rounded-2xl text-sm px-5 focus:bg-white border border-slate-200 transition-all shadow-none"
+                className="h-10 bg-surface-tertiary text-fg-primary font-medium rounded-2xl text-sm px-5 focus:bg-surface-secondary border border-border transition-all shadow-none"
               />
-              {imageBaseWarn && <BaseUrlWarning yunwuWarn={imageYunwuWarn} />}
+              {imageBaseWarn && (
+                <p className="text-xs text-warning px-1">{t('settings.provider.geminiBasePathHint')}</p>
+              )}
               {imageProvider === 'openai' && (
-                <p className="text-xs text-red-500 px-1">{t('settings.provider.openaiImageLimit')}</p>
+                <p className="text-xs text-error px-1">{t('settings.provider.openaiImageLimit')}</p>
               )}
             </div>
 
             {/* API Key */}
             <div className="space-y-3">
-              <label className="text-[13px] font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2 px-1">
-                <Key className="w-4 h-4 text-blue-600" />
+              <label className="text-[13px] font-bold text-fg-secondary uppercase tracking-wide flex items-center gap-2 px-1">
+                <Key className="w-4 h-4 text-primary" />
                 API Key
               </label>
               <div className="relative">
@@ -1096,12 +503,12 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   value={imageApiKey || ''}
                   onChange={(e) => setImageApiKey(e.target.value)}
                   placeholder="sk-******************"
-                  className="h-10 bg-slate-100 text-slate-900 font-medium rounded-2xl text-sm px-5 pr-14 focus:bg-white border border-slate-200 transition-all shadow-none"
+                  className="h-10 bg-surface-tertiary text-fg-primary font-medium rounded-2xl text-sm px-5 pr-14 focus:bg-surface-secondary border border-border transition-all shadow-none"
                 />
                 <button
                   type="button"
                   onClick={() => setShowImageKey(!showImageKey)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 p-2 text-slate-500 hover:text-blue-600 transition-colors bg-white/80 rounded-xl shadow-sm"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 p-2 text-fg-muted hover:text-primary transition-colors bg-surface-secondary/80 rounded-xl shadow-sm"
                 >
                   {showImageKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -1109,15 +516,15 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             </div>
 
             {/* Model Name */}
-            <div className="space-y-3" data-onboarding="settings-ref-compression">
-              <label className="text-[13px] font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2 px-1">
-                <Box className="w-4 h-4 text-blue-600" />
+            <div className="space-y-3">
+              <label className="text-[13px] font-bold text-fg-secondary uppercase tracking-wide flex items-center gap-2 px-1">
+                <Box className="w-4 h-4 text-primary" />
                 {t('settings.model.default')}
               </label>
               <Select
                 value={imageModelSelect}
                 onChange={handleImageModelSelectChange}
-                className="h-10 bg-slate-100 text-slate-900 font-bold rounded-2xl text-sm px-5 focus:bg-white border border-slate-200 transition-all shadow-none"
+                className="h-10 bg-surface-tertiary text-fg-primary font-bold rounded-2xl text-sm px-5 focus:bg-surface-secondary border border-border transition-all shadow-none"
               >
                 {IMAGE_MODEL_OPTIONS.map(opt => (
                   <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -1130,15 +537,15 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   value={imageModel}
                   onChange={(e) => setImageModel(e.target.value)}
                   placeholder={t('settings.model.customPlaceholder')}
-                  className="h-10 bg-slate-100 text-slate-900 font-medium rounded-2xl text-sm px-5 focus:bg-white border border-slate-200 transition-all shadow-none mt-2"
+                  className="h-10 bg-surface-tertiary text-fg-primary font-medium rounded-2xl text-sm px-5 focus:bg-surface-secondary border border-border transition-all shadow-none mt-2"
                 />
               )}
             </div>
 
             {/* 参考图压缩设置 */}
             <div className="space-y-3">
-              <label className="text-[13px] font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2 px-1">
-                <ImageIcon className="w-4 h-4 text-blue-600" />
+              <label className="text-[13px] font-bold text-fg-secondary uppercase tracking-wide flex items-center gap-2 px-1">
+                <ImageIcon className="w-4 h-4 text-primary" />
                 {t('settings.refImageCompression.label')}
               </label>
               <div className="flex items-center gap-3 px-1">
@@ -1149,260 +556,83 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   }}
                 />
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-sm text-slate-600">
+                  <span className="text-sm text-fg-secondary">
                     {draftEnableRefImageCompression ? t('common.enabled') : t('common.disabled')}
                   </span>
-                  <span className="text-xs text-slate-500">
+                  <span className="text-xs text-fg-muted">
                     {t('settings.refImageCompression.speedHint')}
                   </span>
                 </div>
               </div>
             </div>
-
+            {/* 识图配置 */}
             <div className="space-y-3">
-              <label className="text-[13px] font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2 px-1">
-                <MessageSquare className="w-4 h-4 text-blue-600" />
-                {t('settings.promptOptimizeDefault.label')}
+              <label className="text-[13px] font-bold text-fg-secondary uppercase tracking-wide flex items-center gap-2 px-1">
+                <ScanEye className="w-4 h-4 text-primary" />
+                {t('settings.vision.title')}
               </label>
-              <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
-                <div className="flex items-center gap-3">
-                  <ToggleSwitch
-                    checked={draftPromptOptimizeMode !== 'off'}
-                    onChange={(checked) => {
-                      if (checked) {
-                        const issue = getPromptOptimizeConfigIssue({
-                          mode: 'text',
-                          chatProvider,
-                          chatApiBaseUrl,
-                          chatApiKey,
-                          chatModel,
-                          chatTimeoutSeconds
-                        });
-                        if (issue === 'missing') {
-                          toast.error(t('settings.toast.chatConfigIncomplete'));
-                          return;
-                        }
-                        if (issue === 'unsupported') {
-                          toast.error(t('settings.toast.openaiGeminiUnsupported'));
-                          return;
-                        }
-                      }
-                      setDraftPromptOptimizeMode((current) => {
-                        if (!checked) return 'off';
-                        return current === 'off' ? 'text' : current;
-                      });
-                    }}
-                  />
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-sm text-slate-700">
-                      {draftPromptOptimizeMode === 'off' ? t('common.disabled') : t('common.enabled')}
-                    </span>
-                    <span className="text-xs text-slate-500">
-                      {t('settings.promptOptimizeDefault.hint')}
-                    </span>
-                  </div>
-                </div>
-                {draftPromptOptimizeMode !== 'off' && (
-                  <Select
-                    value={draftPromptOptimizeMode}
-                    onChange={(e) => setDraftPromptOptimizeMode((e.target.value as 'text' | 'json'))}
-                    className="h-10 bg-white text-slate-900 font-medium rounded-2xl text-sm px-5 focus:bg-white border border-slate-200 transition-all shadow-none"
-                  >
-                    <option value="text">{t('settings.promptOptimizeDefault.textMode')}</option>
-                    <option value="json">{t('settings.promptOptimizeDefault.jsonMode')}</option>
-                  </Select>
-                )}
-              </div>
+              <Select
+                value={visionProvider}
+                onChange={(e) => setVisionProvider(e.target.value)}
+                className="h-10 bg-surface-tertiary text-fg-primary font-bold rounded-2xl text-sm px-5 focus:bg-surface-secondary border border-border transition-all shadow-none"
+              >
+                <option value="gemini-chat">Gemini</option>
+                <option value="openai-chat">OpenAI</option>
+              </Select>
+
+              <Input
+                type="text"
+                value={visionApiBaseUrl}
+                onChange={(e) => setVisionApiBaseUrl(e.target.value)}
+                placeholder={t('settings.apiBaseUrl.placeholder')}
+                className="h-10 bg-surface-tertiary text-fg-primary font-medium rounded-2xl text-sm px-5 focus:bg-surface-secondary border border-border transition-all shadow-none"
+              />
+              <Input
+                type="password"
+                value={visionApiKey}
+                onChange={(e) => setVisionApiKey(e.target.value)}
+                placeholder={t('settings.apiKey.placeholder')}
+                className="h-10 bg-surface-tertiary text-fg-primary font-medium rounded-2xl text-sm px-5 focus:bg-surface-secondary border border-border transition-all shadow-none"
+              />
+              <Input
+                type="text"
+                value={visionModel}
+                onChange={(e) => setVisionModel(e.target.value)}
+                placeholder={t('settings.model.placeholder')}
+                className="h-10 bg-surface-tertiary text-fg-primary font-medium rounded-2xl text-sm px-5 focus:bg-surface-secondary border border-border transition-all shadow-none"
+              />
             </div>
 
             {/* Timeout */}
             <div className="space-y-3">
-              <label className="text-[13px] font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2 px-1">
-                <Box className="w-4 h-4 text-blue-600" />
+              <label className="text-[13px] font-bold text-fg-secondary uppercase tracking-wide flex items-center gap-2 px-1">
+                <Box className="w-4 h-4 text-primary" />
                 {t('settings.timeout.image')}
               </label>
               <Input
                 type="number"
                 min={5}
                 step={1}
-                value={imageTimeoutSeconds || ''}
-                onChange={(e) => setImageTimeoutSeconds(parseTimeoutInput(e.target.value))}
-                placeholder="500"
-                className="h-10 bg-slate-100 text-slate-900 font-medium rounded-2xl text-sm px-5 focus:bg-white border border-slate-200 transition-all shadow-none"
+                value={imageTimeoutSeconds}
+                onChange={(e) => setImageTimeoutSeconds(parseTimeoutInput(e.target.value, imageTimeoutSeconds))}
+                className="h-10 bg-surface-tertiary text-fg-primary font-medium rounded-2xl text-sm px-5 focus:bg-surface-secondary border border-border transition-all shadow-none"
               />
             </div>
-            <div className="space-y-3">
-              <label className="text-[13px] font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2 px-1">
-                <RefreshCw className="w-4 h-4 text-blue-600" />
-                {t('settings.retry.image')}
-              </label>
-              <Input
-                type="number"
-                min={0}
-                step={1}
-                value={imageMaxRetries || imageMaxRetries === 0 ? imageMaxRetries : ''}
-                onChange={(e) => setImageMaxRetries(parseRetryInput(e.target.value))}
-                placeholder="1"
-                className="h-10 bg-slate-100 text-slate-900 font-medium rounded-2xl text-sm px-5 focus:bg-white border border-slate-200 transition-all shadow-none"
-              />
-              <p className="text-xs text-slate-500 px-1">{t('settings.retry.hint')}</p>
-            </div>
-                </>
-              )}
-
-              {activeTab === 'vision' && (
-                <>
-            {/* Provider Selection */}
-            <div className="space-y-3">
-              <label className="text-[13px] font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2 px-1">
-                <Box className="w-4 h-4 text-blue-600" />
-                {t('settings.provider.label')}
-              </label>
-              <Select
-                value={visionProvider}
-                onChange={handleVisionProviderChange}
-                className="h-10 bg-slate-100 text-slate-900 font-bold rounded-2xl text-sm px-5 focus:bg-white border border-slate-200 transition-all shadow-none"
-              >
-                {CHAT_PROVIDER_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </Select>
-            </div>
-
-            {/* API Base URL */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between px-1">
-                <label className="text-[13px] font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2">
-                  <Globe className="w-4 h-4 text-blue-600" />
-                  Base URL
-                </label>
-                <span className="text-xs text-slate-500">
-                  {t('settings.provider.recommended')}
-                  <button
-                    type="button"
-                    onClick={handleOpenYunwu}
-                    className="text-blue-600 hover:text-blue-700 underline underline-offset-2"
-                  >
-                    {t('settings.provider.yunwu')}
-                  </button>
-                </span>
-              </div>
-              <Input
-                type="text"
-                value={visionApiBaseUrl || ''}
-                onChange={(e) => setVisionApiBaseUrl(e.target.value)}
-                placeholder={
-                  visionProvider === 'gemini-chat'
-                    ? 'https://generativelanguage.googleapis.com'
-                    : 'https://api.openai.com/v1'
-                }
-                className="h-10 bg-slate-100 text-slate-900 font-medium rounded-2xl text-sm px-5 focus:bg-white border border-slate-200 transition-all shadow-none"
-              />
-              {visionBaseWarn && <BaseUrlWarning yunwuWarn={visionYunwuWarn} />}
-              <p className="text-xs text-slate-500 px-1">{t('settings.vision.hint')}</p>
-            </div>
-
-            {/* API Key */}
-            <div className="space-y-3">
-              <label className="text-[13px] font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2 px-1">
-                <Key className="w-4 h-4 text-blue-600" />
-                API Key
-              </label>
-              <div className="relative">
-                <Input
-                  type={showVisionKey ? 'text' : 'password'}
-                  value={visionApiKey || ''}
-                  onChange={(e) => setVisionApiKey(e.target.value)}
-                  placeholder={t('settings.vision.apiKeyPlaceholder')}
-                  className="h-10 bg-slate-100 text-slate-900 font-medium rounded-2xl text-sm px-5 pr-14 focus:bg-white border border-slate-200 transition-all shadow-none"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowVisionKey(!showVisionKey)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 p-2 text-slate-500 hover:text-blue-600 transition-colors bg-white/80 rounded-xl shadow-sm"
-                >
-                  {showVisionKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-              <p className="text-xs text-slate-500 px-1">{t('settings.vision.apiKeyHint')}</p>
-            </div>
-
-            {/* Model */}
-            <div className="space-y-3">
-              <label className="text-[13px] font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2 px-1">
-                <Box className="w-4 h-4 text-blue-600" />
-                {t('settings.model.vision')}
-              </label>
-              <Select
-                value={visionModelSelect}
-                onChange={handleVisionModelSelectChange}
-                className="h-10 bg-slate-100 text-slate-900 font-bold rounded-2xl text-sm px-5 focus:bg-white border border-slate-200 transition-all shadow-none"
-              >
-                {VISION_MODEL_OPTIONS.map(opt => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-                <option value={CUSTOM_MODEL_VALUE}>{t('settings.model.custom')}</option>
-              </Select>
-              {visionModelSelect === CUSTOM_MODEL_VALUE && (
-                <Input
-                  type="text"
-                  value={visionModel}
-                  onChange={(e) => setVisionModel(e.target.value)}
-                  placeholder={t('settings.model.customPlaceholder')}
-                  className="h-10 bg-slate-100 text-slate-900 font-medium rounded-2xl text-sm px-5 focus:bg-white border border-slate-200 transition-all shadow-none mt-2"
-                />
-              )}
-            </div>
-
-            {/* Timeout */}
-            <div className="space-y-3">
-              <label className="text-[13px] font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2 px-1">
-                <Box className="w-4 h-4 text-blue-600" />
-                {t('settings.timeout.vision')}
-              </label>
-              <Input
-                type="number"
-                min={5}
-                step={1}
-                value={visionTimeoutSeconds || ''}
-                onChange={(e) => setVisionTimeoutSeconds(parseTimeoutInput(e.target.value))}
-                placeholder="150"
-                className="h-10 bg-slate-100 text-slate-900 font-medium rounded-2xl text-sm px-5 focus:bg-white border border-slate-200 transition-all shadow-none"
-              />
-            </div>
-            <div className="space-y-3">
-              <label className="text-[13px] font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2 px-1">
-                <RefreshCw className="w-4 h-4 text-blue-600" />
-                {t('settings.retry.vision')}
-              </label>
-              <Input
-                type="number"
-                min={0}
-                step={1}
-                value={visionMaxRetries || visionMaxRetries === 0 ? visionMaxRetries : ''}
-                onChange={(e) => setVisionMaxRetries(parseRetryInput(e.target.value))}
-                placeholder="1"
-                className="h-10 bg-slate-100 text-slate-900 font-medium rounded-2xl text-sm px-5 focus:bg-white border border-slate-200 transition-all shadow-none"
-              />
-              <p className="text-xs text-slate-500 px-1">{t('settings.retry.hint')}</p>
-            </div>
-                </>
-              )}
+            </>
+          )}
 
               {activeTab === 'chat' && (
                 <>
             {/* Provider Selection */}
             <div className="space-y-3">
-              <label className="text-[13px] font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2 px-1">
-                <Box className="w-4 h-4 text-blue-600" />
+              <label className="text-[13px] font-bold text-fg-secondary uppercase tracking-wide flex items-center gap-2 px-1">
+                <Box className="w-4 h-4 text-primary" />
                 {t('settings.provider.label')}
               </label>
               <Select
                 value={chatProvider}
                 onChange={handleChatProviderChange}
-                className="h-10 bg-slate-100 text-slate-900 font-bold rounded-2xl text-sm px-5 focus:bg-white border border-slate-200 transition-all shadow-none"
+                className="h-10 bg-surface-tertiary text-fg-primary font-bold rounded-2xl text-sm px-5 focus:bg-surface-secondary border border-border transition-all shadow-none"
               >
                 {CHAT_PROVIDER_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -1415,19 +645,20 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             {/* API Base URL */}
             <div className="space-y-3">
               <div className="flex items-center justify-between px-1">
-                <label className="text-[13px] font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2">
-                  <Globe className="w-4 h-4 text-blue-600" />
+                <label className="text-[13px] font-bold text-fg-secondary uppercase tracking-wide flex items-center gap-2">
+                  <Globe className="w-4 h-4 text-primary" />
                   Base URL
                 </label>
-                <span className="text-xs text-slate-500">
+                <span className="text-xs text-fg-muted">
                   {t('settings.provider.recommended')}
-                  <button
-                    type="button"
-                    onClick={handleOpenYunwu}
-                    className="text-blue-600 hover:text-blue-700 underline underline-offset-2"
+                  <a
+                    href="https://yunwu.ai/register?aff=i4hh"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-primary hover:text-blue-700 underline underline-offset-2"
                   >
                     {t('settings.provider.yunwu')}
-                  </button>
+                  </a>
                 </span>
               </div>
               <Input
@@ -1439,15 +670,17 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     ? 'https://generativelanguage.googleapis.com'
                     : 'https://api.openai.com/v1'
                 }
-                className="h-10 bg-slate-100 text-slate-900 font-medium rounded-2xl text-sm px-5 focus:bg-white border border-slate-200 transition-all shadow-none"
+                className="h-10 bg-surface-tertiary text-fg-primary font-medium rounded-2xl text-sm px-5 focus:bg-surface-secondary border border-border transition-all shadow-none"
               />
-              {chatBaseWarn && <BaseUrlWarning yunwuWarn={chatYunwuWarn} />}
+              {chatBaseWarn && (
+                <p className="text-xs text-warning px-1">{t('settings.provider.geminiBasePathHint')}</p>
+              )}
             </div>
 
             {/* API Key */}
             <div className="space-y-3">
-              <label className="text-[13px] font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2 px-1">
-                <Key className="w-4 h-4 text-blue-600" />
+              <label className="text-[13px] font-bold text-fg-secondary uppercase tracking-wide flex items-center gap-2 px-1">
+                <Key className="w-4 h-4 text-primary" />
                 API Key
               </label>
               <div className="relative">
@@ -1456,12 +689,12 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   value={chatApiKey || ''}
                   onChange={(e) => setChatApiKey(e.target.value)}
                   placeholder="sk-******************"
-                  className="h-10 bg-slate-100 text-slate-900 font-medium rounded-2xl text-sm px-5 pr-14 focus:bg-white border border-slate-200 transition-all shadow-none"
+                  className="h-10 bg-surface-tertiary text-fg-primary font-medium rounded-2xl text-sm px-5 pr-14 focus:bg-surface-secondary border border-border transition-all shadow-none"
                 />
                 <button
                   type="button"
                   onClick={() => setShowChatKey(!showChatKey)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 p-2 text-slate-500 hover:text-blue-600 transition-colors bg-white/80 rounded-xl shadow-sm"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 p-2 text-fg-muted hover:text-primary transition-colors bg-surface-secondary/80 rounded-xl shadow-sm"
                 >
                   {showChatKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -1470,8 +703,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
             {/* Chat Model */}
             <div className="space-y-3">
-              <label className="text-[13px] font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2 px-1">
-                <Box className="w-4 h-4 text-blue-600" />
+              <label className="text-[13px] font-bold text-fg-secondary uppercase tracking-wide flex items-center gap-2 px-1">
+                <Box className="w-4 h-4 text-primary" />
                 {t('settings.model.chat')}
               </label>
               <Input
@@ -1479,168 +712,34 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 value={chatModel}
                 onChange={(e) => setChatModel(e.target.value)}
                 placeholder="gemini-3-flash-preview"
-                className="h-10 bg-slate-100 text-slate-900 font-medium rounded-2xl text-sm px-5 focus:bg-white border border-slate-200 transition-all shadow-none"
+                className="h-10 bg-surface-tertiary text-fg-primary font-medium rounded-2xl text-sm px-5 focus:bg-surface-secondary border border-border transition-all shadow-none"
               />
             </div>
 
             {/* Timeout */}
             <div className="space-y-3">
-              <label className="text-[13px] font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2 px-1">
-                <Box className="w-4 h-4 text-blue-600" />
+              <label className="text-[13px] font-bold text-fg-secondary uppercase tracking-wide flex items-center gap-2 px-1">
+                <Box className="w-4 h-4 text-primary" />
                 {t('settings.timeout.chat')}
               </label>
               <Input
                 type="number"
                 min={5}
                 step={1}
-                value={chatTimeoutSeconds || ''}
-                onChange={(e) => setChatTimeoutSeconds(parseTimeoutInput(e.target.value))}
-                placeholder="150"
-                className="h-10 bg-slate-100 text-slate-900 font-medium rounded-2xl text-sm px-5 focus:bg-white border border-slate-200 transition-all shadow-none"
+                value={chatTimeoutSeconds}
+                onChange={(e) => setChatTimeoutSeconds(parseTimeoutInput(e.target.value, chatTimeoutSeconds))}
+                className="h-10 bg-surface-tertiary text-fg-primary font-medium rounded-2xl text-sm px-5 focus:bg-surface-secondary border border-border transition-all shadow-none"
               />
             </div>
-            <div className="space-y-3">
-              <label className="text-[13px] font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2 px-1">
-                <RefreshCw className="w-4 h-4 text-blue-600" />
-                {t('settings.retry.chat')}
-              </label>
-              <Input
-                type="number"
-                min={0}
-                step={1}
-                value={chatMaxRetries || chatMaxRetries === 0 ? chatMaxRetries : ''}
-                onChange={(e) => setChatMaxRetries(parseRetryInput(e.target.value))}
-                placeholder="1"
-                className="h-10 bg-slate-100 text-slate-900 font-medium rounded-2xl text-sm px-5 focus:bg-white border border-slate-200 transition-all shadow-none"
-              />
-              <p className="text-xs text-slate-500 px-1">{t('settings.retry.hint')}</p>
-            </div>
-                </>
-              )}
-
-              {activeTab === 'update' && (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3 rounded-2xl bg-white/70 border border-slate-200/60 p-3">
-                    <div className="w-12 h-12 rounded-2xl overflow-hidden bg-white/80 border border-slate-200/60 shadow-lg shadow-blue-200">
-                      <img src={appIcon} alt={t('app.title')} className="w-full h-full object-cover" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-slate-900">{t('app.title')}</span>
-                        <span className="text-xs font-semibold text-slate-500 font-mono">v{appVersion || '-'}</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={handleOpenRepo}
-                        className="mt-1 inline-flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-700 hover:underline underline-offset-2 max-w-full"
-                      >
-                        <Github className="w-3.5 h-3.5" />
-                        <span className="truncate">{repoUrl}</span>
-                      </button>
-                    </div>
-                  </div>
-                  <label className="text-[13px] font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2 px-1">
-                    <RefreshCw className="w-4 h-4 text-blue-600" />
-                    {t('settings.update.title')}
-                  </label>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={handleCheckUpdates}
-                    className="w-full h-10 rounded-2xl"
-                    disabled={isCheckingUpdates}
-                  >
-                    {isCheckingUpdates ? (
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    ) : (
-                      <RefreshCw className="w-4 h-4 mr-2" />
-                    )}
-                    {isCheckingUpdates ? t('settings.update.checkingShort') : t('settings.update.check')}
-                  </Button>
-                  {updateHint && (
-                    <div className={`text-xs font-semibold px-1 flex items-center gap-2 ${updateHintStyle}`}>
-                      <span>{updateHint.message}</span>
-                      {updateHint.type === 'available' && (
-                        <button
-                          type="button"
-                          onClick={handleOpenUpdater}
-                          className="underline underline-offset-2 text-amber-700 hover:text-amber-800"
-                        >
-                          {t('settings.update.view')}
-                        </button>
-                      )}
-                    </div>
-                  )}
-                  {!updateHint && updaterStatus === 'available' && update && (
-                    <div className="text-xs font-semibold px-1 flex items-center gap-2 text-amber-600">
-                      <span>{t('settings.update.available', { version: update.version })}</span>
-                      <button
-                        type="button"
-                        onClick={handleOpenUpdater}
-                        className="underline underline-offset-2 text-amber-700 hover:text-amber-800"
-                      >
-                        {t('settings.update.view')}
-                      </button>
-                    </div>
-                  )}
-                  {!updateHint && updaterStatus === 'error' && updaterError && (
-                    <div className="text-xs font-semibold px-1 text-red-600">
-                      {t('settings.update.failedWith', { error: updaterError })}
-                    </div>
-                  )}
-                  <p className="text-xs text-slate-500 leading-relaxed px-1">
-                    {t('settings.update.autoNote')}
-                  </p>
-                </div>
-              )}
-
-              {activeTab === 'logs' && (
-                <div className="space-y-3">
-                  <label className="text-[13px] font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2 px-1">
-                    <FileText className="w-4 h-4 text-blue-600" />
-                    {t('settings.logs.title')}
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      onClick={handleOpenLogDir}
-                      className="flex-1 h-10 rounded-2xl"
-                    >
-                      <FolderOpen className="w-4 h-4 mr-2" />
-                      {t('settings.logs.openDir')}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      onClick={handleCopyLogDir}
-                      className="h-10 rounded-2xl"
-                      title={t('settings.logs.copyDirTitle')}
-                    >
-                      <Copy className="w-4 h-4" />
-                    </Button>
-                  </div>
-                  <label className="flex items-center gap-2 text-sm text-slate-600 select-none">
-                    <input
-                      type="checkbox"
-                      checked={verboseLogs}
-                      onChange={(e) => handleToggleVerboseLogs(e.target.checked)}
-                      className="accent-blue-600"
-                    />
-                    <span>{t('settings.logs.verboseLabel')}</span>
-                  </label>
-                  <p className="text-xs text-slate-500 leading-relaxed px-1">
-                    {t('settings.logs.help')}
-                  </p>
-                </div>
-              )}
+            </>
+          )}
             </div>
 
             <div className="pt-3">
               <Button
                 onClick={handleSave}
                 disabled={loading}
-                className="w-full h-12 text-base bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black rounded-2xl shadow-xl shadow-blue-200/50 border-none transition-all duration-300"
+                className="w-full h-12 text-base bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black rounded-2xl shadow-xl shadow-primary/50 border-none transition-all duration-300"
               >
                 {loading ? (
                   <Loader2 className="w-5 h-5 animate-spin" />

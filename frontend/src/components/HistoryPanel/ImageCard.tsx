@@ -82,8 +82,10 @@ export const ImageCard = React.memo(function ImageCard({ image, onClick }: Image
     }, []);
 
     const handleClick = useCallback(() => {
+        // 弹窗打开时不触发预览
+        if (isMoveDialogOpen || showConfirm || contextMenu.visible) return;
         onClick(image);
-    }, [image.id, onClick]);
+    }, [image.id, onClick, isMoveDialogOpen, showConfirm, contextMenu.visible]);
 
     const handleCancelConfirm = useCallback((e: React.MouseEvent) => {
         e.stopPropagation();
@@ -190,7 +192,7 @@ export const ImageCard = React.memo(function ImageCard({ image, onClick }: Image
 
     return (
         <div
-            className="bg-white rounded-xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-md cursor-pointer group relative flex flex-col h-full"
+            className="bg-surface-secondary rounded-xl overflow-hidden border border-border shadow-sm hover:shadow-md cursor-pointer group relative flex flex-col h-full"
             style={{ contentVisibility: 'auto', containIntrinsicSize: '240px 320px' }}
             onClick={handleClick}
             draggable
@@ -201,7 +203,7 @@ export const ImageCard = React.memo(function ImageCard({ image, onClick }: Image
             {/* 拖拽指示器 - 左上角 */}
             <div className="absolute top-2 left-12 z-10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                 <div className="bg-black/20 backdrop-blur-sm rounded-lg p-1.5">
-                    <GripVertical className="w-3 h-3 sm:w-4 sm:h-4 text-gray-600" />
+                    <GripVertical className="w-3 h-3 sm:w-4 sm:h-4 text-fg-secondary" />
                 </div>
             </div>
 
@@ -221,7 +223,7 @@ export const ImageCard = React.memo(function ImageCard({ image, onClick }: Image
                         className={`
                             rounded-full flex items-center justify-center shadow-lg
                             transition-all duration-200
-                            bg-blue-500 hover:bg-blue-600 text-white w-7 h-7 sm:w-8 sm:h-8
+                            bg-primary/100 hover:bg-primary text-white w-7 h-7 sm:w-8 sm:h-8
                             pointer-events-auto
                         `}
                         title={t('history.folder.moveButtonTitle')}
@@ -249,7 +251,7 @@ export const ImageCard = React.memo(function ImageCard({ image, onClick }: Image
                         className={`
                             rounded-full flex items-center justify-center shadow-lg
                             transition-all duration-200
-                            bg-red-500 hover:bg-red-600 text-white w-7 h-7 sm:w-8 sm:h-8
+                            bg-error/100 hover:bg-error/90 text-white w-7 h-7 sm:w-8 sm:h-8
                             ${isDeleting ? 'opacity-50 cursor-not-allowed' : ''}
                             pointer-events-auto
                         `}
@@ -273,7 +275,7 @@ export const ImageCard = React.memo(function ImageCard({ image, onClick }: Image
                         className={`
                             rounded-full flex items-center justify-center shadow-lg
                             transition-all duration-200
-                            bg-red-600 text-white w-auto px-3 h-8
+                            bg-error text-white w-auto px-3 h-8
                             ${isDeleting ? 'opacity-50 cursor-not-allowed' : ''}
                             pointer-events-auto
                         `}
@@ -293,7 +295,7 @@ export const ImageCard = React.memo(function ImageCard({ image, onClick }: Image
                 <div className="absolute top-2 right-[76px] z-20 pointer-events-none">
                     <button
                         onClick={handleCancelConfirm}
-                        className="bg-slate-500 text-white w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-600 transition-colors shadow-lg opacity-100 pointer-events-auto"
+                        className="bg-surface-tertiary text-white w-8 h-8 rounded-full flex items-center justify-center hover:bg-surface-tertiary transition-colors shadow-lg opacity-100 pointer-events-auto"
                         title={t('common.cancel')}
                     >
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -319,17 +321,17 @@ export const ImageCard = React.memo(function ImageCard({ image, onClick }: Image
 
             {/* 简要信息 */}
             <div className="p-2 sm:p-3 flex flex-col gap-1.5 sm:gap-2 flex-shrink-0">
-                <p className="text-[10px] sm:text-xs text-gray-800 line-clamp-2 font-medium leading-relaxed" title={image.prompt}>
+                <p className="text-[10px] sm:text-xs text-fg-primary line-clamp-2 font-medium leading-relaxed" title={image.prompt}>
                     {image.prompt}
                 </p>
 
-                <div className="flex items-center justify-between text-[8px] sm:text-[9px] text-gray-400 pt-1 border-t border-gray-50 mt-auto">
+                <div className="flex items-center justify-between text-[8px] sm:text-[9px] text-fg-muted pt-1 border-t border-gray-50 mt-auto">
                     <span className="hidden sm:inline">{formatDateTime(image.taskCreatedAt)}</span>
                     <div className="flex items-center gap-1 ml-auto">
-                        <span className="bg-blue-50 text-blue-600 px-1 py-0.5 rounded font-black tracking-tighter border border-blue-100/50">
+                        <span className="bg-primary/10 text-primary px-1 py-0.5 rounded font-black tracking-tighter border border-blue-100/50">
                             {image.imageSizeLabel}
                         </span>
-                        <span className="bg-slate-100 text-slate-500 px-1 py-0.5 rounded font-bold tracking-tighter border border-slate-200/50">
+                        <span className="bg-surface-tertiary text-fg-muted px-1 py-0.5 rounded font-bold tracking-tighter border border-border/50">
                             {image.aspectRatioLabel}
                         </span>
                     </div>
@@ -344,12 +346,12 @@ export const ImageCard = React.memo(function ImageCard({ image, onClick }: Image
                         onClick={handleCloseContextMenu}
                     />
                     <div
-                        className="fixed bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50 min-w-[160px]"
+                        className="fixed bg-surface-secondary rounded-lg shadow-lg border border-border py-1 z-50 min-w-[160px]"
                         style={{ left: contextMenu.x, top: contextMenu.y }}
                     >
                         <button
-                            className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
-                            onClick={handleMoveImage}
+                            className="w-full px-4 py-2 text-left text-sm hover:bg-surface-tertiary flex items-center gap-2"
+                            onClick={(e) => { e.stopPropagation(); handleMoveImage(); }}
                         >
                             <Move className="w-4 h-4" />
                             {t('history.folder.moveImage')}

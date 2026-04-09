@@ -10,7 +10,7 @@ export function LoadMore() {
 
   if (!hasMore) {
       return (
-          <div className="text-center py-4 text-xs text-gray-400">
+          <div className="text-center py-4 text-xs text-fg-muted">
               {t('history.loadMore.noMore')}
           </div>
       );
@@ -23,7 +23,7 @@ export function LoadMore() {
         size="sm" 
         onClick={loadMore}
         disabled={loading}
-        className="text-gray-500"
+        className="text-fg-muted"
       >
         {loading ? (
             <>

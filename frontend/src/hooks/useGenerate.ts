@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { AxiosError } from 'axios';
 import { useConfigStore } from '../store/configStore';
 import { useGenerateStore } from '../store/generateStore';
-import { generateBatch, generateBatchWithImages, getTaskStatus } from '../services/generateApi';
+import { generateBatch, generateBatchWithImages, getTaskStatus, createDraftBatch, submitBatch } from '../services/generateApi';
 import { useTaskStream } from './useTaskStream';
 import { setUpdateSource, getUpdateSource, clearUpdateSource } from '../store/updateSourceStore';
 import { toast } from '../store/toastStore';
@@ -33,7 +33,7 @@ const sleep = (ms: number) => new Promise<void>((resolve) => {
 
 export function useGenerate() {
   const config = useConfigStore();
-  const { startTask, status, taskId, failTask, updateProgress, updateProgressBatch, completeTask, setConnectionMode, connectionMode, setSubmitting, isSubmitting: isStoreSubmitting } = useGenerateStore();
+  const { startTask, status, taskId, taskType, failTask, updateProgress, updateProgressBatch, completeTask, setConnectionMode, connectionMode, setSubmitting, isSubmitting: isStoreSubmitting, setTaskType } = useGenerateStore();
   const resetPromptHistory = usePromptHistoryStore((s) => s.reset);
   const [isInternalSubmitting, setIsInternalSubmitting] = useState(false);
 

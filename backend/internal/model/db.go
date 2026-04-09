@@ -42,7 +42,7 @@ func InitDB(dbPath string) {
 	}
 
 	// 自动迁移表结构
-	err = DB.AutoMigrate(&ProviderConfig{}, &Task{}, &Folder{})
+	err = DB.AutoMigrate(&ProviderConfig{}, &Task{}, &Batch{}, &Folder{})
 	if err != nil {
 		log.Fatalf("数据库迁移失败: %v", err)
 	}

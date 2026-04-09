@@ -3,16 +3,76 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --background: 210 40% 98%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 222 47% 11%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222 47% 11%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 222 47% 11%;
+    --radius: 0.625rem;
+  }
+
+  .dark {
+    --background: 0 0% 4%;
+    --foreground: 0 0% 100%;
+    --card: 0 0% 10%;
+    --card-foreground: 0 0% 100%;
+    --popover: 0 0% 10%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 271 91% 65%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 240 4% 47%;
+    --accent: 271 91% 65%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 16%;
+    --input: 0 0% 16%;
+    --ring: 271 91% 65%;
+    --radius: 0.625rem;
+
+    /* Custom design tokens */
+    --surface-primary: 0 0% 4%;
+    --surface-secondary: 0 0% 10%;
+    --surface-tertiary: 0 0% 15%;
+    --surface-inverse: 0 0% 100%;
+    --fg-primary: 0 0% 100%;
+    --fg-secondary: 240 4% 66%;
+    --fg-muted: 240 4% 47%;
+    --fg-inverse: 0 0% 4%;
+    --accent-color: 271 91% 65%;
+    --accent-hover: 271 81% 56%;
+    --accent-subtle: 271 91% 65%;
+    --success: 142 71% 45%;
+    --warning: 38 92% 50%;
+    --error: 0 84% 60%;
+  }
+
   body {
-    @apply bg-gray-50 text-gray-900;
+    @apply bg-background text-foreground;
+  }
+
+  /* 暗色模式滚动条配色（标准属性，不影响 Mac overlay 行为） */
+  .dark * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(0 0% 30%) transparent;
   }
 }
 
-/* 引导模式下强制显示 hover 元素 */
-body.onboarding-active {
-  /* 强制显示参考图区域的操作按钮 */
-  .group:hover .opacity-0.group-hover\:opacity-100,
-  .group .opacity-0.group-hover\:opacity-100 {
-    opacity: 1 !important;
-  }
-}

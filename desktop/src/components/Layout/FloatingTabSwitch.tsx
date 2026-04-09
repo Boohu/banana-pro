@@ -1,10 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { LayoutGrid, History, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useGenerateStore } from '../../store/generateStore';
-import { useHistoryStore } from '../../store/historyStore';
-import { toast } from '../../store/toastStore';
-import { cn } from '../common/Button';
+import { LayoutGrid, History } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { cn } from '../common/Button';
+import { useGenerateStore } from '../../store/generateStore';
 
 interface TabButtonProps {
   icon: React.ReactNode;
@@ -13,15 +11,13 @@ interface TabButtonProps {
   isExpanded: boolean;
   onClick: () => void;
   disabled?: boolean;
-  onboardingId?: string;
 }
 
-function TabButton({ icon, label, active, isExpanded, onClick, disabled, onboardingId }: TabButtonProps) {
+function TabButton({ icon, label, active, isExpanded, onClick, disabled }: TabButtonProps) {
   return (
     <button
       onClick={onClick}
       disabled={disabled}
-      data-onboarding={onboardingId}
       className={cn(
         "flex items-center justify-center rounded-xl transition-all duration-200",
         "relative overflow-hidden",
@@ -129,19 +125,8 @@ export function FloatingTabSwitch() {
     setTab(tab);
     setIsExpanded(false);
 
-    // 切换到历史记录时，强制触发一次加载以获取最新数据
-    if (tab === 'history') {
-      console.log('[FloatingTabSwitch] switched to history, trigger load');
-      const historyState = useHistoryStore.getState();
-      const now = Date.now();
-      const shouldReload = !historyState.lastLoadedAt || now - historyState.lastLoadedAt > 15000;
-      if (shouldReload && !historyState.loading) {
-        historyState.loadHistory(true)
-          .catch(err => {
-            console.error('Failed to reload history on tab switch:', err);
-          });
-      }
-    }
+    // 注意：不需要在这里手动加载历史记录
+    // HistoryPanel 组件会监听 currentTab 变化并自动加载
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -231,7 +216,6 @@ export function FloatingTabSwitch() {
           isExpanded={isExpanded}
           onClick={() => handleTabChange('history')}
           disabled={isDraggingRef.current}
-          onboardingId="tab-history"
         />
       </div>
     </div>

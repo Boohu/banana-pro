@@ -1,35 +1,14 @@
-import React, { useState, useEffect, useRef, Suspense, lazy, useMemo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Header } from './Header';
 import { FloatingTabSwitch } from './FloatingTabSwitch';
+import ConfigPanel from '../ConfigPanel';
 import GenerateArea from '../GenerateArea';
+import HistoryPanel from '../HistoryPanel';
 import { useGenerateStore } from '../../store/generateStore';
+import { ChevronLeft, ChevronRight, SlidersHorizontal, X } from 'lucide-react';
 import { useHistoryStore } from '../../store/historyStore';
-import { ChevronLeft, ChevronRight, SlidersHorizontal, X, AlertTriangle, Loader2 } from 'lucide-react';
-import api from '../../services/api';
-import { toast } from '../../store/toastStore';
-import { VersionBadge } from '../common/VersionBadge';
-import { InternalDragLayer } from '../common/InternalDragLayer';
-import { getTaskStatus } from '../../services/generateApi';
-import { getUpdateSource } from '../../store/updateSourceStore';
 import { TemplateMarketDrawer } from '../TemplateMarket/TemplateMarketDrawer';
-import { useBackendResumeRecovery } from '../../hooks/useBackendResumeRecovery';
-
-// 使用懒加载减少初始包体积
-const ConfigPanel = lazy(() => import('../ConfigPanel'));
-const HistoryPanel = lazy(() => import('../HistoryPanel'));
-
-// 懒加载加载中状态
-const PanelLoader = ({ label }: { label: string }) => (
-  <div className="flex-1 flex items-center justify-center bg-white/50 backdrop-blur-sm rounded-3xl">
-    <div className="flex flex-col items-center gap-3">
-      <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
-      <span className="text-sm text-slate-500">{label}</span>
-    </div>
-  </div>
-);
-
-import { tauriInitPromise } from '../../services/api';
 
 export default function MainLayout() {
   const { t } = useTranslation();
@@ -43,27 +22,12 @@ export default function MainLayout() {
   const totalCount = useGenerateStore((s) => s.totalCount);
   const completedCount = useGenerateStore((s) => s.completedCount);
   const errorMessage = useGenerateStore((s) => s.error);
-  const recoveryStatus = useGenerateStore((s) => s.recoveryStatus);
 
   const [isHydrated, setIsHydrated] = useState(false);
-  const [isTauriReady, setIsTauriReady] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
-  const [isBackendHealthy, setIsBackendHealthy] = useState<boolean | null>(null);
   const [isTemplateMarketOpen, setIsTemplateMarketOpen] = useState(false);
   const safeTab = currentTab === 'history' ? 'history' : 'generate';
   const lastTaskIdRef = useRef<string | null>(null);
-
-  useBackendResumeRecovery();
-
-  // 1. 确保状态恢复
-  useEffect(() => {
-    setIsHydrated(true);
-    tauriInitPromise.then(() => setIsTauriReady(true));
-  }, []);
-
-  useEffect(() => {
-    import('../HistoryPanel');
-  }, []);
 
   useEffect(() => {
     if (currentTab !== 'generate' && currentTab !== 'history') {
@@ -80,61 +44,12 @@ export default function MainLayout() {
     lastTaskIdRef.current = taskId;
   }, [taskId]);
 
-  // 2. 检查后端健康状态
-  useEffect(() => {
-    if (!isHydrated || !isTauriReady) return;
-
-    let retryCount = 0;
-    const maxRetries = 5;
-
-    const checkHealth = async () => {
-      try {
-        await api.get('/health');
-        setIsBackendHealthy(true);
-        retryCount = 0; // 重置重试计数
-      } catch (error) {
-        console.error('Backend health check failed:', error);
-        
-        // 只有在重试多次都失败后才提示用户，给 Sidecar 启动留出时间
-        if (retryCount >= maxRetries) {
-          setIsBackendHealthy(false);
-          toast.error(t('layout.toast.backendUnavailable'));
-        } else {
-          retryCount++;
-        }
-      }
-    };
-
-    // 延迟 1 秒进行第一次检查，给 Sidecar 启动时间
-    const initialTimer = setTimeout(checkHealth, 1000);
-    const intervalTimer = setInterval(checkHealth, 5000);
-
-    return () => {
-      clearTimeout(initialTimer);
-      clearInterval(intervalTimer);
-    };
-  }, [isHydrated]);
-
-  const hasPrefetchedHistoryRef = useRef(false);
-  useEffect(() => {
-    if (!isHydrated || !isTauriReady) return;
-    if (hasPrefetchedHistoryRef.current) return;
-
-    const historyState = useHistoryStore.getState();
-    if (historyState.items.length > 0 || historyState.loading) {
-      hasPrefetchedHistoryRef.current = true;
-      return;
-    }
-
-    hasPrefetchedHistoryRef.current = true;
-    historyState.loadHistory(true, { silent: true }).catch(() => {
-      hasPrefetchedHistoryRef.current = false;
-    });
-  }, [isHydrated, isTauriReady]);
+  // 确保状态恢复
+  useEffect(() => setIsHydrated(true), []);
 
   // 轻量同步：生成区状态变化时写回历史列表，避免两边状态不一致
   useEffect(() => {
-    if (!isHydrated || !isTauriReady) return;
+    if (!isHydrated) return;
     const syncTaskId = taskId || (status !== 'idle' ? lastTaskIdRef.current : null);
     if (!syncTaskId) return;
     if (syncTaskId.startsWith('batch-')) return;
@@ -150,287 +65,27 @@ export default function MainLayout() {
       images: taskImages,
       updatedAt: new Date().toISOString()
     });
-  }, [isHydrated, isTauriReady, taskId, status, totalCount, completedCount, images, errorMessage]);
+  }, [isHydrated, taskId, status, totalCount, completedCount, images, errorMessage]);
 
-  const hasCurrentTaskImages = useMemo(() => {
-    if (!taskId) return false;
-    return images.some((img) => img.taskId === taskId);
-  }, [images, taskId]);
-
-  // 冷启动恢复：如果本地持久化了 processing taskId，但生成区没有任何该任务的卡片
-  // 常见于：退出 App 后重开，Sidecar 后端尚未就绪导致未能及时同步，UI 会“卡在生成中但列表空”
-  const isRecoveringTaskRef = useRef(false);
+  // 刷新后如果仍有进行中的任务，后台拉一次历史触发 syncWithGenerateStore 做纠偏/恢复
+  // 避免“必须切到历史页才恢复”的业务闭环缺口
+  const hasSyncedProcessingTaskRef = useRef(false);
   useEffect(() => {
-    if (!isHydrated || !isTauriReady) return;
+    if (!isHydrated) return;
+    if (hasSyncedProcessingTaskRef.current) return;
     if (status !== 'processing' || !taskId) return;
-    if (hasCurrentTaskImages) return;
-    if (isRecoveringTaskRef.current) return;
 
-    isRecoveringTaskRef.current = true;
-    let cancelled = false;
+    hasSyncedProcessingTaskRef.current = true;
+    useHistoryStore.getState().loadHistory(true, { silent: true }).catch(() => {});
+  }, [isHydrated, status, taskId]);
 
-    const recover = async () => {
-      const maxAttempts = 12;
-      for (let attempt = 0; attempt < maxAttempts && !cancelled; attempt++) {
-        try {
-          const taskData = await getTaskStatus(taskId);
-          if (cancelled) return;
-
-          const current = useGenerateStore.getState();
-          if (current.status !== 'processing' || current.taskId !== taskId) return;
-
-          // 后端 task.status 为 pending/processing/completed/failed
-          if (taskData.status === 'processing' || taskData.status === 'pending') {
-            current.restoreTaskState({
-              taskId,
-              status: 'processing',
-              totalCount: taskData.totalCount,
-              completedCount: taskData.completedCount,
-              images: taskData.images || []
-            });
-            return;
-          }
-
-          if (taskData.status === 'completed') {
-            // 恢复完成态：保留图片展示，避免用户感觉“生成丢了”
-            current.restoreTaskState({
-              taskId,
-              status: 'processing',
-              totalCount: taskData.totalCount,
-              completedCount: taskData.completedCount,
-              images: taskData.images || []
-            });
-            current.completeTask();
-            return;
-          }
-
-          if (taskData.status === 'failed') {
-            current.failTask(taskData);
-            return;
-          }
-
-          // 兜底：未知状态，清理本地任务状态，避免卡在 processing
-          current.clearTaskState();
-          return;
-        } catch (err) {
-          // Sidecar 启动/端口切换期间可能短暂失败：做有限次重试，避免“永远卡住”
-          const delay = Math.min(500 * (attempt + 1), 3000);
-          await new Promise((r) => setTimeout(r, delay));
-        }
-      }
-
-      // 重试仍失败：如果仍然没有任何可展示的卡片，清理掉 processing 状态避免 UI 假死
-      const current = useGenerateStore.getState();
-      if (current.status === 'processing' && current.taskId === taskId && current.images.length === 0) {
-        current.clearTaskState();
-      }
-    };
-
-    recover().finally(() => {
-      isRecoveringTaskRef.current = false;
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [isHydrated, isTauriReady, status, taskId, hasCurrentTaskImages]);
-
-  // 任务恢复逻辑：冷启动恢复 + 轮询/WS 驱动进度更新
-
-  // 常驻 Watchdog：当轮询/WS 因组件卸载或竞态停摆时，兜底同步任务完成态
-  // 典型场景：移动端抽屉关闭导致 ConfigPanel 卸载，useGenerate 内的轮询随之停止
-  const isTaskWatchdogRunningRef = useRef(false);
-  const hasWarnedCountMismatchRef = useRef<string | null>(null);
-  const staleCountRef = useRef(0);
-  const lastAuthoritativeCheckAtRef = useRef(0);
-  const lastAuthoritativeTaskIdRef = useRef<string | null>(null);
-  const BATCH_TASK_PREFIX = 'batch-';
-  const AUTHORITATIVE_SYNC_INTERVAL_MS = 10000;
-  const isBatchTaskId = (value: string | null | undefined) => {
-    if (!value) return false;
-    return value.startsWith(BATCH_TASK_PREFIX);
-  };
-  useEffect(() => {
-    if (!isHydrated || !isTauriReady) return;
-
-    let cancelled = false;
-    const POLL_MS = 3000;
-    const POLL_ALIVE_THRESHOLD_MS = 4500;
-    const STALE_LIMIT = 3;
-
-    const tick = async () => {
-      if (cancelled) return;
-
-      const state = useGenerateStore.getState();
-      const currentTaskId = state.taskId;
-      if (state.status !== 'processing' || !currentTaskId) return;
-      if (isBatchTaskId(currentTaskId)) return;
-
-      if (lastAuthoritativeTaskIdRef.current !== currentTaskId) {
-        lastAuthoritativeTaskIdRef.current = currentTaskId;
-        lastAuthoritativeCheckAtRef.current = 0;
-        staleCountRef.current = 0;
-      }
-
-      const now = Date.now();
-      const lastHeartbeat = state.lastHeartbeatTime ?? state.startTime ?? now;
-      const lastTaskUpdate = state.lastTaskUpdateTime ?? state.startTime ?? now;
-      const heartbeatStaleMs = now - lastHeartbeat;
-      const taskUpdateStaleMs = now - lastTaskUpdate;
-
-      // 若已有“看起来活着”的轮询在跑，就不要重复拉（避免桌面端双重轮询）
-      const source = getUpdateSource();
-      const pollingSeemsAlive =
-        source === 'polling' &&
-        state.connectionMode === 'polling' &&
-        taskUpdateStaleMs < POLL_ALIVE_THRESHOLD_MS;
-      if (pollingSeemsAlive) return;
-
-      const streamActive = source === 'websocket' && state.connectionMode === 'websocket';
-      const shouldRunAuthoritativeCheck = now - lastAuthoritativeCheckAtRef.current >= AUTHORITATIVE_SYNC_INTERVAL_MS;
-      let shouldEscalateToPolling = false;
-      if (streamActive) {
-        if (taskUpdateStaleMs < POLL_ALIVE_THRESHOLD_MS && !shouldRunAuthoritativeCheck) {
-          staleCountRef.current = 0;
-          return;
-        }
-
-        if (!shouldRunAuthoritativeCheck) {
-          staleCountRef.current += 1;
-        }
-        if (!shouldRunAuthoritativeCheck && staleCountRef.current < STALE_LIMIT) {
-          return;
-        }
-        shouldEscalateToPolling = !shouldRunAuthoritativeCheck || heartbeatStaleMs >= POLL_ALIVE_THRESHOLD_MS;
-      } else {
-        staleCountRef.current = 0;
-      }
-
-      if (isTaskWatchdogRunningRef.current) return;
-      isTaskWatchdogRunningRef.current = true;
-
-      try {
-        lastAuthoritativeCheckAtRef.current = now;
-        const taskData = await getTaskStatus(currentTaskId);
-        if (cancelled) return;
-
-        staleCountRef.current = 0;
-
-        const latest = useGenerateStore.getState();
-        if (latest.status !== 'processing' || latest.taskId !== currentTaskId) return;
-
-        // 同步图片与进度（保持生成区展示最新结果）
-        if (taskData.images && taskData.images.length > 0) {
-          latest.updateProgressBatch(taskData.completedCount, taskData.images);
-        } else {
-          latest.updateProgress(taskData.completedCount, null);
-        }
-
-        // 若后端已完成/失败，立即结束生成态（避免“时间一直计数但不结束”）
-        if (taskData.status === 'completed') {
-          if (
-            taskData.totalCount > 1 &&
-            (taskData.images?.length || 0) < taskData.totalCount &&
-            hasWarnedCountMismatchRef.current !== currentTaskId
-          ) {
-            hasWarnedCountMismatchRef.current = currentTaskId;
-            toast.info(t('generate.toast.countMismatch', {
-              total: taskData.totalCount,
-              returned: taskData.images?.length || 0
-            }));
-          }
-          latest.completeTask();
-          return;
-        }
-
-        if (taskData.status === 'failed') {
-          latest.failTask(taskData);
-          return;
-        }
-
-        if (taskData.status === 'partial') {
-          toast.info(t('generate.toast.partial'));
-          latest.completeTask();
-          return;
-        }
-
-        // 仍在 processing：只有实时链路连续 stale 才降级到 polling；
-        // 定期权威校验本身不意味着 websocket 不可用。
-        if (shouldEscalateToPolling && latest.connectionMode !== 'polling') {
-          latest.setConnectionMode('polling');
-        }
-      } catch (err) {
-        // 网络/端口切换短暂失败：不打断用户，仅在需要时切到 polling 以便重试
-        const latest = useGenerateStore.getState();
-        if (
-          !cancelled &&
-          latest.status === 'processing' &&
-          latest.taskId === currentTaskId &&
-          latest.connectionMode !== 'polling' &&
-          (!streamActive || shouldEscalateToPolling)
-        ) {
-          latest.setConnectionMode('polling');
-        }
-      } finally {
-        isTaskWatchdogRunningRef.current = false;
-      }
-    };
-
-    const timer = setInterval(() => void tick(), POLL_MS);
-    const immediate = setTimeout(() => void tick(), 1000);
-
-    return () => {
-      cancelled = true;
-      clearInterval(timer);
-      clearTimeout(immediate);
-    };
-  }, [isHydrated, isTauriReady]);
-
-  const isTauri = typeof window !== 'undefined' && Boolean((window as any).__TAURI_INTERNALS__);
+  // 任务恢复逻辑：由历史记录加载后的 syncWithGenerateStore 处理
 
   if (!isHydrated) return null;
 
   return (
     <div className="flex flex-col h-screen bg-[#f8fafc] overflow-hidden font-sans antialiased text-slate-900">
-      {/* macOS overlay + transparent 下没有系统拖动区：提供全局“边缘拖动条”，且始终在弹窗之上 */}
-      {isTauri && (
-        <>
-          <div
-            className="fixed top-0 left-0 right-0 h-2 z-[10000] [-webkit-app-region:drag]"
-            data-tauri-drag-region
-          />
-          <div
-            className="fixed bottom-0 left-0 right-0 h-2 z-[10000] [-webkit-app-region:drag]"
-            data-tauri-drag-region
-          />
-          <div
-            className="fixed top-0 bottom-0 left-0 w-2 z-[10000] [-webkit-app-region:drag]"
-            data-tauri-drag-region
-          />
-          <div
-            className="fixed top-0 bottom-0 right-0 w-2 z-[10000] [-webkit-app-region:drag]"
-            data-tauri-drag-region
-          />
-        </>
-      )}
-
       <Header />
-      <InternalDragLayer />
-
-      {(isBackendHealthy === false || recoveryStatus !== 'idle') && (
-        <div className={`mx-4 mt-2 p-3 rounded-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2 ${
-          recoveryStatus === 'recovering'
-            ? 'bg-amber-50 border border-amber-100 text-amber-700'
-            : 'bg-red-50 border border-red-100 text-red-600'
-        }`}>
-          <AlertTriangle className="w-5 h-5 flex-shrink-0" />
-          <div className="text-sm font-bold">
-            {recoveryStatus === 'recovering'
-              ? t('layout.backendRecovering')
-              : t('layout.backendBanner')}
-          </div>
-        </div>
-      )}
 
       <main className="flex-1 flex overflow-hidden p-4 gap-4 relative">
         {/* 桌面端：左侧配置栏 */}
@@ -441,9 +96,7 @@ export default function MainLayout() {
             `}
         >
           <div className="w-96 h-full">
-            <Suspense fallback={<PanelLoader label={t('layout.loadingModule')} />}>
-              <ConfigPanel />
-            </Suspense>
+            <ConfigPanel />
           </div>
         </aside>
 
@@ -477,9 +130,7 @@ export default function MainLayout() {
                         <button onClick={() => setIsMobileDrawerOpen(false)} className="p-2 bg-slate-100 rounded-xl"><X className="w-5 h-5" /></button>
                     </div>
                     <div className="flex-1 overflow-y-auto p-4">
-                        <Suspense fallback={<PanelLoader label={t('layout.loadingModule')} />}>
-                            <ConfigPanel />
-                        </Suspense>
+                        <ConfigPanel />
                     </div>
                 </div>
             </div>
@@ -495,14 +146,10 @@ export default function MainLayout() {
              <GenerateArea />
           </div>
           <div className={`absolute inset-0 transition-opacity duration-500 ${safeTab === 'history' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
-             <Suspense fallback={<PanelLoader label={t('layout.loadingModule')} />}>
-               <HistoryPanel isActive={safeTab === 'history'} />
-             </Suspense>
+             <HistoryPanel isActive={safeTab === 'history'} />
           </div>
         </section>
       </main>
-
-      <VersionBadge />
     </div>
   );
 }

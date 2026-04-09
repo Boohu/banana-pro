@@ -78,51 +78,51 @@ export const FailedTaskCard = React.memo(function FailedTaskCard({ task, onClick
         switch (task.status) {
             case 'failed':
                 return {
-                    icon: <XCircle className="w-8 h-8 text-red-500" />,
+                    icon: <XCircle className="w-8 h-8 text-error" />,
                     title: t('history.status.failed.title'),
                     description: task.errorMessage || t('history.status.failed.description'),
-                    bgColor: 'bg-red-50',
-                    borderColor: 'border-red-200'
+                    bgColor: 'bg-error/10',
+                    borderColor: 'border-error/30'
                 };
             case 'pending':
                 return {
-                    icon: <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />,
+                    icon: <Loader2 className="w-8 h-8 text-primary animate-spin" />,
                     title: t('history.status.pending.title'),
                     description: t('history.status.pending.description'),
-                    bgColor: 'bg-blue-50',
-                    borderColor: 'border-blue-200'
+                    bgColor: 'bg-primary/10',
+                    borderColor: 'border-primary/30'
                 };
             case 'processing':
                 return {
-                    icon: <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />,
+                    icon: <Loader2 className="w-8 h-8 text-primary animate-spin" />,
                     title: t('history.status.processing.title'),
                     description: t('history.status.processing.description', { index: task.completedCount + 1 }),
-                    bgColor: 'bg-blue-50',
-                    borderColor: 'border-blue-200'
+                    bgColor: 'bg-primary/10',
+                    borderColor: 'border-primary/30'
                 };
             case 'partial':
                 return {
-                    icon: <AlertCircle className="w-8 h-8 text-orange-500" />,
+                    icon: <AlertCircle className="w-8 h-8 text-warning" />,
                     title: t('history.status.partial.title'),
                     description: t('history.status.partial.description', { completed: task.completedCount, total: task.totalCount }),
-                    bgColor: 'bg-orange-50',
-                    borderColor: 'border-orange-200'
+                    bgColor: 'bg-warning/10',
+                    borderColor: 'border-warning/30'
                 };
             case 'completed':
                 return {
-                    icon: <AlertCircle className="w-8 h-8 text-gray-400" />,
+                    icon: <AlertCircle className="w-8 h-8 text-fg-muted" />,
                     title: t('history.status.completed.title'),
                     description: t('history.status.completed.description'),
-                    bgColor: 'bg-gray-50',
-                    borderColor: 'border-gray-200'
+                    bgColor: 'bg-surface-tertiary',
+                    borderColor: 'border-border'
                 };
             default:
                 return {
-                    icon: <AlertCircle className="w-8 h-8 text-gray-400" />,
+                    icon: <AlertCircle className="w-8 h-8 text-fg-muted" />,
                     title: t('history.status.unknown.title'),
                     description: t('history.status.unknown.description'),
-                    bgColor: 'bg-gray-50',
-                    borderColor: 'border-gray-200'
+                    bgColor: 'bg-surface-tertiary',
+                    borderColor: 'border-border'
                 };
         }
     }, [task.status, task.errorMessage, task.completedCount, task.totalCount, t]);
@@ -130,9 +130,9 @@ export const FailedTaskCard = React.memo(function FailedTaskCard({ task, onClick
     return (
         <div
             className={`
-                break-inside-avoid rounded-xl overflow-hidden border shadow-sm
+                break-inside-avoid rounded-xl overflow-hidden shadow-sm
                 hover:shadow-md cursor-pointer group relative
-                h-full flex flex-col ${statusInfo.bgColor} ${statusInfo.borderColor}
+                h-full flex flex-col border ${statusInfo.bgColor} ${statusInfo.borderColor}
             `}
             style={{ contentVisibility: 'auto', containIntrinsicSize: '240px 240px' }}
             onClick={handleClick}
@@ -154,7 +154,7 @@ export const FailedTaskCard = React.memo(function FailedTaskCard({ task, onClick
                         className={`
                             rounded-full flex items-center justify-center shadow-lg
                             transition-all duration-200
-                            bg-red-500 hover:bg-red-600 text-white w-7 h-7 sm:w-8 sm:h-8
+                            bg-error/100 hover:bg-error/90 text-white w-7 h-7 sm:w-8 sm:h-8
                             ${isDeleting ? 'opacity-50 cursor-not-allowed' : ''}
                             pointer-events-auto
                         `}
@@ -178,7 +178,7 @@ export const FailedTaskCard = React.memo(function FailedTaskCard({ task, onClick
                         className={`
                             rounded-full flex items-center justify-center shadow-lg
                             transition-all duration-200
-                            bg-red-600 text-white w-auto px-3 h-8
+                            bg-error text-white w-auto px-3 h-8
                             ${isDeleting ? 'opacity-50 cursor-not-allowed' : ''}
                             pointer-events-auto
                         `}
@@ -198,7 +198,7 @@ export const FailedTaskCard = React.memo(function FailedTaskCard({ task, onClick
                 <div className="absolute top-2 right-[76px] z-20 pointer-events-none">
                     <button
                         onClick={handleCancelConfirm}
-                        className="bg-slate-500 text-white w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-600 transition-colors shadow-lg opacity-100 pointer-events-auto"
+                        className="bg-surface-tertiary text-white w-8 h-8 rounded-full flex items-center justify-center hover:bg-surface-tertiary transition-colors shadow-lg opacity-100 pointer-events-auto"
                         title={t('common.cancel')}
                     >
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -209,24 +209,24 @@ export const FailedTaskCard = React.memo(function FailedTaskCard({ task, onClick
             )}
 
             {/* 内容区域 */}
-            <div className="p-5 sm:p-6 flex flex-col items-center justify-center flex-1 min-h-0">
+            <div className="p-5 sm:p-6 flex flex-col items-center justify-center flex-1 min-h-0 min-w-0 overflow-hidden">
                 {/* 状态图标 */}
                 <div className="mb-4">
                     {statusInfo.icon}
                 </div>
 
                 {/* 状态标题 */}
-                <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                <h3 className="text-lg font-semibold text-fg-primary mb-2">
                     {statusInfo.title}
                 </h3>
 
                 {/* 状态描述 */}
                 {statusInfo.description && (
                     <p
-                        className={`text-center mb-3 ${
+                        className={`text-center mb-3 w-full break-all ${
                             task.status === 'processing'
-                                ? 'text-xs text-gray-600 whitespace-nowrap truncate'
-                                : 'text-sm text-gray-600 line-clamp-3'
+                                ? 'text-xs text-fg-secondary line-clamp-2'
+                                : 'text-sm text-fg-secondary line-clamp-3'
                         }`}
                         title={statusInfo.description}
                     >
@@ -235,23 +235,23 @@ export const FailedTaskCard = React.memo(function FailedTaskCard({ task, onClick
                 )}
 
                 {/* 分隔线 */}
-                <div className="w-full border-t border-gray-300/50 my-3" />
+                <div className="w-full border-t border-border/50 my-3" />
 
                 {/* 任务信息 */}
                 <div className="w-full min-h-0">
-                    <p className="text-xs text-gray-800 line-clamp-2 font-medium leading-relaxed mb-3" title={task.prompt}>
+                    <p className="text-xs text-fg-primary line-clamp-2 font-medium leading-relaxed mb-3" title={task.prompt}>
                         {task.prompt || t('history.prompt.empty')}
                     </p>
 
-                    <div className="flex items-center justify-between text-[9px] text-gray-400 pt-1">
+                    <div className="flex items-center justify-between text-[9px] text-fg-muted pt-1">
                         <span className="hidden sm:block">{formatDateTime(task.createdAt)}</span>
                         <div className="flex items-center gap-1 ml-auto">
                             <span className={`
                                 px-1.5 py-0.5 rounded font-black tracking-tighter border
-                                ${task.status === 'failed' ? 'bg-red-50 text-red-600 border-red-100/50' : ''}
-                                ${task.status === 'processing' ? 'bg-yellow-50 text-yellow-600 border-yellow-100/50' : ''}
-                                ${task.status === 'partial' ? 'bg-orange-50 text-orange-600 border-orange-100/50' : ''}
-                                ${task.status === 'completed' ? 'bg-gray-100 text-gray-500 border-gray-200/50' : ''}
+                                ${task.status === 'failed' ? 'bg-error/10 text-error border-error/30' : ''}
+                                ${task.status === 'processing' ? 'bg-warning/10 text-warning border-warning/30' : ''}
+                                ${task.status === 'partial' ? 'bg-warning/10 text-warning border-warning/30' : ''}
+                                ${task.status === 'completed' ? 'bg-surface-tertiary text-fg-muted border-border/50' : ''}
                             `}>
                                 {task.status.toUpperCase()}
                             </span>

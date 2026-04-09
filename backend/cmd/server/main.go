@@ -211,7 +211,8 @@ func main() {
 		log.Printf("[CORS] Request from Origin: %s, Method: %s, Path: %s", origin, c.Request.Method, c.Request.URL.Path)
 
 		if platform.IsTauriSidecar() {
-			if !isAllowedTauriOrigin(origin) {
+			// 允许空 Origin（来自 Tauri Rust invoke 的本地请求不带 Origin）
+			if origin != "" && !isAllowedTauriOrigin(origin) {
 				c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
 					"code":    403,
 					"message": "origin not allowed",
@@ -226,7 +227,11 @@ func main() {
 		} else {
 			trimmedOrigin := strings.TrimSpace(origin)
 			hasWildcard := allowlistHasWildcard(corsAllowlist)
-			if isNullOrigin(trimmedOrigin) {
+			// Also allow Tauri origins in non-sidecar mode (e.g. desktop connecting to Docker backend)
+			if isAllowedTauriOrigin(trimmedOrigin) {
+				c.Writer.Header().Set("Access-Control-Allow-Origin", trimmedOrigin)
+				c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+			} else if isNullOrigin(trimmedOrigin) {
 				c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
 					"code":    403,
 					"message": "origin not allowed",
@@ -289,6 +294,13 @@ func main() {
 		v1.DELETE("/folders/:id", api.DeleteFolderHandler)           // 删除手动文件夹
 		v1.POST("/folders/month", api.GetOrCreateMonthFolderHandler) // 按需获取或创建月份文件夹
 		v1.POST("/folders/move-image", api.MoveImageHandler)         // 移动图片
+		// 批次管理 API
+		v1.POST("/batches/draft", api.CreateDraftBatchHandler)         // 创建/更新草稿批次
+		v1.POST("/batches/:batch_id/submit", api.SubmitBatchHandler)   // 提交批次生成
+		v1.GET("/batches/:batch_id", api.GetBatchHandler)              // 查询批次详情
+		v1.GET("/batches/:batch_id/stream", api.StreamBatchHandler)    // SSE 批次进度推送
+		v1.GET("/batches", api.ListBatchesHandler)                     // 分页查询批次列表
+		v1.DELETE("/batches/:batch_id", api.DeleteBatchHandler)        // 删除批次
 	}
 
 	// 静态资源访问 (将 storage 目录整体暴露，以匹配数据库中的 storage/local/xxx.jpg 路径)

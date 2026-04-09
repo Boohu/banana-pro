@@ -22,14 +22,14 @@ export function BatchSettings() {
 
   return (
     <div className="space-y-3">
-        <div className="flex items-center gap-2 text-gray-900 font-medium">
+        <div className="flex items-center gap-2 text-fg-primary font-medium">
             <Settings2 className="w-4 h-4" />
             <span>{t('config.batch.title')}</span>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-                <label className="text-xs text-gray-500">{t('config.batch.count')}</label>
+                <label className="text-xs text-fg-muted">{t('config.batch.count')}</label>
                 <Input
                     type="number"
                     min={1}
@@ -45,7 +45,7 @@ export function BatchSettings() {
                 />
             </div>
             <div className="space-y-1">
-                <label className="text-xs text-gray-500">{t('config.batch.resolution')}</label>
+                <label className="text-xs text-fg-muted">{t('config.batch.resolution')}</label>
                 <Select value={imageSize} onChange={(e) => setImageSize(e.target.value)} className="h-9 text-sm">
                     <option value="1K">{t('config.batch.resolution1k')}</option>
                     <option value="2K">{t('config.batch.resolution2k')}</option>
@@ -55,7 +55,7 @@ export function BatchSettings() {
         </div>
 
         <div className="space-y-1">
-            <label className="text-xs text-gray-500">{t('config.batch.aspectRatio')}</label>
+            <label className="text-xs text-fg-muted">{t('config.batch.aspectRatio')}</label>
              <Select value={aspectRatio} onChange={(e) => setAspectRatio(e.target.value)} className="h-9 text-sm">
                 {supportedRatios.map((ratio) => {
                   const key = ratio.replace(':', '_');

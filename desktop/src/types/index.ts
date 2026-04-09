@@ -20,20 +20,9 @@ export interface GeneratedImage {
   url?: string;
   thumbnailUrl?: string;
   prompt?: string;
-  promptOriginal?: string;
-  promptOptimized?: string;
-  promptOptimizeMode?: string;
   status?: 'pending' | 'success' | 'failed';
   model?: string;
   options?: string | ImageOptions;
-  errorMessage?: string;
-  errorRawMessage?: string;
-  errorCode?: string;
-  errorCategory?: string;
-  errorRequestId?: string;
-  errorRetryable?: boolean;
-  errorDetail?: string;
-  previewSource?: 'generate' | 'history';
 }
 
 // 图片选项配置
@@ -46,28 +35,15 @@ export interface ImageOptions {
 export interface GenerationTask {
   id: string;
   prompt: string;
-  promptOriginal?: string;
-  promptOptimized?: string;
-  promptOptimizeMode?: string;
   model: string;
   totalCount: number;
   completedCount: number;
   status: 'pending' | 'processing' | 'completed' | 'failed' | 'partial';
   options: string;
   errorMessage: string;
-  errorRawMessage?: string;
-  errorCode?: string;
-  errorCategory?: string;
-  errorRequestId?: string;
-  errorRetryable?: boolean;
-  errorDetail?: string;
   createdAt: string;
   updatedAt: string;
   images: GeneratedImage[];
-}
-
-export interface TaskFailurePayload extends Partial<GenerationTask> {
-  taskId?: string;
 }
 
 // 批量生成请求参数
@@ -91,6 +67,7 @@ export interface HistoryQueryParams {
     page?: number;
     pageSize?: number;
     keyword?: string;
+    folder_id?: string;
 }
 
 // 历史列表响应
@@ -110,8 +87,6 @@ export interface ExtendedFile extends File {
   __compressed?: boolean;
   // 原始文件大小（压缩前）
   __originalSize?: number;
-  // 本地文件路径 (Tauri 环境)
-  __path?: string;
 }
 
 // 参考图持久化信息
@@ -158,6 +133,8 @@ export interface TemplateMeta {
   materials: string[];
   industries: string[];
   ratios: string[];
+  version?: string;
+  updated_at?: string;
 }
 
 export interface TemplateListResponse {
@@ -165,26 +142,16 @@ export interface TemplateListResponse {
   items: TemplateItem[];
 }
 
-export interface BackendImageSource {
-  kind: 'http_url' | 'storage_relative' | string;
-  value: string;
-}
-
 // 后端 Task 模型（用于 API 响应）
 export interface BackendTask {
   task_id: string;
   prompt: string;
-  prompt_original?: string;
-  prompt_optimized?: string;
-  prompt_optimize_mode?: string;
   model_id?: string;
   provider_name?: string;
   local_path?: string;
   thumbnail_path?: string;
   image_url?: string;
   thumbnail_url?: string;
-  image_source?: BackendImageSource;
-  thumbnail_source?: BackendImageSource;
   width?: number;
   height?: number;
   created_at: string;
@@ -192,13 +159,38 @@ export interface BackendTask {
   status: string;
   total_count?: number;
   error_message?: string;
-  error_raw_message?: string;
-  error_code?: string;
-  error_category?: string;
-  error_request_id?: string;
-  error_retryable?: boolean;
-  error_detail?: string;
   config_snapshot?: string;
+}
+
+// 后端 Batch 模型（用于批次 API 响应）
+export interface BackendBatch {
+  batch_id: string;
+  prompt: string;
+  provider_name: string;
+  model_id: string;
+  total_count: number;
+  completed_count: number;
+  failed_count: number;
+  status: 'draft' | 'pending' | 'processing' | 'completed' | 'failed' | 'partial';
+  config_snapshot?: string;
+  folder_id?: string;
+  created_at: string;
+  updated_at?: string;
+  tasks?: BackendTask[];
+}
+
+// 创建/更新草稿批次请求
+export interface DraftBatchRequest {
+  batch_id?: string;
+  prompt: string;
+  provider: string;
+  model_id: string;
+  params: {
+    count: number;
+    aspectRatio: string;
+    imageSize: string;
+    prompt_optimize_mode?: string;
+  };
 }
 
 // 后端历史列表响应

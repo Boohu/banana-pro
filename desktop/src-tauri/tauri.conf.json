@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "大香蕉 AI",
+  "productName": "筋斗云AI",
   "version": "2.7.4",
   "identifier": "com.dztool.banana",
   "build": {
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "大香蕉 AI",
+        "title": "",
         "width": 1200,
         "height": 800,
         "transparent": true,

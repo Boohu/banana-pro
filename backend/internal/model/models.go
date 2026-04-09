@@ -48,12 +48,31 @@ type Task struct {
 	ThumbnailPath       string         `json:"thumbnail_path"`                                   // 缩略图本地存储路径
 	Width               int            `json:"width"`                                            // 图片宽度
 	Height              int            `json:"height"`                                           // 图片高度
+	BatchID             string         `gorm:"index" json:"batch_id,omitempty"`                  // 所属批次 ID（可选）
 	TotalCount          int            `gorm:"default:1" json:"total_count"`                     // 申请生成的数量
 	ConfigSnapshot      string         `json:"config_snapshot"`                                  // 生成时的配置快照
 	CreatedAt           time.Time      `gorm:"index:idx_status_created;index" json:"created_at"` // 创建时间
 	ProcessingStartedAt *time.Time     `gorm:"index" json:"processing_started_at"`               // 实际开始处理时间（不含排队时间）
 	CompletedAt         *time.Time     `json:"completed_at"`
 	DeletedAt           gorm.DeletedAt `gorm:"index" json:"-"`
+}
+
+// Batch 对应 batches 表，用于存储批次生成任务的分组信息
+type Batch struct {
+	ID             uint           `gorm:"primaryKey" json:"id"`
+	BatchID        string         `gorm:"uniqueIndex;not null" json:"batch_id"`    // 外部调用的唯一 ID
+	Prompt         string         `json:"prompt"`                                  // 批次提示词
+	ProviderName   string         `json:"provider_name"`                           // 使用的 Provider
+	ModelID        string         `json:"model_id"`                                // 使用的模型 ID
+	TotalCount     int            `gorm:"default:1" json:"total_count"`            // 批次总数
+	CompletedCount int            `gorm:"default:0" json:"completed_count"`        // 已完成数
+	FailedCount    int            `gorm:"default:0" json:"failed_count"`           // 已失败数
+	Status         string         `gorm:"index;default:'draft'" json:"status"`     // draft|pending|processing|completed|failed|partial
+	ConfigSnapshot string         `json:"config_snapshot"`                         // 批次配置快照 JSON
+	FolderID       string         `gorm:"index" json:"folder_id"`                 // 所属文件夹 ID
+	CreatedAt      time.Time      `gorm:"index" json:"created_at"`
+	UpdatedAt      time.Time      `json:"updated_at"`
+	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
 // Folder 对应 folders 表，用于存储相册文件夹信息

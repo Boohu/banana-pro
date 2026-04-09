@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { CheckSquare, Square, Download, Trash2, Loader2 } from 'lucide-react';
 import { useGenerateStore } from '../../store/generateStore';
-import { useGenerateDisplayImages } from '../../hooks/useGenerateDisplayImages';
 import { Button } from '../common/Button';
 import { exportImages } from '../../services/historyApi';
 import { toast } from '../../store/toastStore';
@@ -9,8 +8,7 @@ import { useTranslation } from 'react-i18next';
 
 export function BatchActions() {
   const { t } = useTranslation();
-  const images = useGenerateDisplayImages();
-  const { selectedIds, selectAll, clearSelection, clearImages } = useGenerateStore();
+  const { images, selectedIds, selectAll, clearSelection, clearImages } = useGenerateStore();
   const [isExporting, setIsExporting] = useState(false);
   const objectUrlRef = useRef<string | null>(null);  // 记录 ObjectURL
 
@@ -126,18 +124,18 @@ export function BatchActions() {
   };
 
   return (
-    <div className="bg-white border-t border-gray-200 p-4 flex items-center justify-between">
+    <div className="bg-surface-secondary border-t border-border p-4 flex items-center justify-between">
       <div className="flex items-center gap-2">
         <Button 
             variant="ghost" 
             size="sm" 
             onClick={allSelected ? clearSelection : selectAll}
-            className="text-gray-600"
+            className="text-fg-secondary"
         >
           {allSelected ? <CheckSquare className="w-4 h-4 mr-2" /> : <Square className="w-4 h-4 mr-2" />}
           {allSelected ? t('generate.batch.clearSelection') : t('generate.batch.selectAll')}
         </Button>
-        <span className="text-sm text-gray-500 ml-2">
+        <span className="text-sm text-fg-muted ml-2">
             {t('generate.batch.selectedCount', { count: selectedIds.size })}
         </span>
       </div>
@@ -148,7 +146,7 @@ export function BatchActions() {
             size="sm" 
             onClick={handleExport}
             disabled={!hasSelection || isExporting}
-            className="text-blue-600 border-blue-200 hover:bg-blue-50"
+            className="text-primary border-blue-200 hover:bg-primary/10"
         >
           {isExporting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
           {isExporting ? t('generate.batch.exporting') : t('generate.batch.exportSelected')}
@@ -159,7 +157,7 @@ export function BatchActions() {
             onClick={handleClearImages}
             className={showClearConfirm
                 ? 'bg-red-600 text-white hover:bg-red-700'
-                : 'text-red-600 hover:bg-red-50 hover:text-red-700'
+                : 'text-error hover:bg-error/10 hover:text-error'
             }
         >
           <Trash2 className="w-4 h-4 mr-2" />

@@ -1,10 +1,7 @@
 import React, { ButtonHTMLAttributes } from 'react';
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { cn } from '@/lib/utils';
 
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
+export { cn } from '@/lib/utils';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
@@ -14,10 +11,10 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = 'primary', size = 'md', ...props }, ref) => {
     const variants = {
-      primary: 'bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-200 active:scale-95',
-      secondary: 'bg-slate-100 text-slate-700 hover:bg-slate-200 active:scale-95',
-      danger: 'bg-red-500 text-white hover:bg-red-600 active:scale-95',
-      ghost: 'bg-transparent hover:bg-slate-100 text-slate-600 active:scale-95',
+      primary: 'bg-primary text-white hover:bg-primary/90 shadow-md shadow-primary active:scale-95',
+      secondary: 'bg-surface-tertiary text-fg-secondary hover:bg-surface-tertiary active:scale-95',
+      danger: 'bg-error/100 text-white hover:bg-error/90 active:scale-95',
+      ghost: 'bg-transparent hover:bg-surface-tertiary text-fg-secondary active:scale-95',
     };
 
     const sizes = {
@@ -30,7 +27,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         ref={ref}
         className={cn(
-          'inline-flex items-center justify-center rounded-2xl font-bold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50 disabled:pointer-events-none',
+          'inline-flex items-center justify-center rounded-2xl font-bold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:pointer-events-none',
           variants[variant],
           sizes[size],
           className

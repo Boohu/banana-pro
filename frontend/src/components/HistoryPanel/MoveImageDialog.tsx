@@ -78,9 +78,9 @@ export function MoveImageDialog({
   const getFolderIcon = useCallback((folder: Folder) => {
     const isSelected = selectedFolderId === folder.id;
     if (isSelected) {
-      return <FolderOpen className="w-6 h-6 text-blue-600" />;
+      return <FolderOpen className="w-6 h-6 text-primary" />;
     }
-    return <FolderIcon className="w-6 h-6 text-slate-400" />;
+    return <FolderIcon className="w-6 h-6 text-fg-muted" />;
   }, [selectedFolderId]);
 
   return (
@@ -92,30 +92,30 @@ export function MoveImageDialog({
       className="max-w-md"
     >
       <div className="space-y-5">
-        <div className="flex items-center gap-4 p-4 bg-amber-50 rounded-2xl">
+        <div className="flex items-center gap-4 p-4 bg-warning/10 rounded-2xl">
           <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center flex-shrink-0">
-            <Image className="w-6 h-6 text-amber-600" />
+            <Image className="w-6 h-6 text-warning" />
           </div>
           <div className="flex-1">
-            <p className="text-sm text-slate-600">
+            <p className="text-sm text-fg-secondary">
               {t('history.folder.selectFolder')}
             </p>
           </div>
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-bold text-slate-700">
+          <label className="text-sm font-bold text-fg-secondary">
             {t('history.folder.title')}
           </label>
           
           <div className="max-h-64 overflow-y-auto space-y-2 pr-1">
             {isLoading ? (
-              <div className="flex items-center justify-center py-8 text-slate-400">
-                <div className="w-5 h-5 border-2 border-slate-300 border-t-blue-500 rounded-full animate-spin mr-2" />
+              <div className="flex items-center justify-center py-8 text-fg-muted">
+                <div className="w-5 h-5 border-2 border-border border-t-blue-500 rounded-full animate-spin mr-2" />
                 <span className="text-sm">{t('common.loading')}</span>
               </div>
             ) : folders.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-8 text-slate-400">
+              <div className="flex flex-col items-center justify-center py-8 text-fg-muted">
                 <FolderIcon className="w-12 h-12 mb-2 opacity-30" />
                 <p className="text-sm">{t('history.folder.empty')}</p>
               </div>
@@ -132,26 +132,26 @@ export function MoveImageDialog({
                       w-full flex items-center gap-3 p-3 rounded-xl text-left
                       transition-all duration-200
                       ${isSelected 
-                        ? 'bg-blue-50 border-2 border-blue-500 shadow-sm' 
-                        : 'bg-white border-2 border-transparent hover:bg-slate-50 hover:border-slate-200'
+                        ? 'bg-primary/10 border-2 border-blue-500 shadow-sm' 
+                        : 'bg-surface-secondary border-2 border-transparent hover:bg-surface-tertiary hover:border-border'
                       }
                       disabled:opacity-50 disabled:cursor-not-allowed
                     `}
                   >
                     <div className={`
                       w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0
-                      ${isSelected ? 'bg-blue-100' : 'bg-slate-100'}
+                      ${isSelected ? 'bg-primary/15' : 'bg-surface-tertiary'}
                     `}>
                       {getFolderIcon(folder)}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className={`
                         font-medium truncate
-                        ${isSelected ? 'text-blue-900' : 'text-slate-900'}
+                        ${isSelected ? 'text-blue-900' : 'text-fg-primary'}
                       `}>
                         {folder.name}
                       </p>
-                      <p className="text-xs text-slate-500">
+                      <p className="text-xs text-fg-muted">
                         {folder.type === 'month' 
                           ? t('history.folder.typeMonth') 
                           : t('history.folder.typeManual')
@@ -160,7 +160,7 @@ export function MoveImageDialog({
                     </div>
                     
                     {isSelected && (
-                      <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+                      <div className="w-5 h-5 bg-primary/100 rounded-full flex items-center justify-center flex-shrink-0">
                         <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                         </svg>

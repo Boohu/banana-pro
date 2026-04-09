@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { AxiosError } from 'axios';
 import { useConfigStore } from '../store/configStore';
 import { useGenerateStore } from '../store/generateStore';
 import { generateBatch, generateBatchWithImages, getTaskStatus } from '../services/generateApi';
@@ -8,12 +9,9 @@ import { toast } from '../store/toastStore';
 import { usePromptHistoryStore } from '../store/promptHistoryStore';
 import { useHistoryStore } from '../store/historyStore';
 import i18n from '../i18n';
-import { getDiagnosticVerbose } from '../utils/diagnosticLogger';
-import { getPromptOptimizeConfigIssue } from '../utils/promptOptimizeConfig';
 
 // 流式连接建立超时时间（毫秒）- 超过此时间未建立连接则启动轮询
-// 本地后端通常不会推实时进度，过长会导致用户"卡住"的观感
-const STREAM_OPEN_TIMEOUT = 3000;
+const STREAM_OPEN_TIMEOUT = 5000;
 // 轮询间隔（毫秒）
 const POLL_INTERVAL = 3000;
 // 最大轮询重试次数（降低到 6 次，避免用户等待过久）
@@ -33,40 +31,6 @@ const sleep = (ms: number) => new Promise<void>((resolve) => {
   setTimeout(resolve, ms);
 });
 
-const normalizeRefPath = (value: string) => value.replace(/\\/g, '/').replace(/\/+/g, '/');
-const isWindowsAbsolutePath = (value: string) => /^[a-zA-Z]:[\\/]/.test(value) || value.startsWith('\\\\');
-const isAbsoluteRefPath = (value: string) => value.startsWith('/') || isWindowsAbsolutePath(value);
-const isStorageRelativeRefPath = (value: string) => {
-  const normalized = normalizeRefPath(value);
-  return normalized.startsWith('/storage/') || normalized.startsWith('storage/');
-};
-
-async function resolveRefPathForUpload(rawPath: string): Promise<string> {
-  const trimmed = String(rawPath || '').trim();
-  if (!trimmed) return '';
-
-  const normalized = normalizeRefPath(trimmed);
-  if (isAbsoluteRefPath(normalized) && !isStorageRelativeRefPath(normalized)) {
-    return normalized;
-  }
-
-  if (window.__TAURI_INTERNALS__ && isStorageRelativeRefPath(normalized)) {
-    try {
-      const { invoke } = await import('@tauri-apps/api/core');
-      const appDataDir = await invoke<string>('get_app_data_dir');
-      const base = normalizeRefPath(String(appDataDir || '').trim()).replace(/\/+$/, '');
-      const relative = normalized.replace(/^\/+/, '');
-      if (base) {
-        return `${base}/${relative}`;
-      }
-    } catch (error) {
-      console.warn('[useGenerate] resolve storage ref path failed:', error);
-    }
-  }
-
-  return '';
-}
-
 export function useGenerate() {
   const config = useConfigStore();
   const { startTask, status, taskId, failTask, updateProgress, updateProgressBatch, completeTask, setConnectionMode, connectionMode, setSubmitting, isSubmitting: isStoreSubmitting } = useGenerateStore();
@@ -81,6 +45,7 @@ export function useGenerate() {
   const isPollingRef = useRef(false);
   const pollRetryCountRef = useRef(0); // 轮询重试计数器
   const wsCloseRequestedRef = useRef(false); // 标记是否主动请求关闭WebSocket
+  const hasStartedRef = useRef(false); // 标记是否已启动过轮询
   const basePollIntervalRef = useRef(POLL_INTERVAL); // 基础轮询间隔，用于指数退避
   const expectedTaskIdRef = useRef<string | null>(null); // 记录期望的任务ID，防止闭包陷阱
   // 主动同步定时器引用 - 作为 SSE/轮询的兜底机制
@@ -133,21 +98,8 @@ export function useGenerate() {
     // 批量任务不启动主动同步（已有独立轮询逻辑）
     if (isBatchTaskId(currentTaskId)) return;
 
-    // 记录任务开始时间
-    const startTime = Date.now();
-    const timeoutMs = (config.imageTimeoutSeconds || 500) * 1000;
-
     const doSync = async () => {
       try {
-        // 超时检测
-        const elapsed = Date.now() - startTime;
-        if (elapsed > timeoutMs) {
-          console.log('[active sync] Timeout detected, marking task as failed');
-          storeRef.current.failTask(i18n.t('generate.toast.timeout', { seconds: Math.round(timeoutMs / 1000) }));
-          stopActiveSync();
-          return;
-        }
-
         // 检查当前状态是否仍在处理中
         const currentState = useGenerateStore.getState();
         if (currentState.status !== 'processing' || currentState.taskId !== currentTaskId) {
@@ -182,7 +134,7 @@ export function useGenerate() {
             stopActiveSync();
             return;
           } else if (taskData.status === 'failed') {
-            storeRef.current.failTask(taskData);
+            storeRef.current.failTask(taskData.errorMessage || 'Unknown error');
             stopActiveSync();
             return;
           } else if (taskData.status === 'partial') {
@@ -195,6 +147,17 @@ export function useGenerate() {
         // 状态仍为 processing，继续定期同步
         activeSyncTimerRef.current = setTimeout(doSync, ACTIVE_SYNC_INTERVAL);
       } catch (error) {
+        // 检测 404 错误，任务不存在时停止同步
+        const axiosError = error as AxiosError;
+        if (axiosError.response?.status === 404) {
+          console.log('[active sync] Task not found (404), stopping sync');
+          expectedTaskIdRef.current = null;
+          clearUpdateSource();
+          storeRef.current.setConnectionMode('none');
+          stopActiveSync();
+          return;
+        }
+
         console.error('[active sync] Error:', error);
         // 出错时继续尝试，不中断同步
         activeSyncTimerRef.current = setTimeout(doSync, ACTIVE_SYNC_INTERVAL);
@@ -203,24 +166,21 @@ export function useGenerate() {
 
     // 启动同步
     activeSyncTimerRef.current = setTimeout(doSync, ACTIVE_SYNC_INTERVAL);
-  }, [stopActiveSync, config.imageTimeoutSeconds]);
+  }, [stopActiveSync]);
 
   // 轮询函数：检查任务状态
   const startPolling = useCallback(async (currentTaskId: string) => {
-    const currentState = useGenerateStore.getState();
-    if (
-      isPollingRef.current ||
-      currentState.status !== 'processing' ||
-      currentState.taskId !== currentTaskId ||
-      isBatchTaskId(currentTaskId)
-    ) {
+    if (isPollingRef.current || status !== 'processing' || isBatchTaskId(currentTaskId)) {
       return;
     }
 
-    // 进入 polling 模式时由 polling 接管更新源（避免 websocket 标记残留导致轮询无法启动）
+    // 竞态条件修复：检查是否有其他更新源正在运行
     if (getUpdateSource() === 'websocket') {
-      setUpdateSource(null);
+      console.log('[race guard] WebSocket still active, waiting');
+      return;
     }
+
+    // 设置当前更新源为 polling
     setUpdateSource('polling');
 
     isPollingRef.current = true;
@@ -239,8 +199,6 @@ export function useGenerate() {
         // 竞态条件修复：再次检查当前更新源
         if (getUpdateSource() !== 'polling') {
           console.log('[race guard] polling interrupted, source switched');
-          // 允许后续再次启动轮询（避免卡住）
-          isPollingRef.current = false;
           return;
         }
 
@@ -260,22 +218,11 @@ export function useGenerate() {
 
         // 检查任务是否完成
         if (taskData.status === 'completed' || taskData.status === 'failed') {
-          if (
-            taskData.status === 'completed' &&
-            taskData.totalCount > 1 &&
-            (taskData.images?.length || 0) < taskData.totalCount
-          ) {
-            toast.info(i18n.t('generate.toast.countMismatch', {
-              total: taskData.totalCount,
-              returned: taskData.images?.length || 0
-            }));
-          }
-
           stopPolling();
           if (taskData.status === 'completed') {
             storeRef.current.completeTask();
-          } else {
-            storeRef.current.failTask(taskData);
+          } else if (taskData.errorMessage) {
+            storeRef.current.failTask(taskData.errorMessage);
           }
           return;
         }
@@ -283,7 +230,17 @@ export function useGenerate() {
         // 继续轮询（使用当前间隔）
         pollTimerRef.current = setTimeout(poll, basePollIntervalRef.current);
       } catch (error) {
+        // 检测 404 错误，任务不存在时停止轮询
+        const axiosError = error as AxiosError;
+        if (axiosError.response?.status === 404) {
+          console.log('[polling] Task not found (404), stopping poll');
+          expectedTaskIdRef.current = null;
+          stopPolling();
+          return;
+        }
+
         console.error('Polling error:', error);
+
 
         // 检查重试次数
         pollRetryCountRef.current++;
@@ -309,13 +266,17 @@ export function useGenerate() {
 
     // 开始轮询
     poll();
-  }, [stopPolling]);
+  }, [status, stopPolling]);
 
   // 监听 connectionMode 变化，当切换到 polling 时自动启动轮询
   useEffect(() => {
-    if (connectionMode === 'polling' && status === 'processing' && taskId && !isBatchTaskId(taskId) && !isPollingRef.current) {
+    if (connectionMode === 'polling' && status === 'processing' && taskId && !isBatchTaskId(taskId) && !isPollingRef.current && !hasStartedRef.current) {
       console.log('Detected polling mode, starting poll');
+      hasStartedRef.current = true;
       startPolling(taskId);
+    } else if (connectionMode === 'none' && status === 'idle') {
+      // 只在任务回到 idle 状态时重置标记
+      hasStartedRef.current = false;
     }
   }, [connectionMode, status, taskId, startPolling]);
 
@@ -364,50 +325,18 @@ export function useGenerate() {
       toast.error(i18n.t('prompt.toast.empty'));
       return;
     }
-    const promptOptimizeConfigIssue = getPromptOptimizeConfigIssue({
-      mode: config.defaultPromptOptimizeMode,
-      chatProvider: config.chatProvider,
-      chatApiBaseUrl: config.chatApiBaseUrl,
-      chatApiKey: config.chatApiKey,
-      chatModel: config.chatModel,
-      chatTimeoutSeconds: config.chatTimeoutSeconds,
-      chatSyncedConfig: config.chatSyncedConfig,
-      requireSynced: true
-    });
-    if (promptOptimizeConfigIssue === 'missing') {
-      toast.error(i18n.t('prompt.toast.chatConfig'));
-      return;
-    }
-    if (promptOptimizeConfigIssue === 'unsynced') {
-      toast.error(i18n.t('prompt.toast.chatConfigChanged'));
-      return;
-    }
-    if (promptOptimizeConfigIssue === 'unsupported') {
-      toast.error(i18n.t('settings.toast.openaiGeminiUnsupported'));
-      return;
-    }
 
     resetPromptHistory(config.prompt);
-
-    // 优化 UX：如果用户在历史页点击“开始生成”，先立刻切到生成页
-    // 避免历史页在请求期间/状态切换时出现“跳回顶部再切页”的观感
-    if (useGenerateStore.getState().currentTab !== 'generate') {
-      useGenerateStore.getState().setTab('generate');
-    }
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('template-market:close', { detail: { reason: 'generate' } }));
-    }
-
     setSubmitting(true);
     setIsInternalSubmitting(true);
     try {
       // 竞态条件修复：启动新任务前清理旧的更新源标记
       clearUpdateSource();
-      const verboseLogging = getDiagnosticVerbose();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('template-market:close', { detail: { reason: 'generate' } }));
+      }
 
       const requestedCount = Math.max(1, Number(config.count) || 1);
-      const promptOptimizeMode = config.defaultPromptOptimizeMode || 'off';
-      const shouldAutoOptimizePrompt = promptOptimizeMode !== 'off';
 
       const submitSingleGenerate = async () => {
         if (config.refFiles.length > 0) {
@@ -418,20 +347,9 @@ export function useGenerate() {
           formData.append('aspectRatio', config.aspectRatio);
           formData.append('imageSize', config.imageSize);
           formData.append('count', '1');
-          formData.append('verbose_logging', String(verboseLogging));
-          if (shouldAutoOptimizePrompt) {
-            formData.append('prompt_optimize_mode', promptOptimizeMode);
-            formData.append('prompt_optimize_provider', config.chatProvider);
-            formData.append('prompt_optimize_model', config.chatModel);
-          }
 
           config.refFiles.forEach((file) => {
-            const extFile = file as any;
-            if (extFile.__path) {
-              formData.append('refPaths', extFile.__path);
-            } else {
-              formData.append('refImages', file);
-            }
+            formData.append('refImages', file);
           });
 
           return generateBatchWithImages(formData);
@@ -445,25 +363,13 @@ export function useGenerate() {
             count: 1,
             aspectRatio: config.aspectRatio,
             imageSize: config.imageSize,
-            verbose_logging: verboseLogging,
-            ...(shouldAutoOptimizePrompt ? {
-              prompt_optimize_mode: promptOptimizeMode,
-              prompt_optimize_provider: config.chatProvider,
-              prompt_optimize_model: config.chatModel,
-            } : {}),
           }
         } as any);
       };
 
       const pollTaskUntilFinished = async (singleTaskId: string) => {
-        const startTime = Date.now();
-        const timeoutMs = (config.imageTimeoutSeconds || 500) * 1000;
         let retry = 0;
         while (true) {
-          // 超时检测
-          if (Date.now() - startTime > timeoutMs) {
-            throw new Error(i18n.t('generate.toast.timeout', { seconds: Math.round(timeoutMs / 1000) }));
-          }
           try {
             const taskData = await getTaskStatus(singleTaskId);
             retry = 0;
@@ -595,32 +501,11 @@ export function useGenerate() {
         formData.append('aspectRatio', config.aspectRatio);
         formData.append('imageSize', config.imageSize);
         formData.append('count', requestedCount.toString());
-        formData.append('verbose_logging', String(verboseLogging));
-        if (shouldAutoOptimizePrompt) {
-          formData.append('prompt_optimize_mode', promptOptimizeMode);
-          formData.append('prompt_optimize_provider', config.chatProvider);
-          formData.append('prompt_optimize_model', config.chatModel);
-        }
         
         // 添加所有参考图片
-        for (const file of config.refFiles) {
-          const extFile = file as any;
-          if (extFile.__path) {
-            const resolvedPath = await resolveRefPathForUpload(extFile.__path);
-            if (resolvedPath) {
-              // 如果有真实本地路径，直接传路径，避免大文件 IPC 传输
-              formData.append('refPaths', resolvedPath);
-              continue;
-            }
-          }
-
-          if (file.size > 0) {
-            // 否则传二进制文件 (Web 环境或拖拽上传)
-            formData.append('refImages', file);
-          } else {
-            console.warn('[useGenerate] skip ref image without valid path or file bytes');
-          }
-        }
+        config.refFiles.forEach((file) => {
+          formData.append('refImages', file);
+        });
 
         response = await generateBatchWithImages(formData);
       } else {
@@ -633,12 +518,6 @@ export function useGenerate() {
             count: requestedCount,
             aspectRatio: config.aspectRatio,
             imageSize: config.imageSize,
-            verbose_logging: verboseLogging,
-            ...(shouldAutoOptimizePrompt ? {
-              prompt_optimize_mode: promptOptimizeMode,
-              prompt_optimize_provider: config.chatProvider,
-              prompt_optimize_model: config.chatModel,
-            } : {}),
           }
         } as any);
       }

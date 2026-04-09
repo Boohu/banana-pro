@@ -52,7 +52,7 @@ export function ViewToggle({ viewMode, onChange }: ViewToggleProps) {
 
   return (
     // 外层容器：使用 slate-100 背景，圆角胶囊式设计
-    <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg" data-onboarding="history-view-toggle">
+    <div className="flex items-center gap-1 bg-surface-tertiary p-1 rounded-lg">
       {/* 时间线视图按钮 */}
       <button
         onClick={() => onChange('timeline')}
@@ -61,9 +61,9 @@ export function ViewToggle({ viewMode, onChange }: ViewToggleProps) {
           "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all",
           // 激活状态：白色背景、深色文字、轻微阴影
           viewMode === 'timeline'
-            ? "bg-white text-slate-900 shadow-sm"
+            ? "bg-surface-secondary text-fg-primary shadow-sm"
             // 未激活状态：灰色文字、hover 变深
-            : "text-slate-600 hover:text-slate-900"
+            : "text-fg-secondary hover:text-fg-primary"
         )}
         aria-pressed={viewMode === 'timeline'}
         aria-label={t('history.viewMode.timeline')}
@@ -76,16 +76,15 @@ export function ViewToggle({ viewMode, onChange }: ViewToggleProps) {
 
       {/* 相册视图按钮 */}
       <button
-        data-onboarding="history-view-album"
         onClick={() => onChange('album')}
         className={cn(
           // 基础样式：与时间线按钮保持一致
           "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all",
           // 激活状态样式
           viewMode === 'album'
-            ? "bg-white text-slate-900 shadow-sm"
+            ? "bg-surface-secondary text-fg-primary shadow-sm"
             // 未激活状态样式
-            : "text-slate-600 hover:text-slate-900"
+            : "text-fg-secondary hover:text-fg-primary"
         )}
         aria-pressed={viewMode === 'album'}
         aria-label={t('history.viewMode.album')}

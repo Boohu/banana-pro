@@ -45,7 +45,7 @@ export function Modal({
     <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 sm:p-6">
       {/* 全屏背景遮罩 - 增强通透感 */}
       <div 
-        className="absolute inset-0 bg-slate-900/20 backdrop-blur-sm animate-in fade-in duration-300" 
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300"
         onClick={onClose}
       />
       
@@ -53,9 +53,9 @@ export function Modal({
       <div 
         className={`
           relative w-full flex flex-col
-          bg-white/80 backdrop-blur-2xl
-          rounded-[2.5rem] border border-white/50 
-          shadow-[0_24px_80px_-12px_rgba(0,0,0,0.15)]
+          bg-surface-secondary backdrop-blur-2xl
+          rounded-2xl border border-border
+          shadow-[0_24px_80px_-12px_rgba(0,0,0,0.5)]
           animate-in fade-in zoom-in-95 duration-300
           max-h-[90vh]
           ${className}
@@ -64,14 +64,14 @@ export function Modal({
         {!hideHeader && (
             <div
               className={[
-                'flex items-center justify-between border-b border-slate-200/20 flex-shrink-0',
+                'flex items-center justify-between border-b border-border/20 flex-shrink-0',
                 density === 'compact' ? 'px-8 py-5' : 'px-10 py-8'
               ].join(' ')}
             >
                 {title ? (
                     <h3
                       className={[
-                        'font-black text-slate-900 tracking-tighter',
+                        'font-black text-fg-primary tracking-tighter',
                         density === 'compact' ? 'text-xl' : 'text-2xl'
                       ].join(' ')}
                     >
@@ -83,7 +83,7 @@ export function Modal({
                   <button
                       onClick={onClose}
                       className={[
-                        'bg-slate-200/30 hover:bg-white rounded-2xl transition-all text-slate-400 hover:text-slate-900 active:scale-90',
+                        'bg-surface-tertiary/30 hover:bg-surface-secondary rounded-2xl transition-all text-fg-muted hover:text-fg-primary active:scale-90',
                         density === 'compact' ? 'p-2.5' : 'p-3'
                       ].join(' ')}
                   >

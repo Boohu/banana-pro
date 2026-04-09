@@ -2,22 +2,16 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import type { PersistedRefImage } from '../types';
 
-const IMAGE_MODELS = {
-  FLASH: { value: 'gemini-3.1-flash-image-preview', label: 'Flash' },
+// Model constants to avoid magic strings
+export const IMAGE_MODELS = {
+  FLASH: { value: 'gemini-3-flash-image-preview', label: 'Flash' },
   PRO: { value: 'gemini-3-pro-image-preview', label: 'Pro' },
 } as const;
-
-// 默认生图模型名称
-export const DEFAULT_IMAGE_MODEL = IMAGE_MODELS.FLASH.value;
 
 // Model options for the dropdown selectors
 export const IMAGE_MODEL_OPTIONS = [
   { value: IMAGE_MODELS.FLASH.value, label: `${IMAGE_MODELS.FLASH.label} (${IMAGE_MODELS.FLASH.value})` },
   { value: IMAGE_MODELS.PRO.value, label: `${IMAGE_MODELS.PRO.label} (${IMAGE_MODELS.PRO.value})` },
-] as const;
-
-export const VISION_MODEL_OPTIONS = [
-  { value: 'gemini-3-flash-preview', label: 'Flash (gemini-3-flash-preview)' },
 ] as const;
 
 export const CUSTOM_MODEL_VALUE = '__custom__';
@@ -32,10 +26,13 @@ export const IMAGE_MODEL_CONFIG: Record<string, { aspectRatios: string[] }> = {
   }
 };
 
+// Default aspect ratios for custom/unknown models
+const DEFAULT_ASPECT_RATIOS = ['1:1', '2:3', '3:2', '3:4', '4:3', '4:5', '5:4', '9:16', '16:9', '21:9'];
+
 // Helper function to get supported aspect ratios for a model
 export const getModelAspectRatios = (model: string): string[] => {
   const ratios = IMAGE_MODEL_CONFIG[model]?.aspectRatios;
-  return (ratios && ratios.length > 0) ? ratios : ['1:1'];
+  return (ratios && ratios.length > 0) ? ratios : DEFAULT_ASPECT_RATIOS;
 };
 
 interface ConfigState {
@@ -45,22 +42,19 @@ interface ConfigState {
   imageApiKey: string;
   imageModel: string;
   imageTimeoutSeconds: number;
-  imageMaxRetries: number;
-  enableRefImageCompression: boolean;
-
   // 识图配置（逆向提示词用）
   visionProvider: string;
   visionApiBaseUrl: string;
   visionApiKey: string;
   visionModel: string;
   visionTimeoutSeconds: number;
-  visionMaxRetries: number;
   visionSyncedConfig: {
     apiBaseUrl: string;
     apiKey: string;
     model: string;
     timeoutSeconds: number;
   } | null;
+  enableRefImageCompression: boolean;
 
   // 对话配置
   chatProvider: string;
@@ -68,59 +62,44 @@ interface ConfigState {
   chatApiKey: string;
   chatModel: string;
   chatTimeoutSeconds: number;
-  chatMaxRetries: number;
   chatSyncedConfig: {
     apiBaseUrl: string;
     apiKey: string;
     model: string;
     timeoutSeconds: number;
   } | null;
-  defaultPromptOptimizeMode: 'off' | 'text' | 'json';
-  enableSystemNotifications: boolean;
-  notifyOnlyWhenBackground: boolean;
-  notifyOnFailure: boolean;
 
   language: string;
   languageResolved: string | null;
-
-  // 新手引导
-  showOnboarding: boolean;  // 是否在下次启动时显示引导
-
+  
   prompt: string;
   count: number;
   imageSize: string;
   aspectRatio: string;
   refFiles: File[];
   refImageEntries: PersistedRefImage[];
+  draftBatchId: string | null;
 
   setImageProvider: (provider: string) => void;
   setImageApiBaseUrl: (url: string) => void;
   setImageApiKey: (key: string) => void;
   setImageModel: (model: string) => void;
   setImageTimeoutSeconds: (seconds: number) => void;
-  setImageMaxRetries: (count: number) => void;
-  setEnableRefImageCompression: (enabled: boolean) => void;
   setVisionProvider: (provider: string) => void;
   setVisionApiBaseUrl: (url: string) => void;
   setVisionApiKey: (key: string) => void;
   setVisionModel: (model: string) => void;
   setVisionTimeoutSeconds: (seconds: number) => void;
-  setVisionMaxRetries: (count: number) => void;
   setVisionSyncedConfig: (config: { apiBaseUrl: string; apiKey: string; model: string; timeoutSeconds: number } | null) => void;
+  setEnableRefImageCompression: (enabled: boolean) => void;
   setChatProvider: (provider: string) => void;
   setChatApiBaseUrl: (url: string) => void;
   setChatApiKey: (key: string) => void;
   setChatModel: (model: string) => void;
   setChatTimeoutSeconds: (seconds: number) => void;
-  setChatMaxRetries: (count: number) => void;
   setChatSyncedConfig: (config: { apiBaseUrl: string; apiKey: string; model: string; timeoutSeconds: number } | null) => void;
-  setDefaultPromptOptimizeMode: (mode: 'off' | 'text' | 'json') => void;
-  setEnableSystemNotifications: (enabled: boolean) => void;
-  setNotifyOnlyWhenBackground: (enabled: boolean) => void;
-  setNotifyOnFailure: (enabled: boolean) => void;
   setLanguage: (language: string) => void;
   setLanguageResolved: (languageResolved: string | null) => void;
-  setShowOnboarding: (show: boolean) => void;
   setPrompt: (prompt: string) => void;
   setCount: (count: number) => void;
   setImageSize: (size: string) => void;
@@ -130,6 +109,7 @@ interface ConfigState {
   removeRefFile: (index: number) => void;
   clearRefFiles: () => void;
   setRefImageEntries: (entries: PersistedRefImage[]) => void;
+  setDraftBatchId: (id: string | null) => void;
 
   reset: () => void;
 }
@@ -140,72 +120,59 @@ export const useConfigStore = create<ConfigState>()(
       imageProvider: 'gemini',
       imageApiBaseUrl: 'https://generativelanguage.googleapis.com',
       imageApiKey: '',
-      imageModel: DEFAULT_IMAGE_MODEL,
+      imageModel: 'gemini-3-flash-image-preview',
       imageTimeoutSeconds: 500,
-      imageMaxRetries: 1,
-      enableRefImageCompression: true,
+      // 识图配置（逆向提示词用）
       visionProvider: 'gemini-chat',
       visionApiBaseUrl: '',
       visionApiKey: '',
       visionModel: 'gemini-3-flash-preview',
       visionTimeoutSeconds: 150,
-      visionMaxRetries: 1,
       visionSyncedConfig: null,
+      enableRefImageCompression: true,
       chatProvider: 'openai-chat',
       chatApiBaseUrl: 'https://api.openai.com/v1',
       chatApiKey: '',
       chatModel: 'gemini-3-flash-preview',
       chatTimeoutSeconds: 150,
-      chatMaxRetries: 1,
       chatSyncedConfig: null,
-      defaultPromptOptimizeMode: 'off',
-      enableSystemNotifications: true,
-      notifyOnlyWhenBackground: true,
-      notifyOnFailure: true,
       language: 'system',
       languageResolved: null,
-      showOnboarding: true,  // 首次启动默认显示引导
       prompt: '',
       count: 1,
       imageSize: '2K',
       aspectRatio: '1:1',
       refFiles: [],
       refImageEntries: [],
+      draftBatchId: null,
 
       setImageProvider: (imageProvider) => set({ imageProvider }),
       setImageApiBaseUrl: (imageApiBaseUrl) => set({ imageApiBaseUrl }),
       setImageApiKey: (imageApiKey) => set({ imageApiKey }),
       setImageModel: (imageModel) => set({ imageModel }),
       setImageTimeoutSeconds: (imageTimeoutSeconds) => set({ imageTimeoutSeconds }),
-      setImageMaxRetries: (imageMaxRetries) => set({ imageMaxRetries }),
-      setEnableRefImageCompression: (enableRefImageCompression) => set({ enableRefImageCompression }),
       setVisionProvider: (visionProvider) => set({ visionProvider }),
       setVisionApiBaseUrl: (visionApiBaseUrl) => set({ visionApiBaseUrl }),
       setVisionApiKey: (visionApiKey) => set({ visionApiKey }),
       setVisionModel: (visionModel) => set({ visionModel }),
       setVisionTimeoutSeconds: (visionTimeoutSeconds) => set({ visionTimeoutSeconds }),
-      setVisionMaxRetries: (visionMaxRetries) => set({ visionMaxRetries }),
       setVisionSyncedConfig: (visionSyncedConfig) => set({ visionSyncedConfig }),
+      setEnableRefImageCompression: (enableRefImageCompression) => set({ enableRefImageCompression }),
       setChatProvider: (chatProvider) => set({ chatProvider }),
       setChatApiBaseUrl: (chatApiBaseUrl) => set({ chatApiBaseUrl }),
       setChatApiKey: (chatApiKey) => set({ chatApiKey }),
       setChatModel: (chatModel) => set({ chatModel }),
       setChatTimeoutSeconds: (chatTimeoutSeconds) => set({ chatTimeoutSeconds }),
-      setChatMaxRetries: (chatMaxRetries) => set({ chatMaxRetries }),
       setChatSyncedConfig: (chatSyncedConfig) => set({ chatSyncedConfig }),
-      setDefaultPromptOptimizeMode: (defaultPromptOptimizeMode) => set({ defaultPromptOptimizeMode }),
-      setEnableSystemNotifications: (enableSystemNotifications) => set({ enableSystemNotifications }),
-      setNotifyOnlyWhenBackground: (notifyOnlyWhenBackground) => set({ notifyOnlyWhenBackground }),
-      setNotifyOnFailure: (notifyOnFailure) => set({ notifyOnFailure }),
       setLanguage: (language) => set({ language }),
       setLanguageResolved: (languageResolved) => set({ languageResolved }),
-      setShowOnboarding: (showOnboarding) => set({ showOnboarding }),
       setPrompt: (prompt) => set({ prompt }),
       setCount: (count) => set({ count }),
       setImageSize: (imageSize) => set({ imageSize }),
       setAspectRatio: (aspectRatio) => set({ aspectRatio }),
       setRefFiles: (refFiles) => set({ refFiles }),
       setRefImageEntries: (refImageEntries) => set({ refImageEntries }),
+      setDraftBatchId: (draftBatchId) => set({ draftBatchId }),
 
       addRefFiles: (files) => set((state) => ({
           // 限制最多 10 张
@@ -220,39 +187,33 @@ export const useConfigStore = create<ConfigState>()(
 
       reset: () => set({
         imageApiBaseUrl: 'https://generativelanguage.googleapis.com',
-        imageModel: DEFAULT_IMAGE_MODEL,
+        imageModel: 'gemini-3-flash-image-preview',
         imageTimeoutSeconds: 500,
-        imageMaxRetries: 1,
-        enableRefImageCompression: true,
-        visionProvider: 'gemini-chat',
-        visionApiBaseUrl: '',
-        visionApiKey: '',
-        visionModel: 'gemini-3-flash-preview',
-        visionTimeoutSeconds: 150,
-        visionMaxRetries: 1,
-        visionSyncedConfig: null,
+      // 识图配置（逆向提示词用）
+      visionProvider: 'gemini-chat',
+      visionApiBaseUrl: '',
+      visionApiKey: '',
+      visionModel: 'gemini-3-flash-preview',
+      visionTimeoutSeconds: 150,
+      visionSyncedConfig: null,
         chatProvider: 'openai-chat',
         chatApiBaseUrl: 'https://api.openai.com/v1',
         chatModel: 'gemini-3-flash-preview',
         chatTimeoutSeconds: 150,
-        chatMaxRetries: 1,
         chatSyncedConfig: null,
-        defaultPromptOptimizeMode: 'off',
-        enableSystemNotifications: true,
-        notifyOnlyWhenBackground: true,
-        notifyOnFailure: true,
         prompt: '',
         count: 1,
         imageSize: '2K',
         aspectRatio: '1:1',
         refFiles: [],
         refImageEntries: [],
+        draftBatchId: null,
       })
     }),
     {
       name: 'app-config-storage',
       storage: createJSONStorage(() => localStorage),
-      version: 15,
+      version: 11,
       // 关键：不要将 File 对象序列化到 localStorage（File 对象无法序列化）
       partialize: (state) => {
           const { refFiles, ...rest } = state;
@@ -267,7 +228,7 @@ export const useConfigStore = create<ConfigState>()(
             imageProvider: state.imageProvider ?? state.provider ?? 'gemini',
             imageApiBaseUrl: state.imageApiBaseUrl ?? state.apiBaseUrl ?? 'https://generativelanguage.googleapis.com',
             imageApiKey: state.imageApiKey ?? state.apiKey ?? '',
-            imageModel: state.imageModel ?? state.model ?? DEFAULT_IMAGE_MODEL,
+            imageModel: state.imageModel ?? state.model ?? 'gemini-3-flash-image-preview',
             chatApiBaseUrl: state.chatApiBaseUrl ?? 'https://api.openai.com/v1',
             chatApiKey: state.chatApiKey ?? '',
             chatModel: state.chatModel ?? state.textModel ?? '',
@@ -322,40 +283,8 @@ export const useConfigStore = create<ConfigState>()(
             };
           }
         }
-        // 版本 10: 添加识图配置，默认继承生图配置
-        if (version < 10) {
-          next = {
-            ...next,
-            visionProvider: 'gemini-chat',
-            visionApiBaseUrl: next.imageApiBaseUrl ?? '',
-            visionApiKey: next.imageApiKey ?? '',
-            visionModel: 'gemini-3-flash-preview',
-            visionTimeoutSeconds: 150,
-            visionSyncedConfig: null
-          };
-        }
-        // 版本 11: 添加新手引导开关，首次启动默认显示
         if (version < 11) {
-          next = {
-            ...next,
-            showOnboarding: true
-          };
-        }
-        if (version < 13) {
-          next = {
-            ...next,
-            imageMaxRetries: next.imageMaxRetries ?? 1,
-            visionMaxRetries: next.visionMaxRetries ?? 1,
-            chatMaxRetries: next.chatMaxRetries ?? 1
-          };
-        }
-        if (version < 15) {
-          next = {
-            ...next,
-            enableSystemNotifications: next.enableSystemNotifications ?? true,
-            notifyOnlyWhenBackground: next.notifyOnlyWhenBackground ?? true,
-            notifyOnFailure: next.notifyOnFailure ?? true
-          };
+          next = { ...next, draftBatchId: next.draftBatchId ?? null };
         }
 
         return next;

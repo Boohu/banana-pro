@@ -13,6 +13,9 @@ const mountApp = () => {
   )
 }
 
+// Enable dark mode
+document.documentElement.classList.add('dark')
+
 const bootstrap = async () => {
   const language = await initI18n()
   const { language: storedLanguage, languageResolved, setLanguage, setLanguageResolved } = useConfigStore.getState()

@@ -8,10 +8,9 @@ import { ImageCard } from './ImageCard';
 import { ImagePreview } from '../GenerateArea/ImagePreview';
 import { FlattenedImage } from './HistoryList';
 import { getFolders, getFolderImages, Folder } from '../../services/folderApi';
-import { getImageUrl, getImageUrlFromSource } from '../../services/api';
+import { getImageUrl } from '../../services/api';
 import { toast } from '../../store/toastStore';
 import { mapBackendHistoryResponse } from '../../utils/mapping';
-import { formatAspectRatioLabel } from '../../utils/aspectRatio';
 
 interface FolderWithCount extends Folder {
   imageCount: number;
@@ -52,7 +51,28 @@ const getResolutionLabel = (w: number, h: number) => {
   return 'SD';
 };
 
-const getRatioLabel = (w: number, h: number) => formatAspectRatioLabel(w, h);
+// 辅助函数：根据像素计算比例标签（简化为最简比例）
+const getRatioLabel = (w: number, h: number) => {
+  if (!w || !h) return '1:1';
+
+  // 计算最大公约数（GCD - Greatest Common Divisor）
+  const gcd = (a: number, b: number): number => {
+    a = Math.abs(a);
+    b = Math.abs(b);
+    while (b) {
+      const t = b;
+      b = a % b;
+      a = t;
+    }
+    return a;
+  };
+
+  const divisor = gcd(w, h);
+  const ratioW = w / divisor;
+  const ratioH = h / divisor;
+
+  return `${ratioW}:${ratioH}`;
+};
 
 const getSafeArrayItem = <T,>(items: T[], idx: number): T | undefined => {
   if (!Number.isInteger(idx) || idx < 0 || idx >= items.length) {
@@ -90,7 +110,7 @@ export const AlbumView = forwardRef<AlbumViewRef, {}>(function AlbumView(_props,
       const foldersWithCount: FolderWithCount[] = data.map((folder) => ({
         ...folder,
         imageCount: folder.image_count ?? 0,
-        coverImage: getImageUrlFromSource(folder.cover_image_source, folder.cover_image || '') || undefined
+        coverImage: folder.cover_image ? getImageUrl(folder.cover_image) : undefined
       }));
       setFolders(foldersWithCount);
     } catch (error) {
@@ -109,10 +129,8 @@ export const AlbumView = forwardRef<AlbumViewRef, {}>(function AlbumView(_props,
     list.forEach((task) => {
       if (task.images.length === 0) return;
       task.images.forEach((img) => {
-        const normalizedUrl = getImageUrl(img.filePath || img.url || img.thumbnailPath || '');
-        const normalizedThumbnailUrl = getImageUrl(
-          img.thumbnailPath || img.filePath || img.thumbnailUrl || img.url || ''
-        );
+        const normalizedUrl = img.url || img.filePath || img.thumbnailPath;
+        const normalizedThumbnailUrl = img.thumbnailUrl || img.thumbnailPath || img.filePath || normalizedUrl;
         if (!normalizedUrl) return;
         nextImages.push({
           ...img,
@@ -198,13 +216,6 @@ export const AlbumView = forwardRef<AlbumViewRef, {}>(function AlbumView(_props,
     setSelectedImage(null);
   }, []);
 
-  const handlePreviewDeleteSuccess = useCallback((deletedImage: FlattenedImage) => {
-    setFolderImages((prev) => prev.filter((item) => item.id !== deletedImage.id));
-    setFolderImagesTotal((prev) => Math.max(0, prev - 1));
-    setSelectedImage((prev) => (prev?.id === deletedImage.id ? null : prev));
-    void loadFolders();
-  }, [loadFolders]);
-
   useImperativeHandle(ref, () => ({
     refresh: () => {
       void loadFolders();
@@ -217,28 +228,6 @@ export const AlbumView = forwardRef<AlbumViewRef, {}>(function AlbumView(_props,
   useEffect(() => {
     void loadFolders();
   }, [loadFolders]);
-
-  useEffect(() => {
-    const handleImageMoved = () => {
-      void loadFolders();
-      if (selectedFolder) {
-        void openFolder(selectedFolder);
-      }
-    };
-
-    const handleHistoryReconciled = () => {
-      if (selectedFolder) {
-        void openFolder(selectedFolder);
-      }
-    };
-
-    window.addEventListener('history:image-moved', handleImageMoved as EventListener);
-    window.addEventListener('history:reconciled', handleHistoryReconciled as EventListener);
-    return () => {
-      window.removeEventListener('history:image-moved', handleImageMoved as EventListener);
-      window.removeEventListener('history:reconciled', handleHistoryReconciled as EventListener);
-    };
-  }, [loadFolders, openFolder, selectedFolder]);
 
   const folderCell = useCallback(({
     columnIndex,
@@ -315,15 +304,11 @@ export const AlbumView = forwardRef<AlbumViewRef, {}>(function AlbumView(_props,
     return (
       <div {...ariaAttributes} style={cellStyle}>
         <div style={{ width: itemWidth, height: itemHeight }}>
-          <ImageCard
-            image={image}
-            onClick={setSelectedImage}
-            onDeleteSuccess={handlePreviewDeleteSuccess}
-          />
+          <ImageCard image={image} onClick={setSelectedImage} />
         </div>
       </div>
     );
-  }, [handlePreviewDeleteSuccess]);
+  }, []);
 
   const folderTitle = useMemo(() => {
     if (!selectedFolder) return '';
@@ -341,14 +326,14 @@ export const AlbumView = forwardRef<AlbumViewRef, {}>(function AlbumView(_props,
 
     if (folders.length === 0) {
       return (
-        <div className="text-center py-12 text-gray-500 text-sm">
+        <div className="text-center py-12 text-fg-muted text-sm">
           {t('history.folder.empty')}
         </div>
       );
     }
 
     return (
-      <div className="h-full min-h-0" data-onboarding="album-folder-grid">
+      <div className="h-full min-h-0">
         <AutoSizer
           className="h-full w-full"
           renderProp={({ width, height }) => {
@@ -401,15 +386,15 @@ export const AlbumView = forwardRef<AlbumViewRef, {}>(function AlbumView(_props,
 
   return (
     <div className="h-full min-h-0 flex flex-col">
-      <div className="px-4 pt-3 pb-2 border-b border-gray-200 bg-white flex items-center gap-3" data-onboarding="album-folder-detail">
+      <div className="px-4 pt-3 pb-2 border-b border-border bg-surface-secondary flex items-center gap-3">
         <button
-          className="inline-flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-700"
+          className="inline-flex items-center gap-1.5 text-sm text-primary hover:text-blue-700"
           onClick={closeFolder}
         >
           <ArrowLeft className="w-4 h-4" />
           {t('history.folder.backToFolders')}
         </button>
-        <div className="text-sm text-gray-700 truncate" title={folderTitle}>
+        <div className="text-sm text-fg-secondary truncate" title={folderTitle}>
           {folderTitle}
         </div>
       </div>
@@ -420,7 +405,7 @@ export const AlbumView = forwardRef<AlbumViewRef, {}>(function AlbumView(_props,
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
           </div>
         ) : folderImages.length === 0 ? (
-          <div className="text-center py-12 text-gray-500 text-sm">
+          <div className="text-center py-12 text-fg-muted text-sm">
             {t('history.folder.emptyInFolder')}
           </div>
         ) : (
@@ -483,8 +468,6 @@ export const AlbumView = forwardRef<AlbumViewRef, {}>(function AlbumView(_props,
           image={selectedImage}
           images={folderImages}
           onImageChange={setSelectedImage}
-          onDeleteSuccess={handlePreviewDeleteSuccess}
-          sourceContext="history"
           onClose={() => { setSelectedImage(null); }}
         />
       )}

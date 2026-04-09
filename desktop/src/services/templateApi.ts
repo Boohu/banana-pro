@@ -3,7 +3,9 @@ import { TemplateListResponse } from '../types';
 
 export const getTemplates = async (options?: { refresh?: boolean }): Promise<TemplateListResponse> => {
   const params = options?.refresh ? { refresh: 1 } : undefined;
-  return api.get<any>('/templates', { params }) as unknown as Promise<TemplateListResponse>;
+  const response = await api.get<TemplateListResponse>('/templates', { params });
+  // 拦截器已解包 { code, data } → data，此处直接返回
+  return response as unknown as TemplateListResponse;
 };
 
 export const getTemplateImageProxyUrl = (source: string): string => {

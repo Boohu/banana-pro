@@ -154,8 +154,8 @@ export const ImageCard = React.memo(function ImageCard({
   return (
     <div
       className={cn(
-        "group relative bg-white rounded-xl overflow-hidden border border-gray-100 shadow-sm transition-all duration-300 cursor-pointer flex flex-col h-full",
-        selected ? "ring-2 ring-blue-500 shadow-lg shadow-blue-100/50 scale-[0.98]" : "hover:shadow-md hover:-translate-y-0.5"
+        "group relative bg-surface-secondary rounded-xl overflow-hidden border border-border shadow-sm transition-all duration-300 cursor-pointer flex flex-col h-full",
+        selected ? "ring-2 ring-primary shadow-lg shadow-blue-100/50 scale-[0.98]" : "hover:shadow-md hover:-translate-y-0.5"
       )}
       style={{ contentVisibility: 'auto', containIntrinsicSize: '240px 320px' }}
       onClick={() => !isPending && onClick(image)}
@@ -166,29 +166,29 @@ export const ImageCard = React.memo(function ImageCard({
       {/* 图片/加载区域 - 统一正方形 */}
       <div className={cn(
         "relative w-full aspect-square overflow-hidden transition-colors duration-500",
-        isPending ? "bg-blue-50/50" : "bg-slate-50"
+        isPending ? "bg-primary/10/50" : "bg-surface-tertiary"
       )}>
         {isPending ? (
-          <div className="w-full h-full flex flex-col items-center justify-center relative p-4 bg-blue-50/30">
+          <div className="w-full h-full flex flex-col items-center justify-center relative p-4 bg-primary/10/30">
             {/* 加载动画 - 强化版 */}
             <div className="relative mb-4 flex items-center justify-center">
-              <div className="absolute w-16 h-16 bg-blue-500/10 rounded-full animate-ping" />
+              <div className="absolute w-16 h-16 bg-primary/100/10 rounded-full animate-ping" />
               <div className="absolute w-12 h-12 border-2 border-blue-100 rounded-full" />
               <div className="absolute w-12 h-12 border-t-2 border-blue-500 rounded-full animate-spin" />
-              <Loader2 className="w-6 h-6 text-blue-500 animate-pulse relative z-10" />
+              <Loader2 className="w-6 h-6 text-primary animate-pulse relative z-10" />
             </div>
 
             <div className="flex flex-col items-center gap-2">
               <div className="flex items-center gap-2">
                 <div className="flex gap-0.5">
                   <div className="w-1 h-1 bg-blue-400 rounded-full animate-bounce [animation-delay:-0.3s]" />
-                  <div className="w-1 h-1 bg-blue-500 rounded-full animate-bounce [animation-delay:-0.15s]" />
-                  <div className="w-1 h-1 bg-blue-600 rounded-full animate-bounce" />
+                  <div className="w-1 h-1 bg-primary/100 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                  <div className="w-1 h-1 bg-primary rounded-full animate-bounce" />
                 </div>
-                <span className="text-sm font-bold text-blue-600 tracking-tight">{t('generate.card.generating')}</span>
+                <span className="text-sm font-bold text-primary tracking-tight">{t('generate.card.generating')}</span>
               </div>
-              <div className="flex items-center gap-1.5 px-2 py-0.5 bg-blue-100/50 rounded-full border border-blue-200/50">
-                <span className="text-[10px] font-bold font-mono text-blue-500 tabular-nums">
+              <div className="flex items-center gap-1.5 px-2 py-0.5 bg-primary/15/50 rounded-full border border-blue-200/50">
+                <span className="text-[10px] font-bold font-mono text-primary tabular-nums">
                   {elapsed}s
                 </span>
               </div>
@@ -205,7 +205,7 @@ export const ImageCard = React.memo(function ImageCard({
               <div className={cn(
                 "w-5 h-5 rounded-full border-2 transition-all flex items-center justify-center",
                 selected
-                  ? "bg-blue-500 border-blue-500 text-white"
+                  ? "bg-primary/100 border-blue-500 text-white"
                   : "bg-black/10 border-white/40 text-transparent hover:border-white"
               )}>
                 <Check className="w-3 h-3" />
@@ -240,7 +240,7 @@ export const ImageCard = React.memo(function ImageCard({
               <div className={cn(
                 "w-5 h-5 rounded-full border-2 transition-all flex items-center justify-center",
                 selected
-                  ? "bg-blue-500 border-blue-500 text-white"
+                  ? "bg-primary/100 border-blue-500 text-white"
                   : "bg-black/10 border-white/40 text-transparent hover:border-white"
               )}>
                 <Check className="w-3 h-3" />
@@ -248,33 +248,33 @@ export const ImageCard = React.memo(function ImageCard({
             </div>
           </div>
         ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center bg-red-50/50 p-4 transition-colors duration-500">
+          <div className="w-full h-full flex flex-col items-center justify-center bg-error/10/50 p-4 transition-colors duration-500">
             <div className="relative mb-3">
-              <div className="absolute inset-0 bg-red-500/10 rounded-full animate-pulse" />
+              <div className="absolute inset-0 bg-error/100/10 rounded-full animate-pulse" />
               <XCircle className="w-10 h-10 text-red-400 relative z-10" />
             </div>
-            <span className="text-sm font-bold text-red-500 tracking-tight">{t('generate.card.failed')}</span>
+            <span className="text-sm font-bold text-error tracking-tight">{t('generate.card.failed')}</span>
           </div>
         )}
       </div>
 
       {/* 信息区域 - 保持与历史区一致的样式 */}
-      <div className="p-2 sm:p-3 flex flex-col gap-1.5 sm:gap-2 flex-shrink-0 bg-white">
-        <p className="text-[10px] sm:text-xs text-gray-800 line-clamp-2 font-medium leading-relaxed h-8 sm:h-9" title={image.prompt}>
+      <div className="p-2 sm:p-3 flex flex-col gap-1.5 sm:gap-2 flex-shrink-0 bg-surface-secondary">
+        <p className="text-[10px] sm:text-xs text-fg-primary line-clamp-2 font-medium leading-relaxed h-8 sm:h-9" title={image.prompt}>
           {image.prompt || t('generate.card.emptyPrompt')}
         </p>
 
-        <div className="flex items-center justify-between text-[8px] sm:text-[9px] text-gray-400 pt-1 border-t border-gray-50 mt-auto">
+        <div className="flex items-center justify-between text-[8px] sm:text-[9px] text-fg-muted pt-1 border-t border-gray-50 mt-auto">
           <div className="flex items-center gap-1.5">
             <span className="font-mono">{elapsed}s</span>
             <span className="text-gray-300">|</span>
             <span className="truncate max-w-[60px]">{image.model || 'Gemini'}</span>
           </div>
           <div className="flex items-center gap-1">
-            <span className="bg-blue-50 text-blue-600 px-1 py-0.5 rounded font-black tracking-tighter border border-blue-100/50">
+            <span className="bg-primary/10 text-primary px-1 py-0.5 rounded font-black tracking-tighter border border-blue-100/50">
               {specParts[1] || '1K'}
             </span>
-            <span className="bg-slate-100 text-slate-500 px-1 py-0.5 rounded font-bold tracking-tighter border border-slate-200/50">
+            <span className="bg-surface-tertiary text-fg-muted px-1 py-0.5 rounded font-bold tracking-tighter border border-border/50">
               {specParts[0] || '1:1'}
             </span>
           </div>

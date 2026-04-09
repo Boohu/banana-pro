@@ -20,7 +20,7 @@
   },
   "common": {
     "copy": "コピー",
-    "copied": "コピーしました",
+"copied": "コピーしました",
     "disabled": "無効",
     "enabled": "有効",
     "close": "閉じる",
@@ -48,10 +48,7 @@
     "copyFailed": "コピーに失敗しました",
     "deleteFailed": "削除に失敗しました",
     "imageSrcEmpty": "画像ソースが空です",
-    "imageFetchFailed": "画像の取得に失敗しました: {{status}}",
-    "downloadSuccess": "ダウンロードに成功しました",
-    "downloadFailed": "ダウンロードに失敗しました",
-    "fileTooLarge": "ファイルが大きすぎます（最大 5MB）"
+    "imageFetchFailed": "画像の取得に失敗しました: {{status}}"
   },
   "preview": {
     "copyImage": "画像をコピー",
@@ -74,22 +71,13 @@
     "prompt": {
       "label": "プロンプト",
       "copied": "コピーしました",
-      "empty": "プロンプトなし",
-      "optimizedLabel": "Optimized prompt",
-      "originalLabel": "Original prompt",
-      "expand": "Expand",
-      "collapse": "Collapse"
+      "empty": "プロンプトなし"
     },
     "meta": {
       "model": "モデル",
       "unknown": "不明",
       "size": "サイズ",
       "time": "時間"
-    },
-    "failed": {
-      "title": "生成に失敗しました",
-      "errorCopied": "エラー詳細をコピーしました",
-      "copyError": "エラー詳細をコピー"
     },
     "downloadOriginal": "元画像をダウンロード"
   },
@@ -145,24 +133,18 @@
       "adding": "画像を追加中...",
       "pasteFailed": "貼り付けに失敗しました: {{message}}",
       "deduped": "重複画像を除外しました",
-      "timeout": "操作がタイムアウトしました（{{seconds}}秒）",
-      "chatConfigMissing": "先に設定でビジョンモデルを設定してください",
-      "extractFailed": "プロンプト抽出に失敗しました",
-      "promptExtracted": "プロンプトを抽出しました"
+      "timeout": "操作がタイムアウトしました（{{seconds}}秒）"
     },
     "compressReason": {
       "fileTooLarge": "ファイルサイズが大きすぎます（{{size}}MB）",
       "dimensions": "解像度が大きすぎます（{{width}}x{{height}}）"
-    },
-    "extractPrompt": "画像からプロンプト"
+    }
   },
   "settings": {
     "title": "設定",
     "tabs": {
       "image": "画像モデル",
-      "chat": "チャットモデル",
-      "vision": "ビジョンモデル",
-      "notifications": "システム通知"
+      "chat": "チャットモデル"
     },
     "language": {
       "label": "言語",
@@ -173,44 +155,25 @@
       "recommended": "推奨:",
       "yunwu": "Yunwu API",
       "openaiImageLimit": "OpenAI プロバイダーは現在 1K 画像のみ対応しています",
-      "geminiBasePathHint": "Gemini タイプの Base URL はドメインのみを推奨します（/v1 や具体的なエンドポイントは不要）。",
-      "yunwuMissingV1Hint": "Yunwu API の Base URL は /v1 を含めることを推奨します",
-      "yunwuExtraPathHint": "Yunwu API の Base URL は /v1 までにしてください（下位パス不要）"
+      "geminiBasePathHint": "Gemini タイプの Base URL はドメインのみを推奨します（/v1 や具体的なエンドポイントは不要）。"
     },
     "model": {
       "default": "デフォルトモデル",
       "chat": "チャットモデル",
       "custom": "カスタム",
-      "customPlaceholder": "カスタムモデル ID を入力",
-      "vision": "ビジョンモデル"
+      "customPlaceholder": "カスタムモデル ID を入力"
     },
     "vision": {
-      "title": "画像認識設定",
-      "hint": "画像→プロンプトなどのビジョン機能で使用します",
-      "apiKeyPlaceholder": "ビジョン API Key を入力",
-      "apiKeyHint": "上の Base URL とモデル設定に一致させてください"
+      "title": "画像認識設定"
     },
     "timeout": {
       "image": "画像タイムアウト(秒)",
-      "chat": "テキストタイムアウト(秒)",
-      "vision": "ビジョンタイムアウト（秒）"
-    },
-    "retry": {
-      "image": "画像自動リトライ回数",
-      "chat": "テキスト自動リトライ回数",
-      "vision": "ビジョン自動リトライ回数",
-      "hint": "送信直後に上流で切断された接続エラーのみ対象です。0 で自動リトライを無効化します"
+      "chat": "テキストタイムアウト(秒)"
     },
     "refImageCompression": {
       "label": "参考画像圧縮",
       "hint": "有効にすると、参考画像は自動的に圧縮され、帯域幅とストレージを節約します",
       "speedHint": "参考画像を使う場合の生成速度向上が目的で、理論上は生成品質に影響しません。"
-    },
-    "promptOptimizeDefault": {
-      "label": "Default Prompt Optimization",
-      "hint": "When enabled, image generation first optimizes the prompt inside the backend task, then continues generating without overwriting the current editor input.",
-      "textMode": "Text optimization",
-      "jsonMode": "JSON optimization"
     },
     "update": {
       "title": "更新",
@@ -232,30 +195,14 @@
       "verboseLabel": "詳細ログを有効化（診断情報が増えます）",
       "help": "問題が発生した場合は app.log と server.log を開発者に送ってください（ログにプロンプトが含まれる場合があります）。"
     },
-    "notifications": {
-      "title": "システム通知",
-      "hint": "生成タスクが終了したときにデスクトップ通知を送信します。どの画像か分かるよう、通知文には最適化後のプロンプト要約を優先して表示します。",
-      "enable": "システム通知を有効化",
-      "enableHint": "macOS と Windows のデスクトップ版で利用できます。",
-      "backgroundOnly": "バックグラウンド時のみ通知",
-      "backgroundOnlyHint": "ウィンドウが前面表示かつフォーカス中のときは通知せず、非表示・非フォーカス・バックグラウンド時のみ通知します。",
-      "failure": "失敗時も通知",
-      "failureHint": "有効にすると、失敗や一部完了のタスクも通知します。",
-      "permissionDenied": "システム通知の権限が無効です。システム設定の通知からこのアプリを許可してください。",
-      "testButton": "通知をテスト",
-      "testHint": "macOS/Windows で通知権限が正しく登録されているか確認するために使います。",
-      "testProbeBody": "これはテスト通知です。システム通知が正しく表示されるか確認します。",
-      "testSent": "テスト通知を送信しました。システム通知センターを確認してください。",
-      "testFailed": "テスト通知の送信に失敗しました: {{message}}"
-    },
-    "save": "設定を保存",
+    "save": "同期して保存",
     "toast": {
       "fetchFailed": "バックエンド設定の取得に失敗しました",
       "imageConfigIncomplete": "画像モデル設定を完了してください",
       "chatConfigIncomplete": "チャットモデル設定を完了してください",
       "openaiGeminiUnsupported": "OpenAI の Base URL は Gemini モデルに対応していません。対応エンドポイントを使用してください。",
       "geminiBasePathWarning": "Gemini Base URL に /v1 などのパスが含まれています。ドメインのみの指定を推奨します。",
-      "saveSuccess": "設定を保存しました",
+      "saveSuccess": "設定をサーバーに同期しました",
       "saveFailed": "保存に失敗しました: {{msg}}",
       "checkNetwork": "ネットワークを確認してください",
       "logDirDesktopOnly": "ログフォルダはデスクトップのみ利用可能です",
@@ -265,16 +212,7 @@
       "logDirCopyFailed": "ログパスのコピーに失敗しました",
       "verboseEnabled": "詳細ログを有効にしました",
       "verboseDisabled": "詳細ログを無効にしました",
-      "openLinkFailed": "リンクを開けませんでした",
-      "timeoutTooSmall": "タイムアウトは {{min}} 秒以上にしてください"
-    },
-    "onboarding": {
-      "label": "チュートリアル",
-      "hint": "機能ガイドを再生して操作をすばやく確認できます",
-      "restart": "ガイドを再開始",
-      "confirmTitle": "チュートリアルを再開始",
-      "confirmHint": "最初のステップから再生します。続行しますか？",
-      "confirmStart": "開始"
+      "openLinkFailed": "リンクを開けませんでした"
     }
   },
   "versionBadge": {
@@ -404,8 +342,7 @@
       "failed": "生成に失敗しました",
       "failedWith": "生成に失敗しました: {{message}}",
       "partial": "タスクが一部完了しました",
-      "recovered": "生成進捗を復元しました",
-      "timeout": "操作がタイムアウトしました（{{seconds}}秒）"
+      "recovered": "生成進捗を復元しました"
     }
   },
   "config": {
@@ -419,21 +356,16 @@
       "aspectRatio": "アスペクト比",
       "ratio": {
         "1_1": "1:1（正方形）",
-        "1_4": "1:4（縦長）",
-        "1_8": "1:8（超縦長）",
         "2_3": "2:3（縦 2:3）",
         "3_2": "3:2（横 3:2）",
         "3_4": "3:4（縦 3:4）",
-        "4_1": "4:1（パノラマ）",
         "4_3": "4:3（標準 4:3）",
         "4_5": "4:5（縦 4:5）",
         "5_4": "5:4（横 5:4）",
-        "8_1": "8:1（超横長）",
         "9_16": "9:16（モバイル）",
         "16_9": "16:9（ワイド）",
         "21_9": "21:9（超ワイド）"
-      },
-      "ratioAutoAdjusted": "アスペクト比 {{from}} は未対応のため {{to}} に自動調整しました"
+      }
     },
     "apiKeyHint": "先に右上の設定で画像 API キーを設定してください"
   },
@@ -446,55 +378,6 @@
     "imageLoadFailed": "画像の読み込みに失敗しました",
     "responseStreamMissing": "レスポンスストリームが利用できません"
   },
-  "errorMapping": {
-    "requestIdLine": "リクエスト ID: {{requestId}}",
-    "codes": {
-      "unknown": "生成に失敗しました。後でもう一度お試しください。",
-      "queue_full": "タスクが多すぎてキューがいっぱいです。後でもう一度お試しください。",
-      "app_interrupted": "アプリの再起動または終了によりタスクが中断されました。もう一度生成してください。",
-      "task_timeout": "結果が返る前に生成がタイムアウトしました。後でもう一度お試しください。",
-      "request_canceled": "生成が完了する前にリクエストがキャンセルされました。",
-      "prompt_optimize_auth_missing": "デフォルトのプロンプト最適化にチャットモデルの API キーがありません。設定で補完して保存してください。",
-      "prompt_optimize_model_missing": "デフォルトのプロンプト最適化に利用可能なチャットモデルがありません。設定で補完して保存してください。",
-      "prompt_optimize_provider_missing": "デフォルトのプロンプト最適化に対応するチャットプロバイダー設定がありません。設定で補完して保存してください。",
-      "local_permission_denied": "ローカルファイルまたはフォルダへの書き込み権限がありません。保存先、ディスク権限、またはシステム許可を確認してください。",
-      "policy_blocked": "上流はテキストのみを返し、画像は返しませんでした。安全またはポリシー制限に触れた可能性があります。プロンプトや参照画像を調整して再試行してください。",
-      "no_image_data": "上流から応答はありましたが、画像データが含まれていませんでした。後でもう一度お試しください。",
-      "quota_exceeded": "上流のクォータ不足または制限が発生しています。残高、プラン、または権限を確認してください。",
-      "bad_request": "上流がリクエスト形式またはパラメータを受け付けませんでした。プロンプト、モデル、画像パラメータ、またはリクエスト内容を確認してください。",
-      "unauthorized": "上流の認証に失敗しました。API キーやトークンが正しいか、期限切れでないか確認してください。",
-      "forbidden": "上流がこのリクエストを拒否しました。通常は権限不足、アカウント制限、またはモデルへのアクセス制限が原因です。",
-      "not_found": "要求したリソースが見つかりません。モデル、エンドポイント、または上流パスが存在しない可能性があります。",
-      "request_timeout": "画像結果が返る前に上流リクエストがタイムアウトしました。後でもう一度お試しください。",
-      "request_too_large": "リクエスト本文が大きすぎます。画像サイズ、参照画像数、または長すぎる入力内容を減らして再試行してください。",
-      "rate_limited": "上流が混雑しているか、レート制限に達しています。後でもう一度お試しください。",
-      "internal_server_error": "上流サービスで内部エラーが発生しました。通常はサーバー側の問題です。後でもう一度お試しください。",
-      "bad_gateway": "上流ゲートウェイで異常が発生し、結果が正常に返されませんでした。後でもう一度お試しください。",
-      "service_unavailable": "上流サービスは一時的に利用できません。メンテナンス中または過負荷の可能性があります。後でもう一度お試しください。",
-      "gateway_timeout": "上流ゲートウェイがタイムアウトし、結果が返りませんでした。後でもう一度お試しください。",
-      "tls_error": "上流との安全な接続に失敗しました。後でもう一度お試しください。",
-      "dns_error": "上流アドレスの解決に失敗しました。ネットワークまたはサービスアドレス設定を確認してください。",
-      "connection_refused": "上流サービスに接続できませんでした。サービスアドレスまたはネットワーク接続を確認してください。",
-      "upstream_connection_closed": "上流接続が途中で切断され、画像結果がアプリに返りませんでした。後でもう一度お試しください。",
-      "timeout": "画像結果が返る前にリクエストがタイムアウトしました。後でもう一度お試しください。"
-    },
-    "categories": {
-      "unknown": "不明",
-      "local": "ローカル",
-      "local_config": "ローカル設定",
-      "local_storage": "ローカル保存",
-      "upstream_policy": "上流ポリシー",
-      "upstream_response": "上流レスポンス",
-      "upstream_quota": "上流クォータ",
-      "upstream_request": "上流リクエスト",
-      "upstream_auth": "上流認証",
-      "upstream_permission": "上流権限",
-      "upstream_network": "上流ネットワーク",
-      "upstream_capacity": "上流制限",
-      "upstream_server": "上流サービス",
-      "upstream_gateway": "上流ゲートウェイ"
-    }
-  },
   "layout": {
     "loadingModule": "モジュールを読み込み中...",
     "backendBanner": "バックエンドの準備ができていません。一部機能が利用できない可能性があります。",
@@ -502,34 +385,6 @@
       "backendUnavailable": "バックエンドが利用できません。後でもう一度お試しください。"
     },
     "generateConfigTitle": "生成設定"
-  },
-  "notifications": {
-    "status": {
-      "completed": {
-        "title": "画像生成が完了しました",
-        "body": "生成タスクが完了しました。",
-        "bodyWithPrompt": "完了: {{prompt}}",
-        "batchTitle": "{{count}} 件の生成タスクが完了しました",
-        "batchBody": "{{count}} 件の生成タスクが完了しました。",
-        "batchBodyWithPrompt": "{{prompt}} など {{additionalCount}} 件のタスクが完了しました"
-      },
-      "partial": {
-        "title": "画像生成が一部完了しました",
-        "body": "{{completed}}/{{total}} 件が完了しました。",
-        "bodyWithPrompt": "{{completed}}/{{total}} 件完了: {{prompt}}",
-        "batchTitle": "{{count}} 件の生成タスクが一部完了しました",
-        "batchBody": "{{count}} 件の生成タスクが一部完了しました。",
-        "batchBodyWithPrompt": "{{prompt}} など {{additionalCount}} 件のタスクが一部完了しました"
-      },
-      "failed": {
-        "title": "画像生成に失敗しました",
-        "body": "生成タスクが失敗しました。",
-        "bodyWithPrompt": "失敗: {{prompt}}",
-        "batchTitle": "{{count}} 件の生成タスクが失敗しました",
-        "batchBody": "{{count}} 件の生成タスクが失敗しました。",
-        "batchBodyWithPrompt": "{{prompt}} など {{additionalCount}} 件のタスクが失敗しました"
-      }
-    }
   },
   "history": {
     "searchPlaceholder": "プロンプトまたはモデルを検索",
@@ -774,84 +629,12 @@
       "ratio9_16": "9:16",
       "ratio16_9": "16:9",
       "ratio21_9": "21:9",
-      "ratioAutoAdjusted": "アスペクト比 {{from}} はサポートされていません。{{to}} に自動調整されました"
-    }
-  },
-  "onboarding": {
-    "progress": "{{current}} / {{total}} ステップ",
-    "buttons": {
-      "next": "次へ",
-      "back": "戻る",
-      "skip": "スキップ",
-      "finish": "完了"
-    },
-    "welcome": {
-      "title": "大香蕉 AI へようこそ",
-      "content": "このクイックガイドで主要機能を約1分で確認できます。"
-    },
-    "settings": {
-      "title": "設定入口",
-      "content": "モデル、API Key、言語、更新などを設定できます。"
-    },
-    "prompt": {
-      "title": "まずはプロンプト入力",
-      "content": "生成したい画像を自然文で入力してください。"
-    },
-    "optimizeNormal": {
-      "title": "通常最適化",
-      "content": "口語の説明を安定した生成向けプロンプトに整えます。"
-    },
-    "optimizeJson": {
-      "title": "JSON 最適化",
-      "content": "詳細制御しやすい構造化プロンプトを出力します。"
-    },
-    "resolution": {
-      "title": "解像度と比率",
-      "content": "画質とアスペクト比をここで設定します。"
-    },
-    "refImageUpload": {
-      "title": "参照画像アップロード",
-      "content": "ドラッグ＆ドロップ/貼り付けで参照画像を追加できます。"
-    },
-    "refImageExtract": {
-      "title": "画像からプロンプト",
-      "content": "参照画像からプロンプト案を抽出して素早く開始できます。"
-    },
-    "templateMarket": {
-      "title": "テンプレートマーケット",
-      "content": "人気テンプレートを再利用して効率を上げられます。"
-    },
-    "generate": {
-      "title": "生成開始",
-      "content": "設定を確認して生成を開始します。"
-    },
-    "historyTab": {
-      "title": "履歴タブ",
-      "content": "生成済み画像の閲覧・管理ができます。"
-    },
-    "historyViewToggle": {
-      "title": "表示切替",
-      "content": "タイムライン表示とアルバム表示を切り替えます。"
-    },
-    "historyAlbumCards": {
-      "title": "アルバムカード",
-      "content": "フォルダ単位で画像を整理できます。"
-    },
-    "historyCreateFolder": {
-      "title": "フォルダ作成",
-      "content": "手動フォルダを作成して整理できます。"
-    },
-    "historyOpenFolderImages": {
-      "title": "フォルダ内画像を見る",
-      "content": "フォルダをクリックして中の画像を表示します。"
-    },
-    "historyMoveToFolder": {
-      "title": "フォルダへ移動",
-      "content": "画像を対象フォルダへ移動できます。"
-    },
-    "historyDragToRef": {
-      "title": "参照エリアへドラッグ",
-      "content": "履歴画像を参照エリアへドラッグして続けて生成できます。"
+      "ratioAutoAdjusted": "アスペクト比 {{from}} はサポートされていません。{{to}} に自動調整されました",
+      "ratio3_4": "3:4",
+      "ratio4_5": "4:5",
+      "ratio9_16": "9:16",
+      "ratio16_9": "16:9",
+      "ratio2_3": "2:3"
     }
   }
 }

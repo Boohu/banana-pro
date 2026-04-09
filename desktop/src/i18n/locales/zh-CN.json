@@ -20,9 +20,7 @@
   },
   "common": {
     "copy": "复制",
-    "copied": "已复制",
-    "yes": "是",
-    "no": "否",
+"copied": "已复制",
     "disabled": "已关闭",
     "enabled": "已开启",
     "close": "关闭",
@@ -50,10 +48,7 @@
     "copyFailed": "复制失败",
     "deleteFailed": "删除失败",
     "imageSrcEmpty": "图片地址为空",
-    "imageFetchFailed": "图片获取失败: {{status}}",
-    "downloadSuccess": "下载成功",
-    "downloadFailed": "下载失败",
-    "fileTooLarge": "文件过大（最大 5MB）"
+    "imageFetchFailed": "图片获取失败: {{status}}"
   },
   "preview": {
     "copyImage": "复制图片",
@@ -76,32 +71,13 @@
     "prompt": {
       "label": "提示词 (Prompt)",
       "copied": "已复制",
-      "empty": "暂无提示词",
-      "optimizedLabel": "优化后的提示词",
-      "originalLabel": "用户输入的提示词",
-      "expand": "展开",
-      "collapse": "收起"
+      "empty": "暂无提示词"
     },
     "meta": {
       "model": "模型",
       "unknown": "未知",
       "size": "尺寸",
       "time": "时间"
-    },
-    "failed": {
-      "title": "生成失败",
-      "summary": "失败提示",
-      "detailsTitle": "详细信息",
-      "errorCode": "错误码",
-      "errorCategory": "错误分类",
-      "requestId": "请求ID",
-      "retryable": "建议重试",
-      "errorDetail": "补充说明",
-      "rawError": "原始错误",
-      "taskId": "任务ID",
-      "model": "模型",
-      "errorCopied": "错误详情已复制",
-      "copyError": "复制错误详情"
     },
     "downloadOriginal": "下载高清原图"
   },
@@ -157,24 +133,18 @@
       "adding": "正在添加图片...",
       "pasteFailed": "粘贴图片失败：{{message}}",
       "deduped": "已过滤重复图片",
-      "timeout": "操作超时（{{seconds}}秒）",
-      "chatConfigMissing": "请先在设置中配置识图模型",
-      "extractFailed": "提示词提取失败",
-      "promptExtracted": "提示词提取成功"
+      "timeout": "操作超时（{{seconds}}秒）"
     },
     "compressReason": {
       "fileTooLarge": "文件过大 ({{size}}MB)",
       "dimensions": "尺寸过大 ({{width}}x{{height}})"
-    },
-    "extractPrompt": "识图提词"
+    }
   },
   "settings": {
     "title": "系统设置",
     "tabs": {
       "image": "生图模型",
-      "chat": "对话模型",
-      "vision": "识图模型",
-      "notifications": "系统通知"
+      "chat": "对话模型"
     },
     "language": {
       "label": "语言",
@@ -185,44 +155,25 @@
       "recommended": "推荐平台：",
       "yunwu": "云雾API",
       "openaiImageLimit": "OpenAI 类型当前仅支持生成 1K 图片",
-      "geminiBasePathHint": "Gemini 类型建议 Base URL 仅填写域名，不要带 /v1 或具体接口路径",
-      "yunwuMissingV1Hint": "云雾 API 的 Base URL 建议包含 /v1",
-      "yunwuExtraPathHint": "云雾 API 的 Base URL 建议只保留到 /v1，不要包含更深路径"
+      "geminiBasePathHint": "Gemini 类型建议 Base URL 仅填写域名，不要带 /v1 或具体接口路径"
     },
     "model": {
       "default": "默认模型",
       "chat": "对话模型",
       "custom": "自定义",
-      "customPlaceholder": "输入自定义模型 ID",
-      "vision": "识图模型"
+      "customPlaceholder": "输入自定义模型 ID"
     },
     "vision": {
-      "title": "识图配置",
-      "hint": "用于图片逆向提示词等识图能力",
-      "apiKeyPlaceholder": "请输入识图 API Key",
-      "apiKeyHint": "需与上方 Base URL、模型保持匹配"
+      "title": "识图配置"
     },
     "timeout": {
       "image": "生图超时(秒)",
-      "chat": "生文字超时(秒)",
-      "vision": "识图超时(秒)"
-    },
-    "retry": {
-      "image": "生图自动重试次数",
-      "chat": "生文字自动重试次数",
-      "vision": "识图自动重试次数",
-      "hint": "仅对请求刚发出就被上游断开的连接错误生效；填 0 表示关闭自动重试"
+      "chat": "生文字超时(秒)"
     },
     "refImageCompression": {
       "label": "参考图压缩",
       "hint": "开启后，上传的参考图会自动压缩以节省带宽和存储空间",
       "speedHint": "仅用于提升有参考图时的生成速度，理论上不影响生成效果"
-    },
-    "promptOptimizeDefault": {
-      "label": "默认提示词优化",
-      "hint": "开启后，点击生图会在后台任务内先优化提示词，再继续生成图片，不会覆盖当前输入框内容",
-      "textMode": "文本优化",
-      "jsonMode": "JSON优化"
     },
     "update": {
       "title": "软件更新",
@@ -244,30 +195,14 @@
       "verboseLabel": "启用详细日志（记录更多调试信息）",
       "help": "遇到问题时，请将 app.log 和 server.log 提交给开发者（注意日志可能包含提示词等信息）。"
     },
-    "notifications": {
-      "title": "系统通知",
-      "hint": "生成任务结束时发送系统通知，通知内容会优先展示优化后的提示词摘要，方便区分是哪一张图。",
-      "enable": "启用系统通知",
-      "enableHint": "支持 macOS 和 Windows 桌面端。",
-      "backgroundOnly": "仅后台时提醒",
-      "backgroundOnlyHint": "当前窗口在前台可见时不提醒；隐藏、失焦或切到后台时才发送。",
-      "failure": "失败也提醒",
-      "failureHint": "开启后，生成失败和部分完成也会发送通知。",
-      "permissionDenied": "系统通知权限未开启，请前往系统设置中的通知里允许该应用发送通知。",
-      "testButton": "测试系统通知",
-      "testHint": "用于排查 macOS/Windows 是否已正确注册通知权限。",
-      "testProbeBody": "这是一条测试通知，用于确认系统通知是否正常弹出。",
-      "testSent": "测试通知已发送，请留意系统通知中心。",
-      "testFailed": "测试通知发送失败：{{message}}"
-    },
-    "save": "保存配置",
+    "save": "同步并保存",
     "toast": {
       "fetchFailed": "获取后端配置失败",
       "imageConfigIncomplete": "请先完整配置生图模型",
       "chatConfigIncomplete": "请完整配置对话模型",
       "openaiGeminiUnsupported": "OpenAI 官方 Base URL 不支持 Gemini 模型，请更换兼容接口",
       "geminiBasePathWarning": "检测到 Gemini Base URL 包含路径（如 /v1），建议仅填写域名",
-      "saveSuccess": "配置保存成功",
+      "saveSuccess": "配置已成功同步到服务器",
       "saveFailed": "保存失败: {{msg}}",
       "checkNetwork": "请检查网络",
       "logDirDesktopOnly": "日志目录仅在桌面端可用",
@@ -277,16 +212,7 @@
       "logDirCopyFailed": "复制日志路径失败",
       "verboseEnabled": "已启用详细日志",
       "verboseDisabled": "已关闭详细日志",
-      "openLinkFailed": "打开链接失败",
-      "timeoutTooSmall": "超时时间不能小于 {{min}} 秒"
-    },
-    "onboarding": {
-      "label": "新手引导",
-      "hint": "可重新播放功能引导，帮助快速熟悉操作",
-      "restart": "重新开始引导",
-      "confirmTitle": "重新开始新手引导",
-      "confirmHint": "将从第一步开始播放引导，是否继续？",
-      "confirmStart": "开始引导"
+      "openLinkFailed": "打开链接失败"
     }
   },
   "versionBadge": {
@@ -416,8 +342,7 @@
       "failed": "生成失败",
       "failedWith": "生成失败：{{message}}",
       "partial": "任务部分完成",
-      "recovered": "已恢复生成进度",
-      "timeout": "操作超时（{{seconds}}秒）"
+      "recovered": "已恢复生成进度"
     }
   },
   "config": {
@@ -431,23 +356,18 @@
       "aspectRatio": "宽高比",
       "ratio": {
         "1_1": "1:1 (正方形)",
-        "1_4": "1:4 (超高竖图)",
-        "1_8": "1:8 (极高竖图)",
         "2_3": "2:3 (竖向 2:3)",
         "3_2": "3:2 (横向 3:2)",
         "3_4": "3:4 (竖向 3:4)",
-        "4_1": "4:1 (超宽横图)",
         "4_3": "4:3 (标准 4:3)",
         "4_5": "4:5 (竖向 4:5)",
         "5_4": "5:4 (横向 5:4)",
-        "8_1": "8:1 (极宽横图)",
         "9_16": "9:16 (手机宽屏)",
         "16_9": "16:9 (电脑宽屏)",
         "21_9": "21:9 (超宽屏)"
-      },
-      "ratioAutoAdjusted": "比例 {{from}} 不支持，已自动调整为 {{to}}"
+      }
     },
-    "apiKeyHint": "请先在右上角配置生图 API Key"
+    "apiKeyHint": "请先在左下角「设置」中配置生图 API Key"
   },
   "errors": {
     "fileReadEmpty": "文件读取为空",
@@ -458,91 +378,13 @@
     "imageLoadFailed": "图片加载失败",
     "responseStreamMissing": "响应流不可用"
   },
-  "errorMapping": {
-    "requestIdLine": "请求ID：{{requestId}}",
-    "codes": {
-      "unknown": "生成失败，请稍后重试。",
-      "queue_full": "当前任务较多，队列已满，请稍后再试。",
-      "app_interrupted": "任务因应用重启或退出被中断，请重新生成。",
-      "task_timeout": "生成等待超时，结果未能在设定时间内返回。请稍后重试。",
-      "request_canceled": "请求已取消，生成未完成。",
-      "prompt_optimize_auth_missing": "默认提示词优化缺少对话模型 API Key，请先在设置中补全并保存。",
-      "prompt_optimize_model_missing": "默认提示词优化缺少可用的对话模型，请先在设置中补全并保存。",
-      "prompt_optimize_provider_missing": "默认提示词优化对应的对话模型配置不存在，请先在设置中补全并保存。",
-      "local_permission_denied": "本地文件或目录没有写入权限，请检查保存路径、磁盘权限或系统授权。",
-      "policy_blocked": "上游返回了文本但没有图片，可能触发了安全或合规限制。请调整提示词或参考图后重试。",
-      "no_image_data": "上游已返回响应，但里面没有图片数据。请稍后重试。",
-      "quota_exceeded": "上游额度不足或已被限制，请检查账户余额、套餐或权限。",
-      "bad_request": "请求格式或参数不被上游接受，请检查提示词、模型、图片参数或请求内容。",
-      "unauthorized": "上游鉴权失败，请检查 API Key、令牌是否正确，或是否已过期。",
-      "forbidden": "上游拒绝了本次请求，一般是权限不足、账户受限或模型无权访问。",
-      "not_found": "请求的资源未找到，可能是模型、接口地址或上游端点不存在。",
-      "request_timeout": "上游等待超时，图片结果未能及时返回。请稍后重试。",
-      "request_too_large": "请求体过大，请减少图片体积、参考图数量，或缩短过长的输入内容后重试。",
-      "rate_limited": "上游当前较忙或触发限流，请稍后再试。",
-      "internal_server_error": "上游服务内部异常，这通常是服务端问题，请稍后重试。",
-      "bad_gateway": "上游网关异常，结果没有正常回传。请稍后重试。",
-      "service_unavailable": "上游服务暂时不可用，可能在维护或过载中，请稍后重试。",
-      "gateway_timeout": "上游网关等待超时，结果没有及时回传。请稍后重试。",
-      "tls_error": "与上游建立安全连接失败，请稍后重试。",
-      "dns_error": "解析上游地址失败，请检查网络或服务地址配置。",
-      "connection_refused": "无法连接到上游服务，请检查服务地址或网络连通性。",
-      "upstream_connection_closed": "与上游的连接被提前断开，图片结果未成功回传到本地。请稍后重试。",
-      "timeout": "请求等待超时，图片结果未能及时返回。请稍后重试。"
-    },
-    "categories": {
-      "unknown": "未知",
-      "local": "本地",
-      "local_config": "本地配置",
-      "local_storage": "本地存储",
-      "upstream_policy": "上游风控",
-      "upstream_response": "上游响应",
-      "upstream_quota": "上游额度",
-      "upstream_request": "上游请求",
-      "upstream_auth": "上游鉴权",
-      "upstream_permission": "上游权限",
-      "upstream_network": "上游网络",
-      "upstream_capacity": "上游限流",
-      "upstream_server": "上游服务",
-      "upstream_gateway": "上游网关"
-    }
-  },
   "layout": {
     "loadingModule": "模块加载中...",
     "backendBanner": "后端服务未就绪，部分功能不可用",
-    "backendRecovering": "正在恢复后端连接并同步任务状态，请稍候",
     "toast": {
       "backendUnavailable": "后端服务不可用，请稍后重试"
     },
     "generateConfigTitle": "生成配置"
-  },
-  "notifications": {
-    "status": {
-      "completed": {
-        "title": "图片生成完成",
-        "body": "生成任务已完成。",
-        "bodyWithPrompt": "已完成：{{prompt}}",
-        "batchTitle": "{{count}} 个生成任务已完成",
-        "batchBody": "{{count}} 个生成任务已完成。",
-        "batchBodyWithPrompt": "{{prompt}} 等 {{additionalCount}} 个任务已完成"
-      },
-      "partial": {
-        "title": "图片部分完成",
-        "body": "任务已完成 {{completed}}/{{total}}。",
-        "bodyWithPrompt": "已完成 {{completed}}/{{total}}：{{prompt}}",
-        "batchTitle": "{{count}} 个生成任务部分完成",
-        "batchBody": "{{count}} 个生成任务部分完成。",
-        "batchBodyWithPrompt": "{{prompt}} 等 {{additionalCount}} 个任务部分完成"
-      },
-      "failed": {
-        "title": "图片生成失败",
-        "body": "生成任务失败。",
-        "bodyWithPrompt": "生成失败：{{prompt}}",
-        "batchTitle": "{{count}} 个生成任务失败",
-        "batchBody": "{{count}} 个生成任务失败。",
-        "batchBodyWithPrompt": "{{prompt}} 等 {{additionalCount}} 个任务失败"
-      }
-    }
   },
   "history": {
     "searchPlaceholder": "搜索提示词或模型",
@@ -620,7 +462,8 @@
       "moveFailed": "移动失败",
       "selectFolder": "选择目标文件夹",
       "backToFolders": "返回文件夹",
-      "emptyInFolder": "当前文件夹暂无图片",
+      "emptyInFolder": "当前文件夹暂无图片"
+,
       "moveButton": "移动",
       "moveButtonTitle": "移动图片到文件夹"
     }
@@ -788,83 +631,6 @@
       "ratio16_9": "16:9",
       "ratio21_9": "21:9",
       "ratioAutoAdjusted": "比例 {{from}} 不支持，已自动调整为 {{to}}"
-    }
-  },
-  "onboarding": {
-    "progress": "第 {{current}} / {{total}} 步",
-    "buttons": {
-      "next": "下一步",
-      "back": "上一步",
-      "skip": "跳过",
-      "finish": "完成"
-    },
-    "welcome": {
-      "title": "欢迎使用大香蕉 AI",
-      "content": "本引导会带你快速了解核心功能，约 1 分钟。"
-    },
-    "settings": {
-      "title": "这里是设置入口",
-      "content": "可配置模型、API Key、语言与更新等。"
-    },
-    "prompt": {
-      "title": "先输入提示词",
-      "content": "用自然语言描述你想生成的画面内容。"
-    },
-    "optimizeNormal": {
-      "title": "普通优化",
-      "content": "可将口语化描述优化成更稳定的生图提示词。"
-    },
-    "optimizeJson": {
-      "title": "JSON 优化",
-      "content": "会输出结构化提示词，便于精细控制。"
-    },
-    "resolution": {
-      "title": "分辨率与比例",
-      "content": "在这里设置清晰度和画面宽高比。"
-    },
-    "refImageUpload": {
-      "title": "上传参考图",
-      "content": "支持拖拽/粘贴参考图，进行图生图。"
-    },
-    "refImageExtract": {
-      "title": "识图提词",
-      "content": "可从参考图反推提示词，快速起稿。"
-    },
-    "templateMarket": {
-      "title": "模板市场",
-      "content": "可直接复用热门模板，提高出图效率。"
-    },
-    "generate": {
-      "title": "开始生成",
-      "content": "确认参数后点击开始生成图片。"
-    },
-    "historyTab": {
-      "title": "查看历史",
-      "content": "可在历史中查看、管理已生成图片。"
-    },
-    "historyViewToggle": {
-      "title": "切换视图",
-      "content": "支持时间线与相册两种浏览方式。"
-    },
-    "historyAlbumCards": {
-      "title": "相册卡片",
-      "content": "按文件夹组织图片，便于批量管理。"
-    },
-    "historyCreateFolder": {
-      "title": "创建文件夹",
-      "content": "可创建手动文件夹整理图片。"
-    },
-    "historyOpenFolderImages": {
-      "title": "查看文件夹内容",
-      "content": "点击文件夹可进入查看其中图片。"
-    },
-    "historyMoveToFolder": {
-      "title": "移动到文件夹",
-      "content": "可将图片移动到目标文件夹中。"
-    },
-    "historyDragToRef": {
-      "title": "拖回参考图区域",
-      "content": "支持把历史图片拖拽到参考图区继续生成。"
     }
   }
 }

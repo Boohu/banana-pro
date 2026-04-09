@@ -326,7 +326,7 @@ export const AlbumView = forwardRef<AlbumViewRef, {}>(function AlbumView(_props,
 
     if (folders.length === 0) {
       return (
-        <div className="text-center py-12 text-gray-500 text-sm">
+        <div className="text-center py-12 text-fg-muted text-sm">
           {t('history.folder.empty')}
         </div>
       );
@@ -386,15 +386,15 @@ export const AlbumView = forwardRef<AlbumViewRef, {}>(function AlbumView(_props,
 
   return (
     <div className="h-full min-h-0 flex flex-col">
-      <div className="px-4 pt-3 pb-2 border-b border-gray-200 bg-white flex items-center gap-3">
+      <div className="px-4 pt-3 pb-2 border-b border-border bg-surface-secondary flex items-center gap-3">
         <button
-          className="inline-flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-700"
+          className="inline-flex items-center gap-1.5 text-sm text-primary hover:text-blue-700"
           onClick={closeFolder}
         >
           <ArrowLeft className="w-4 h-4" />
           {t('history.folder.backToFolders')}
         </button>
-        <div className="text-sm text-gray-700 truncate" title={folderTitle}>
+        <div className="text-sm text-fg-secondary truncate" title={folderTitle}>
           {folderTitle}
         </div>
       </div>
@@ -405,7 +405,7 @@ export const AlbumView = forwardRef<AlbumViewRef, {}>(function AlbumView(_props,
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
           </div>
         ) : folderImages.length === 0 ? (
-          <div className="text-center py-12 text-gray-500 text-sm">
+          <div className="text-center py-12 text-fg-muted text-sm">
             {t('history.folder.emptyInFolder')}
           </div>
         ) : (

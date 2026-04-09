@@ -91,11 +91,12 @@ export function useTaskStream(taskId: string | null) {
       if (!isMountedRef.current) return;
       try {
         const data = JSON.parse(event.data);
-        const task = mapBackendTaskToFrontend(data);
 
         if (getUpdateSource() !== 'websocket') {
           return;
         }
+
+        const task = mapBackendTaskToFrontend(data);
 
         if (task.images && task.images.length > 0) {
           storeRef.current.updateProgressBatch(task.completedCount, task.images);

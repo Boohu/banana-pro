@@ -782,7 +782,7 @@ export function ReferenceImageUpload() {
       <div
         className={cn(
           "flex items-center justify-between rounded-xl transition-all",
-          isDraggingOver && "bg-blue-50 ring-2 ring-blue-400 ring-dashed"
+          isDraggingOver && "bg-primary/10 ring-2 ring-blue-400 ring-dashed"
         )}
         onClick={handleAreaClick}
       >
@@ -792,26 +792,26 @@ export function ReferenceImageUpload() {
               e.stopPropagation();
               setIsExpanded(!isExpanded);
             }}
-            className="p-1 hover:bg-slate-100 rounded-lg transition-colors flex-shrink-0"
+            className="p-1 hover:bg-surface-tertiary rounded-lg transition-colors flex-shrink-0"
             title={isExpanded ? t('refImage.toggleCollapse') : t('refImage.toggleExpand')}
           >
-            {isExpanded ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+            {isExpanded ? <ChevronUp className="w-4 h-4 text-fg-muted" /> : <ChevronDown className="w-4 h-4 text-fg-muted" />}
           </button>
           <label
-            className="text-sm font-medium text-gray-700 flex items-center gap-2 cursor-pointer"
+            className="text-sm font-medium text-fg-secondary flex items-center gap-2 cursor-pointer"
           >
-            <ImageIcon className="w-4 h-4 text-blue-500" />
+            <ImageIcon className="w-4 h-4 text-primary" />
             {t('refImage.title', { count: refFiles.length })}
           </label>
         </div>
         <div className="flex items-center gap-2">
           {isDraggingOver && (
-            <span className="text-[10px] text-blue-600 font-medium">
+            <span className="text-[10px] text-primary font-medium">
               {t('refImage.dropHint')}
             </span>
           )}
           {refFiles.length > 0 && !isDraggingOver && (
-            <span className="text-[10px] font-bold text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full">
+            <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
               {t('refImage.modeActive')}
             </span>
           )}
@@ -820,7 +820,7 @@ export function ReferenceImageUpload() {
 
       {/* 收起状态提示 */}
       {!isExpanded && refFiles.length === 0 && (
-        <div className="text-[11px] text-slate-400 italic pl-7">
+        <div className="text-[11px] text-fg-muted italic pl-7">
           {t('refImage.collapsedHint')}
         </div>
       )}
@@ -871,15 +871,15 @@ export function ReferenceImageUpload() {
                   type="button"
                   onClick={handleUploadClick}
                   className={cn(
-                    "flex-shrink-0 w-20 h-20 rounded-2xl border-2 border-dashed bg-white/80 transition-all group snap-start",
+                    "flex-shrink-0 w-20 h-20 rounded-2xl border-2 border-dashed bg-surface-secondary/80 transition-all group snap-start",
                     isDraggingOver
-                      ? "border-blue-500 bg-blue-100"
-                      : "border-slate-200 hover:border-blue-400 hover:bg-blue-50/40"
+                      ? "border-blue-500 bg-primary/15"
+                      : "border-border hover:border-blue-400 hover:bg-primary/10/40"
                   )}
                   title={t('refImage.add')}
                 >
                   <div className="w-full h-full flex items-center justify-center">
-                    <ImagePlus className="w-5 h-5 text-slate-300 group-hover:text-blue-500 transition-colors" />
+                    <ImagePlus className="w-5 h-5 text-fg-muted group-hover:text-primary transition-colors" />
                   </div>
                 </button>
               )}
@@ -893,15 +893,15 @@ export function ReferenceImageUpload() {
                 className={cn(
                     "w-full py-3 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center gap-2 transition-all group",
                     isDraggingOver
-                      ? "border-blue-500 bg-blue-100"
-                      : "border-slate-200 hover:border-blue-400 hover:bg-blue-50/30"
+                      ? "border-blue-500 bg-primary/15"
+                      : "border-border hover:border-blue-400 hover:bg-primary/10/30"
                 )}
               >
-                <ImagePlus className="w-6 h-6 text-slate-300 group-hover:text-blue-500 transition-colors" />
-                <span className="text-xs font-bold text-slate-400 group-hover:text-blue-600">
+                <ImagePlus className="w-6 h-6 text-fg-muted group-hover:text-primary transition-colors" />
+                <span className="text-xs font-bold text-fg-muted group-hover:text-primary">
                     {refFiles.length > 0 ? t('refImage.addMore') : t('refImage.add')}
                 </span>
-                <span className="text-[10px] text-slate-400 mt-0.5">{t('refImage.supportHint')}</span>
+                <span className="text-[10px] text-fg-muted mt-0.5">{t('refImage.supportHint')}</span>
               </button>
           )}
         </>
@@ -917,13 +917,13 @@ export function ReferenceImageUpload() {
       {dragPreview && (
         <div className="fixed inset-0 z-[9999] pointer-events-none">
           <div
-            className="absolute flex items-center justify-center w-16 h-16 rounded-2xl bg-white/90 shadow-lg border border-white/60 ring-2 ring-blue-400/70"
+            className="absolute flex items-center justify-center w-16 h-16 rounded-2xl bg-surface-secondary/90 shadow-lg border border-white/60 ring-2 ring-blue-400/70"
             style={{ transform: `translate3d(${dragPreview.x + 6}px, ${dragPreview.y + 6}px, 0)` }}
           >
             {dragPreview.url ? (
               <img src={dragPreview.url} alt="drag-preview" className="w-full h-full object-cover rounded-2xl" />
             ) : (
-              <ImageIcon className="w-6 h-6 text-slate-400" />
+              <ImageIcon className="w-6 h-6 text-fg-muted" />
             )}
           </div>
         </div>

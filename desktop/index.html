@@ -1,16 +1,16 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="dark">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>大香蕉图片生成工具</title>
+    <title>筋斗云AI</title>
     <!-- 首屏兜底：避免 WebView 初始化时白屏闪烁 -->
     <style>
       html, body {
         margin: 0;
         height: 100%;
-        background: #f8fafc;
+        background: #0A0A0A;
       }
       #root { height: 100%; }
       #boot {
@@ -19,8 +19,8 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        background: #f8fafc;
-        color: #0f172a;
+        background: #0A0A0A;
+        color: #fff;
         user-select: none;
       }
       #boot .boot-wrap { display: flex; flex-direction: column; align-items: center; gap: 14px; }
@@ -28,8 +28,8 @@
         width: 56px;
         height: 56px;
         border-radius: 18px;
-        background: linear-gradient(135deg, #2563eb, #4f46e5);
-        box-shadow: 0 12px 30px rgba(37,99,235,.18);
+        background: linear-gradient(135deg, #A855F7, #7C3AED);
+        box-shadow: 0 12px 30px rgba(168,85,247,.25);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -38,13 +38,13 @@
         color: #fff;
         letter-spacing: -0.04em;
       }
-      #boot .boot-row { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 700; color: rgba(15,23,42,.55); }
+      #boot .boot-row { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 600; color: rgba(255,255,255,.45); }
       #boot .boot-spinner {
         width: 14px;
         height: 14px;
         border-radius: 999px;
-        border: 2px solid rgba(37,99,235,.18);
-        border-top-color: #2563eb;
+        border: 2px solid rgba(168,85,247,.25);
+        border-top-color: #A855F7;
         animation: boot-spin .9s linear infinite;
       }
       @keyframes boot-spin { to { transform: rotate(360deg); } }
@@ -53,7 +53,7 @@
   <body>
     <div id="boot" data-tauri-drag-region>
       <div class="boot-wrap">
-        <div class="boot-logo">B</div>
+        <div class="boot-logo">☁️</div>
         <div class="boot-row">
           <span class="boot-spinner"></span>
           <span>正在启动…</span>

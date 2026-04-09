@@ -1,50 +1,9 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { GeneratedImage, TaskFailurePayload } from '../types';
+import { GeneratedImage } from '../types';
 import { getImageUrl } from '../services/api';
 
-const IMAGE_SIZE_MAX_PX: Record<string, number> = {
-  '1K': 1024,
-  '2K': 2048,
-  '4K': 3840,
-};
-
-function parseAspectRatio(aspectRatio: string): { w: number; h: number } | null {
-  if (!aspectRatio) return null;
-  const m = aspectRatio.trim().match(/^(\d+(?:\.\d+)?)\s*:\s*(\d+(?:\.\d+)?)$/);
-  if (!m) return null;
-  const w = Number(m[1]);
-  const h = Number(m[2]);
-  if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) return null;
-  return { w, h };
-}
-
-function roundToMultiple(n: number, multiple: number) {
-  return Math.max(multiple, Math.round(n / multiple) * multiple);
-}
-
-function getExpectedDimensions(aspectRatio: string, imageSize: string): { width: number; height: number } | null {
-  const ratio = parseAspectRatio(aspectRatio);
-  const max = IMAGE_SIZE_MAX_PX[String(imageSize || '').toUpperCase()];
-  if (!ratio || !max) return null;
-
-  const r = ratio.w / ratio.h;
-  // 经验：按最长边=max，另一边按比例缩放；对齐到 8 的倍数，兼容常见模型尺寸约束
-  if (r >= 1) {
-    const width = max;
-    const height = roundToMultiple(max / r, 8);
-    return { width, height };
-  }
-  const height = max;
-  const width = roundToMultiple(max * r, 8);
-  return { width, height };
-}
-
 type MergeOptions = { removePending?: boolean };
-
-function isFailurePayload(value: string | TaskFailurePayload): value is TaskFailurePayload {
-  return typeof value === 'object' && value !== null;
-}
 
 function normalizeIncomingImage(image: GeneratedImage): GeneratedImage {
   const { width, height, ...rest } = image as any;
@@ -92,6 +51,7 @@ interface GenerateState {
   isSidebarOpen: boolean; // 新增：持久化侧边栏状态
   isSubmitting: boolean; // 新增：提交中的状态
   taskId: string | null;
+  taskType: 'task' | 'batch';
   status: 'idle' | 'processing' | 'completed' | 'failed';
   totalCount: number;
   completedCount: number;
@@ -101,9 +61,7 @@ interface GenerateState {
   startTime: number | null;
   // 新增：连接模式和最后消息时间
   connectionMode: 'websocket' | 'polling' | 'none';
-  lastHeartbeatTime: number | null;
-  lastTaskUpdateTime: number | null;
-  recoveryStatus: 'idle' | 'recovering' | 'backend_unavailable';
+  lastMessageTime: number | null;
 
   setTab: (tab: 'generate' | 'history') => void;
   setSidebarOpen: (isOpen: boolean) => void; // 新增 Action
@@ -111,7 +69,7 @@ interface GenerateState {
   updateProgress: (completedCount: number, image?: GeneratedImage | null) => void;
   updateProgressBatch: (completedCount: number, images: GeneratedImage[]) => void;
   completeTask: () => void;
-  failTask: (failure: string | TaskFailurePayload) => void;
+  failTask: (error: string) => void;
   dismissError: () => void;
   toggleSelect: (id: string) => void;
   selectAll: () => void;
@@ -119,10 +77,9 @@ interface GenerateState {
   clearImages: () => void;
   removeImage: (id: string) => void;
   // 新增：切换连接模式和更新消息时间
+  setTaskType: (type: 'task' | 'batch') => void;
   setConnectionMode: (mode: 'websocket' | 'polling' | 'none') => void;
-  updateLastHeartbeatTime: () => void;
-  updateLastTaskUpdateTime: () => void;
-  setRecoveryStatus: (status: 'idle' | 'recovering' | 'backend_unavailable') => void;
+  updateLastMessageTime: () => void;
   setSubmitting: (isSubmitting: boolean) => void;
   mergeImagesForTask: (taskId: string, images: GeneratedImage[], options?: MergeOptions) => void;
   // 新增：恢复任务状态（用于刷新后恢复）
@@ -137,6 +94,7 @@ export const useGenerateStore = create<GenerateState>()(
       isSidebarOpen: true, // 默认展开
       isSubmitting: false,
       taskId: null,
+      taskType: 'task',
       status: 'idle',
       totalCount: 0,
       completedCount: 0,
@@ -145,24 +103,21 @@ export const useGenerateStore = create<GenerateState>()(
       error: null,
       startTime: null,
       connectionMode: 'none',
-      lastHeartbeatTime: null,
-      lastTaskUpdateTime: null,
-      recoveryStatus: 'idle',
+      lastMessageTime: null,
 
       setTab: (currentTab) => set({ currentTab }),
       setSidebarOpen: (isSidebarOpen) => set({ isSidebarOpen }),
       setSubmitting: (isSubmitting) => set({ isSubmitting }),
 
       startTask: (taskId, totalCount, config) => {
-        const expected = getExpectedDimensions(config.aspectRatio, config.imageSize);
         const placeholders: GeneratedImage[] = Array.from({ length: totalCount }).map((_, i) => ({
             id: `temp-${Date.now()}-${i}`,
             taskId,
             filePath: '',
             thumbnailPath: '',
             fileSize: 0,
-            width: expected?.width || 0,
-            height: expected?.height || 0,
+            width: 0,
+            height: 0,
             mimeType: '',
             createdAt: new Date().toISOString(),
             status: 'pending' as const,
@@ -187,9 +142,7 @@ export const useGenerateStore = create<GenerateState>()(
             selectedIds: new Set(),
             startTime: Date.now(),
             connectionMode: 'websocket',  // 初始使用 WebSocket
-            lastHeartbeatTime: Date.now(),
-            lastTaskUpdateTime: Date.now(),
-            recoveryStatus: 'idle'
+            lastMessageTime: Date.now()
         }));
       },
 
@@ -202,7 +155,7 @@ export const useGenerateStore = create<GenerateState>()(
         return {
             completedCount,
             images: newImages,
-            lastTaskUpdateTime: Date.now()
+            lastMessageTime: Date.now()  // 更新最后消息时间
         };
       }),
 
@@ -219,7 +172,7 @@ export const useGenerateStore = create<GenerateState>()(
         return {
           completedCount,
           images: newImages,
-          lastTaskUpdateTime: Date.now()
+          lastMessageTime: Date.now()
         };
       }),
 
@@ -239,7 +192,7 @@ export const useGenerateStore = create<GenerateState>()(
         const shouldTouchLastMessage = state.taskId === taskId;
         return {
           images: newImages,
-          ...(shouldTouchLastMessage ? { lastTaskUpdateTime: Date.now() } : {})
+          ...(shouldTouchLastMessage ? { lastMessageTime: Date.now() } : {})
         };
       }),
 
@@ -254,66 +207,26 @@ export const useGenerateStore = create<GenerateState>()(
           connectionMode: 'none',
           taskId: null,
           startTime: null,
-          images,
-          recoveryStatus: 'idle'
+          images
         };
       }),
-      failTask: (failure) => set((state) => {
-        const payload = isFailurePayload(failure) ? failure : null;
-        const errorMessage = payload?.errorMessage || (typeof failure === 'string' ? failure : '') || '';
-        const finishedTaskId = payload?.taskId || payload?.id || state.taskId;
-        let images = finishedTaskId
-          ? state.images.filter((img) => !(img.taskId === finishedTaskId && img.status === 'pending'))
-          : state.images;
-
-        if (finishedTaskId) {
-          const payloadImages = Array.isArray(payload?.images) ? payload.images : [];
-          const taskImages = [...payloadImages, ...state.images.filter((img) => img.taskId === finishedTaskId)];
-          const failedIndex = images.findIndex((img) => img.taskId === finishedTaskId && img.status === 'failed');
-          const existingFailedCard = failedIndex >= 0 ? images[failedIndex] : null;
-          const seed = payloadImages[0] || taskImages[0] || existingFailedCard || undefined;
-          const failedCard: GeneratedImage = {
-            id: existingFailedCard?.id || `failed-${finishedTaskId}`,
-            taskId: finishedTaskId,
-            filePath: existingFailedCard?.filePath || '',
-            thumbnailPath: existingFailedCard?.thumbnailPath || '',
-            fileSize: existingFailedCard?.fileSize || 0,
-            width: seed?.width || 0,
-            height: seed?.height || 0,
-            mimeType: seed?.mimeType || existingFailedCard?.mimeType || 'image/png',
-            createdAt: payload?.createdAt || seed?.createdAt || existingFailedCard?.createdAt || new Date().toISOString(),
-            prompt: payload?.prompt || seed?.prompt || existingFailedCard?.prompt || '',
-            promptOriginal: payload?.promptOriginal || seed?.promptOriginal || existingFailedCard?.promptOriginal || '',
-            promptOptimized: payload?.promptOptimized || seed?.promptOptimized || existingFailedCard?.promptOptimized || '',
-            promptOptimizeMode: payload?.promptOptimizeMode || seed?.promptOptimizeMode || existingFailedCard?.promptOptimizeMode || 'off',
-            status: 'failed',
-            model: payload?.model || seed?.model || existingFailedCard?.model || '',
-            options: payload?.options || seed?.options || existingFailedCard?.options,
-            errorMessage: errorMessage || existingFailedCard?.errorMessage || '',
-            errorRawMessage: payload?.errorRawMessage || existingFailedCard?.errorRawMessage,
-            errorCode: payload?.errorCode || existingFailedCard?.errorCode,
-            errorCategory: payload?.errorCategory || existingFailedCard?.errorCategory,
-            errorRequestId: payload?.errorRequestId || existingFailedCard?.errorRequestId,
-            errorRetryable: typeof payload?.errorRetryable === 'boolean' ? payload.errorRetryable : existingFailedCard?.errorRetryable,
-            errorDetail: payload?.errorDetail || existingFailedCard?.errorDetail,
-            url: '',
-            thumbnailUrl: ''
-          };
-          if (failedIndex >= 0) {
-            images[failedIndex] = failedCard;
-          } else {
-            images = [failedCard, ...images];
+      failTask: (error) => set((state) => {
+        const finishedTaskId = state.taskId;
+        // 将当前任务的所有 pending 图片标记为 failed，而不是删除
+        const images = state.images.map((img) => {
+          if (finishedTaskId && img.taskId === finishedTaskId && img.status === 'pending') {
+            return { ...img, status: 'failed' as const };
           }
-        }
+          return img;
+        });
 
         return {
           status: 'failed',
-          error: errorMessage,
+          error,
           connectionMode: 'none',
           taskId: null,
           startTime: null,
-          images,
-          recoveryStatus: 'idle'
+          images
         };
       }),
       dismissError: () => set((state) => ({
@@ -331,7 +244,7 @@ export const useGenerateStore = create<GenerateState>()(
         selectedIds: new Set(state.images.filter(img => img.status === 'success').map(img => img.id))
       })),
       clearSelection: () => set({ selectedIds: new Set() }),
-      clearImages: () => set({ images: [], completedCount: 0, totalCount: 0, taskId: null, status: 'idle', startTime: null, connectionMode: 'none', lastHeartbeatTime: null, lastTaskUpdateTime: null }),
+      clearImages: () => set({ images: [], completedCount: 0, totalCount: 0, taskId: null, status: 'idle', startTime: null, connectionMode: 'none', lastMessageTime: null }),
       removeImage: (id) => set((state) => {
         const nextSelected = new Set(state.selectedIds);
         nextSelected.delete(id);
@@ -341,13 +254,13 @@ export const useGenerateStore = create<GenerateState>()(
         };
       }),
 
+      // 设置任务类型
+      setTaskType: (taskType) => set({ taskType }),
       // 新增：设置连接模式
       setConnectionMode: (mode) => set({ connectionMode: mode }),
 
-      updateLastHeartbeatTime: () => set({ lastHeartbeatTime: Date.now() }),
-      updateLastTaskUpdateTime: () => set({ lastTaskUpdateTime: Date.now() }),
-
-      setRecoveryStatus: (recoveryStatus) => set({ recoveryStatus }),
+      // 新增：更新最后消息时间
+      updateLastMessageTime: () => set({ lastMessageTime: Date.now() }),
 
       // 新增：恢复任务状态（用于刷新后恢复）
       restoreTaskState: (taskState) => set((state) => {
@@ -362,17 +275,14 @@ export const useGenerateStore = create<GenerateState>()(
           // 恢复图片 URL，保留原始状态（Bug #5修复：不强制设为success）
           images: taskState.images.map((img) => ({
             ...img,
-            url: getImageUrl(img.url || img.filePath || img.thumbnailPath || ''),
-            thumbnailUrl: img.thumbnailUrl ? getImageUrl(img.thumbnailUrl) : getImageUrl(img.thumbnailPath || img.filePath || ''),
+            url: getImageUrl(img.id),
             // 保留图片原始状态，如果是pending则保持pending，轮询会更新它
             status: img.status || 'success' as const
           })),
           // 恢复的任务使用轮询模式，更可靠且避免WebSocket连接错误
           // 但如果之前已经是 websocket 模式且正常，则保持
           connectionMode: shouldUsePolling ? 'polling' : state.connectionMode,
-          lastHeartbeatTime: Date.now(),
-          lastTaskUpdateTime: Date.now(),
-          recoveryStatus: 'idle'
+          lastMessageTime: Date.now()
         };
       }),
 
@@ -386,36 +296,23 @@ export const useGenerateStore = create<GenerateState>()(
         error: null,
         startTime: null,
         connectionMode: 'none',
-        lastHeartbeatTime: null,
-        lastTaskUpdateTime: null,
-        recoveryStatus: 'idle',
+        lastMessageTime: null,
         selectedIds: new Set() // Bug #6修复：清空选中状态
       })
     }),
     {
       name: 'generate-ui-storage',
       storage: createJSONStorage(() => localStorage),
-      version: 2,
-      // 仅持久化 UI 偏好，任务状态由后端权威管理，避免冷启动“僵尸生成中”
+      // 持久化 UI 状态 + 任务 ID（用于刷新后恢复）
       partialize: (state) => ({
-        currentTab: state.currentTab,
-        isSidebarOpen: state.isSidebarOpen
+          currentTab: state.currentTab,
+          isSidebarOpen: state.isSidebarOpen,
+          // 只在 processing 时保存任务相关状态，其他情况清空避免状态不一致
+          taskId: state.status === 'processing' ? state.taskId : null,
+          taskType: state.status === 'processing' ? state.taskType : 'task',
+          startTime: state.status === 'processing' ? state.startTime : null,
+          status: state.status === 'processing' ? 'processing' : 'idle'
       }),
-      // 忽略历史版本中已持久化的 taskId/status/startTime 等字段，彻底切断回灌
-      merge: (persistedState, currentState) => {
-        const incoming = (persistedState as Partial<GenerateState> | undefined) ?? {};
-        return {
-          ...currentState,
-          currentTab:
-            incoming.currentTab === 'generate' || incoming.currentTab === 'history'
-              ? incoming.currentTab
-              : currentState.currentTab,
-          isSidebarOpen:
-            typeof incoming.isSidebarOpen === 'boolean'
-              ? incoming.isSidebarOpen
-              : currentState.isSidebarOpen
-        };
-      },
       // 水合后恢复 selectedIds 为空 Set
       onRehydrateStorage: () => (state) => {
         if (state) {

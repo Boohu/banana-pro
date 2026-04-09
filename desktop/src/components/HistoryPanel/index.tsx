@@ -1,12 +1,11 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { FolderPlus } from 'lucide-react';
 import { SearchBar } from './SearchBar';
 import { HistoryList } from './HistoryList';
-import { AlbumView } from './AlbumView';
-import type { AlbumViewRef } from './AlbumView';
 import { ViewToggle } from './ViewToggle';
+import { AlbumView, AlbumViewRef } from './AlbumView';
 import { CreateFolderDialog } from './CreateFolderDialog';
-import { FolderPlus } from 'lucide-react';
 import { useHistoryStore } from '../../store/historyStore';
 
 interface HistoryPanelProps {
@@ -18,22 +17,14 @@ export default function HistoryPanel({ isActive }: HistoryPanelProps) {
   const loadHistory = useHistoryStore((s) => s.loadHistory);
   const viewMode = useHistoryStore((s) => s.viewMode);
   const setViewMode = useHistoryStore((s) => s.setViewMode);
+  
+  const [isCreateFolderDialogOpen, setIsCreateFolderDialogOpen] = useState(false);
+  const albumViewRef = useRef<AlbumViewRef>(null);
 
   // 使用 ref 存储上一次的 isActive 值，检测变化
   const prevIsActiveRef = useRef<boolean>();
   const hasLoadedRef = useRef(false);
   const isLoadingRef = useRef(false);
-
-  // 创建文件夹弹窗状态
-  const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);
-  // AlbumView ref
-  const albumViewRef = useRef<AlbumViewRef>(null);
-
-  // 处理创建文件夹成功
-  const handleFolderCreated = useCallback(() => {
-    // 刷新 AlbumView
-    albumViewRef.current?.refresh();
-  }, []);
 
   useEffect(() => {
     const itemsLength = useHistoryStore.getState().items.length;
@@ -96,33 +87,35 @@ export default function HistoryPanel({ isActive }: HistoryPanelProps) {
   }, [isActive, loadHistory]); // 只依赖 isActive，不依赖 items.length
 
   return (
-    <div className="h-full bg-gray-50 flex flex-col" data-onboarding="history-panel">
-      <div className="p-4 bg-white border-b border-gray-200 shadow-sm z-10">
-        <div className="flex items-center gap-3">
-          <div className="flex-1">
-            <SearchBar />
+    <div className="h-full bg-surface-tertiary flex flex-col">
+      <div className="p-4 bg-surface-secondary border-b border-border shadow-sm z-10">
+        <div className="flex items-center justify-between gap-4">
+          <SearchBar />
+          <div className="flex items-center gap-2">
+            {viewMode === 'album' && (
+              <button
+                onClick={() => setIsCreateFolderDialogOpen(true)}
+                className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-primary bg-primary/10 hover:bg-primary/15 rounded-lg transition-colors"
+              >
+                <FolderPlus className="w-4 h-4" />
+                {t('history.folder.create')}
+              </button>
+            )}
+            <ViewToggle viewMode={viewMode} onChange={setViewMode} />
           </div>
-          {viewMode === 'album' && (
-            <button
-              data-onboarding="create-folder-button"
-              onClick={() => setIsCreateFolderOpen(true)}
-              className="flex items-center gap-2 px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg transition-colors text-sm font-medium"
-              title={t('history.folder.create')}
-            >
-              <FolderPlus className="w-4 h-4" />
-              <span className="hidden sm:inline">{t('history.folder.create')}</span>
-            </button>
-          )}
-          <ViewToggle viewMode={viewMode} onChange={setViewMode} />
         </div>
       </div>
+
       <div className="flex-1 min-h-0">
         {viewMode === 'timeline' ? <HistoryList /> : <AlbumView ref={albumViewRef} />}
       </div>
+      
       <CreateFolderDialog
-        isOpen={isCreateFolderOpen}
-        onClose={() => setIsCreateFolderOpen(false)}
-        onSuccess={handleFolderCreated}
+        isOpen={isCreateFolderDialogOpen}
+        onClose={() => setIsCreateFolderDialogOpen(false)}
+        onSuccess={() => {
+          albumViewRef.current?.refresh();
+        }}
       />
     </div>
   );

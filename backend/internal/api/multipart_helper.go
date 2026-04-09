@@ -32,6 +32,7 @@ type MultipartRequest struct {
 	PromptOptimizeModel    string
 	RefImages              []MultipartFile
 	RefPaths               []string
+	BatchID                string
 }
 
 // ParseGenerateRequestFromMultipart 使用 formstream 解析图生图请求
@@ -128,6 +129,14 @@ func ParseGenerateRequestFromMultipart(c *gin.Context) (*MultipartRequest, error
 		req.PromptOptimizeModel = string(data)
 		return nil
 	})
+	p.Parser.Register("batch_id", func(reader io.Reader, header formstream.Header) error {
+		data, err := io.ReadAll(reader)
+		if err != nil {
+			return err
+		}
+		req.BatchID = string(data)
+		return nil
+	})
 	p.Parser.Register("refPaths", func(reader io.Reader, header formstream.Header) error {
 		data, err := io.ReadAll(reader)
 		if err != nil {
@@ -184,6 +193,7 @@ func parseWithStandardLibrary(c *gin.Context) (*MultipartRequest, error) {
 	req.PromptOptimizeMode = c.PostForm("prompt_optimize_mode")
 	req.PromptOptimizeProvider = c.PostForm("prompt_optimize_provider")
 	req.PromptOptimizeModel = c.PostForm("prompt_optimize_model")
+	req.BatchID = c.PostForm("batch_id")
 
 	form, err := c.MultipartForm()
 	if err == nil && form.File != nil {

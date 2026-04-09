@@ -102,19 +102,19 @@ export function CreateFolderDialog({
       className="max-w-md"
     >
       <div className="space-y-6">
-        <div className="flex items-center gap-4 p-4 bg-blue-50 rounded-2xl">
-          <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
-            <FolderIcon className="w-6 h-6 text-blue-600" />
+        <div className="flex items-center gap-4 p-4 bg-primary/10 rounded-2xl">
+          <div className="w-12 h-12 bg-primary/15 rounded-xl flex items-center justify-center flex-shrink-0">
+            <FolderIcon className="w-6 h-6 text-primary" />
           </div>
           <div className="flex-1">
-            <p className="text-sm text-slate-600">
+            <p className="text-sm text-fg-secondary">
               {t('history.folder.createPlaceholder')}
             </p>
           </div>
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-bold text-slate-700">
+          <label className="text-sm font-bold text-fg-secondary">
             {t('history.folder.title')}
           </label>
           <input
@@ -126,17 +126,18 @@ export function CreateFolderDialog({
             disabled={isCreating}
             className={`
               w-full px-4 py-3 rounded-xl border-2 text-sm font-medium
+              bg-surface-tertiary text-fg-primary placeholder:text-fg-muted
               transition-all duration-200 outline-none
               ${validationError
-                ? 'border-red-300 focus:border-red-500 bg-red-50/50'
-                : 'border-slate-200 focus:border-blue-500 hover:border-slate-300'
+                ? 'border-red-300 focus:border-red-500'
+                : 'border-border focus:border-blue-500 hover:border-border'
               }
-              disabled:bg-slate-100 disabled:cursor-not-allowed
+              disabled:bg-surface-tertiary disabled:cursor-not-allowed
             `}
             autoFocus
           />
           {validationError && (
-            <p className="text-xs font-medium text-red-500">
+            <p className="text-xs font-medium text-error">
               {validationError}
             </p>
           )}

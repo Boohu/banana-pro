@@ -367,7 +367,7 @@
         "21_9": "21:9 (超宽屏)"
       }
     },
-    "apiKeyHint": "请先在右上角配置生图 API Key"
+    "apiKeyHint": "请先在左下角「设置」中配置生图 API Key"
   },
   "errors": {
     "fileReadEmpty": "文件读取为空",

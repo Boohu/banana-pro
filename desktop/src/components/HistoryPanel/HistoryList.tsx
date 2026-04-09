@@ -9,7 +9,6 @@ import { getImageUrl } from '../../services/api';
 import { ImagePreview } from '../GenerateArea/ImagePreview';
 import { ImageCard } from './ImageCard';
 import { FailedTaskCard } from './FailedTaskCard';
-import { formatAspectRatioLabel } from '../../utils/aspectRatio';
 
 // 扩展 Image 类型以包含展示信息
 export interface FlattenedImage extends GeneratedImage {
@@ -72,7 +71,11 @@ const isEmptyTask = (task: GenerationTask): boolean => {
     return !hasAnyPath;
 };
 
-export function HistoryList() {
+interface HistoryListProps {
+  padding?: number;
+}
+
+export function HistoryList({ padding: paddingProp }: HistoryListProps = {}) {
   const { t } = useTranslation();
   const { items, loading, hasMore, loadMore } = useHistoryStore(
     useShallow((s) => ({
@@ -97,47 +100,37 @@ export function HistoryList() {
       return 'SD';
   }, []);
 
-  const getRatioLabel = useCallback((w: number, h: number) => formatAspectRatioLabel(w, h), []);
+  // 辅助函数：根据像素计算比例标签（简化为最简比例）
+  const getRatioLabel = useCallback((w: number, h: number) => {
+      if (!w || !h) return '1:1';
+
+      // 计算最大公约数（GCD - Greatest Common Divisor）
+      const gcd = (a: number, b: number): number => {
+          a = Math.abs(a);
+          b = Math.abs(b);
+          while (b) {
+              const t = b;
+              b = a % b;
+              a = t;
+          }
+          return a;
+      };
+
+      const divisor = gcd(w, h);
+      const ratioW = w / divisor;
+      const ratioH = h / divisor;
+
+      return `${ratioW}:${ratioH}`;
+  }, []);
 
   // 处理图片点击
   const handleImageClick = useCallback((image: FlattenedImage) => {
     setSelectedImage(image);
   }, []);
 
-  // 处理空任务点击（失败任务支持打开失败详情弹窗）
-  const handleEmptyTaskClick = useCallback((task: GenerationTask) => {
-    if (task.status !== 'failed') return;
-
-    const failedImage: FlattenedImage = {
-      id: task.id,
-      taskId: task.id,
-      filePath: '',
-      thumbnailPath: '',
-      fileSize: 0,
-      width: 0,
-      height: 0,
-      mimeType: 'image/png',
-      createdAt: task.createdAt || new Date().toISOString(),
-      url: '',
-      thumbnailUrl: '',
-      prompt: task.prompt || '',
-      promptOriginal: task.promptOriginal || '',
-      promptOptimized: task.promptOptimized || '',
-      promptOptimizeMode: task.promptOptimizeMode || 'off',
-      status: 'failed',
-      model: task.model || '',
-      errorMessage: task.errorMessage || '',
-      errorRawMessage: task.errorRawMessage || '',
-      errorCode: task.errorCode || '',
-      errorCategory: task.errorCategory || '',
-      errorRequestId: task.errorRequestId || '',
-      errorRetryable: task.errorRetryable,
-      errorDetail: task.errorDetail || '',
-      taskCreatedAt: task.createdAt || new Date().toISOString(),
-      imageSizeLabel: '—',
-      aspectRatioLabel: '—'
-    };
-    setSelectedImage(failedImage);
+  // 处理空任务点击
+  const handleEmptyTaskClick = useCallback(() => {
+    console.log('Empty task clicked');
   }, []);
 
   const handleScroll = useCallback((event: React.UIEvent<HTMLDivElement>) => {
@@ -161,12 +154,9 @@ export function HistoryList() {
               task.images.filter(Boolean).forEach(img => {
                   allItems.push({
                       ...img,
-                      url: getImageUrl(img.filePath || img.url || img.thumbnailPath || ''),
-                      thumbnailUrl: getImageUrl(img.thumbnailPath || img.filePath || img.thumbnailUrl || img.url || ''),
+                      url: img.url || getImageUrl(img.filePath || img.thumbnailPath),
+                      thumbnailUrl: img.thumbnailUrl || getImageUrl(img.thumbnailPath || img.filePath),
                       prompt: task.prompt || '',
-                      promptOriginal: task.promptOriginal || img.promptOriginal || '',
-                      promptOptimized: task.promptOptimized || img.promptOptimized || '',
-                      promptOptimizeMode: task.promptOptimizeMode || img.promptOptimizeMode || 'off',
                       model: task.model || '',
                       taskCreatedAt: task.createdAt || new Date().toISOString(),
                       // 基于图片真实的 width 和 height 计算标签
@@ -180,10 +170,8 @@ export function HistoryList() {
       return allItems;
   }, [items, getResolutionLabel, getRatioLabel]);
 
-  // 预筛选所有图片，用于详情页切换
-  const allImageItems = useMemo(() => {
-      return renderItems.filter(isImageItem);
-  }, [renderItems]);
+  // 判断项是否为图片
+  const allImageItems = useMemo(() => renderItems.filter(isImageItem), [renderItems]);
 
   useLayoutEffect(() => {
     const prevLength = prevItemsLengthRef.current;
@@ -259,7 +247,7 @@ export function HistoryList() {
 
   if (items.length === 0) {
       return (
-          <div className="text-center py-12 text-gray-500 text-sm">
+          <div className="text-center py-12 text-fg-muted text-sm">
               {t('history.empty')}
           </div>
       );
@@ -272,7 +260,7 @@ export function HistoryList() {
             className="h-full w-full"
             renderProp={({ width, height }) => {
               if (!width || !height) return null;
-              const padding = 16;
+              const padding = paddingProp ?? 16;
               const innerWidth = Math.max(0, width - padding * 2);
               const innerHeight = Math.max(0, height - padding * 2);
               if (innerWidth <= 0 || innerHeight <= 0) return null;
@@ -303,7 +291,7 @@ export function HistoryList() {
               return (
                 <div
                   style={{ padding }}
-                  className="h-full"
+                  className="h-full overflow-x-hidden"
                   onContextMenu={(event) => event.preventDefault()}
                 >
                   <Grid
@@ -315,7 +303,7 @@ export function HistoryList() {
                     cellComponent={Cell}
                     cellProps={cellProps}
                     overscanCount={2}
-                    style={{ height: innerHeight, width: innerWidth }}
+                    style={{ height: innerHeight, width: innerWidth, overflowX: 'hidden' }}
                     onScroll={handleScroll}
                     onCellsRendered={(_, allCells) => {
                       if (hasMore && !loading && allCells.rowStopIndex >= rowCount - 1) {
@@ -335,7 +323,6 @@ export function HistoryList() {
                 image={selectedImage}
                 images={allImageItems}
                 onImageChange={setSelectedImage}
-                sourceContext="history"
                 onClose={() => setSelectedImage(null)}
             />
         )}

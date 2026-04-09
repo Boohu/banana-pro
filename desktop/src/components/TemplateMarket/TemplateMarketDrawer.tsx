@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom';
 import {
   ArrowLeft,
   AtSign,
+  AlertTriangle,
   Banknote,
   ChevronLeft,
   ChevronRight,
@@ -13,7 +14,6 @@ import {
   Github,
   Landmark,
   Loader2,
-  AlertTriangle,
   Maximize2,
   MessageCircle,
   Printer,
@@ -152,14 +152,12 @@ const isIconUrl = (value?: string) => {
     trimmed.startsWith('http://') ||
     trimmed.startsWith('https://') ||
     trimmed.startsWith('data:') ||
-    trimmed.startsWith('asset:') ||
-    trimmed.startsWith('tauri:') ||
     trimmed.startsWith('blob:')
   );
 };
 
 const renderSourceIcon = (source?: TemplateSource) => {
-  if (!source) return <AtSign className="w-3.5 h-3.5 text-slate-500" />;
+  if (!source) return <AtSign className="w-3.5 h-3.5 text-fg-muted" />;
   if (isIconUrl(source.icon)) {
     return (
       <img
@@ -171,22 +169,13 @@ const renderSourceIcon = (source?: TemplateSource) => {
   }
   const key = (source.icon || '').trim().toLowerCase();
   const Icon = sourceIconMap[key] || AtSign;
-  return <Icon className="w-3.5 h-3.5 text-slate-500" />;
+  return <Icon className="w-3.5 h-3.5 text-fg-muted" />;
 };
 
 const formatSourceName = (name: string) => (name.startsWith('@') ? name : `@${name}`);
 
 const openExternalUrl = async (url: string) => {
   if (!url) return;
-  if ((window as any).__TAURI_INTERNALS__) {
-    try {
-      const { openUrl } = await import('@tauri-apps/plugin-opener');
-      await openUrl(url);
-      return;
-    } catch (err) {
-      console.warn('openUrl failed:', err);
-    }
-  }
   window.open(url, '_blank', 'noopener,noreferrer');
 };
 
@@ -200,7 +189,7 @@ const ActiveFilterChip = ({
   <button
     type="button"
     onClick={onClear}
-    className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-white/80 border border-white/60 px-3 py-1 text-xs text-slate-600 hover:bg-white"
+    className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-surface-secondary/80 border border-white/60 px-3 py-1 text-xs text-fg-secondary hover:bg-surface-secondary"
   >
     <span>{label}</span>
     <X className="w-3 h-3" />
@@ -221,8 +210,8 @@ const FilterChip = ({
     onClick={onClick}
     className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-all ${
       active
-        ? 'bg-blue-600 text-white shadow-sm shadow-blue-200'
-        : 'bg-white/70 text-slate-600 hover:bg-white'
+        ? 'bg-primary text-white shadow-sm shadow-primary'
+        : 'bg-surface-secondary/70 text-fg-secondary hover:bg-surface-secondary'
     }`}
   >
     {label}
@@ -324,7 +313,7 @@ const TemplatePreviewModal = ({
 
   const performZoom = useCallback((nextScale: number) => {
     setScale(clamp(nextScale, 0.5, 5));
-  }, [t]);
+  }, []);
 
   const handleWheel = useCallback((event: WheelEvent) => {
     event.preventDefault();
@@ -415,26 +404,6 @@ const TemplatePreviewModal = ({
         throw new Error('copy failed');
       }
       const blob = await response.blob();
-
-      const isTauri = typeof window !== 'undefined' && Boolean((window as any).__TAURI_INTERNALS__);
-      if (isTauri) {
-        try {
-          const { invoke } = await import('@tauri-apps/api/core');
-          const { writeFile, mkdir, BaseDirectory } = await import('@tauri-apps/plugin-fs');
-          const dir = 'template_clipboard';
-          await mkdir(dir, { recursive: true, baseDir: BaseDirectory.AppData });
-          const hash = await hashString(rawImageSrc);
-          const ext = mimeToExtension(blob.type);
-          const relativePath = `${dir}/${hash}.${ext}`;
-          const bytes = new Uint8Array(await blob.arrayBuffer());
-          await writeFile(relativePath, bytes, { baseDir: BaseDirectory.AppData });
-          await invoke('copy_image_to_clipboard', { path: relativePath });
-          toast.success(t('toast.copyImageSuccess'));
-          return;
-        } catch (err) {
-          console.warn('template copy (tauri) failed, fallback to web clipboard:', err);
-        }
-      }
 
       const ClipboardItemCtor = (window as any).ClipboardItem as typeof ClipboardItem | undefined;
       if (ClipboardItemCtor && navigator.clipboard?.write) {
@@ -640,7 +609,7 @@ const TemplatePreviewModal = ({
         <div className="bg-slate-900/5 rounded-3xl p-4 relative overflow-hidden min-h-[240px] md:h-full md:min-h-0">
           <div
             ref={containerRef}
-            className={`relative w-full h-full min-h-0 rounded-2xl overflow-hidden bg-white/70 flex items-center justify-center overscroll-contain ${
+            className={`relative w-full h-full min-h-0 rounded-2xl overflow-hidden bg-surface-secondary/70 flex items-center justify-center overscroll-contain ${
               isZoomed ? 'cursor-grab active:cursor-grabbing' : ''
             }`}
             onMouseDown={handleMouseDown}
@@ -672,11 +641,11 @@ const TemplatePreviewModal = ({
               />
             )}
             {previewStatus !== 'loaded' && (
-              <div className="absolute inset-0 flex items-center justify-center bg-white/70 rounded-2xl">
+              <div className="absolute inset-0 flex items-center justify-center bg-surface-secondary/70 rounded-2xl">
                 {previewStatus === 'error' ? (
-                  <span className="text-xs text-slate-500">{errorText}</span>
+                  <span className="text-xs text-fg-muted">{errorText}</span>
                 ) : (
-                  <Loader2 className="w-5 h-5 text-slate-500 animate-spin" />
+                  <Loader2 className="w-5 h-5 text-fg-muted animate-spin" />
                 )}
               </div>
             )}
@@ -715,11 +684,11 @@ const TemplatePreviewModal = ({
                 handleCopyImage();
               }}
               disabled={!hasImage || isCopying}
-              className="px-3 py-2 rounded-full bg-white/90 text-slate-600 text-xs font-semibold flex items-center gap-1.5 shadow-sm hover:bg-white disabled:opacity-60 disabled:cursor-not-allowed"
+              className="px-3 py-2 rounded-full bg-surface-secondary/90 text-fg-secondary text-xs font-semibold flex items-center gap-1.5 shadow-sm hover:bg-surface-secondary disabled:opacity-60 disabled:cursor-not-allowed"
               title={hasImage ? t('templateMarket.preview.copyImage') : t('templateMarket.preview.copyImageDisabled')}
             >
               {isCopying ? (
-                <span className="w-3.5 h-3.5 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin" />
+                <span className="w-3.5 h-3.5 border-2 border-border border-t-slate-600 rounded-full animate-spin" />
               ) : (
                 <Copy className="w-3.5 h-3.5" />
               )}
@@ -727,25 +696,25 @@ const TemplatePreviewModal = ({
             </button>
           </div>
 
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1 px-2 py-1.5 bg-white/90 border border-white/70 rounded-full shadow-sm">
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1 px-2 py-1.5 bg-surface-secondary/90 border border-white/70 rounded-full shadow-sm">
             <button
               type="button"
               onClick={() => performZoom(scale - 0.2)}
-              className="p-1.5 rounded-full text-slate-600 hover:bg-white"
+              className="p-1.5 rounded-full text-fg-secondary hover:bg-surface-secondary"
             >
               <ZoomOut className="w-4 h-4" />
             </button>
             <button
               type="button"
               onClick={handleReset}
-              className="px-3 py-1 text-[11px] font-semibold text-slate-700"
+              className="px-3 py-1 text-[11px] font-semibold text-fg-secondary"
             >
               {Math.round(scale * 100)}%
             </button>
             <button
               type="button"
               onClick={() => performZoom(scale + 0.2)}
-              className="p-1.5 rounded-full text-slate-600 hover:bg-white"
+              className="p-1.5 rounded-full text-fg-secondary hover:bg-surface-secondary"
             >
               <ZoomIn className="w-4 h-4" />
             </button>
@@ -756,7 +725,7 @@ const TemplatePreviewModal = ({
           ? createPortal(
               <div
                 ref={contextMenuRef}
-                className="fixed z-[1000] min-w-[180px] bg-white/95 backdrop-blur-xl border border-slate-200/70 rounded-2xl shadow-[0_18px_60px_-18px_rgba(0,0,0,0.35)] overflow-hidden"
+                className="fixed z-[1000] min-w-[180px] bg-surface-secondary/95 backdrop-blur-xl border border-border/70 rounded-2xl shadow-[0_18px_60px_-18px_rgba(0,0,0,0.35)] overflow-hidden"
                 style={{ left: contextMenu.x, top: contextMenu.y }}
                 role="menu"
                 aria-label={t('templateMarket.preview.menuLabel')}
@@ -769,7 +738,7 @@ const TemplatePreviewModal = ({
               >
                 <button
                   type="button"
-                  className="w-full px-4 py-3 flex items-center gap-3 text-sm font-bold text-slate-800 hover:bg-slate-100/70 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full px-4 py-3 flex items-center gap-3 text-sm font-bold text-fg-primary hover:bg-surface-tertiary/70 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   onClick={(event) => {
                     event.stopPropagation();
                     setContextMenu(null);
@@ -778,12 +747,12 @@ const TemplatePreviewModal = ({
                   role="menuitem"
                   disabled={!hasImage}
                 >
-                  <Copy className="w-4 h-4 text-slate-600" />
+                  <Copy className="w-4 h-4 text-fg-secondary" />
                   {t('templateMarket.preview.menu.copyImage')}
                 </button>
                 <button
                   type="button"
-                  className="w-full px-4 py-3 flex items-center gap-3 text-sm font-bold text-slate-800 hover:bg-slate-100/70 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full px-4 py-3 flex items-center gap-3 text-sm font-bold text-fg-primary hover:bg-surface-tertiary/70 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   onClick={(event) => {
                     event.stopPropagation();
                     setContextMenu(null);
@@ -792,13 +761,13 @@ const TemplatePreviewModal = ({
                   role="menuitem"
                   disabled={!hasImage}
                 >
-                  <Copy className="w-4 h-4 text-slate-600" />
+                  <Copy className="w-4 h-4 text-fg-secondary" />
                   {t('templateMarket.preview.menu.copyImagePath')}
                 </button>
-                <div className="h-px bg-slate-200/60" />
+                <div className="h-px bg-surface-tertiary/60" />
                 <button
                   type="button"
-                  className="w-full px-4 py-3 flex items-center gap-3 text-sm font-bold text-slate-800 hover:bg-slate-100/70 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full px-4 py-3 flex items-center gap-3 text-sm font-bold text-fg-primary hover:bg-surface-tertiary/70 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   onClick={(event) => {
                     event.stopPropagation();
                     setContextMenu(null);
@@ -807,12 +776,12 @@ const TemplatePreviewModal = ({
                   role="menuitem"
                   disabled={!hasImage}
                 >
-                  <Download className="w-4 h-4 text-slate-600" />
+                  <Download className="w-4 h-4 text-fg-secondary" />
                   {t('templateMarket.preview.menu.downloadOriginal')}
                 </button>
                 <button
                   type="button"
-                  className="w-full px-4 py-3 flex items-center gap-3 text-sm font-bold text-slate-800 hover:bg-slate-100/70 transition-colors"
+                  className="w-full px-4 py-3 flex items-center gap-3 text-sm font-bold text-fg-primary hover:bg-surface-tertiary/70 transition-colors"
                   onClick={(event) => {
                     event.stopPropagation();
                     setContextMenu(null);
@@ -820,7 +789,7 @@ const TemplatePreviewModal = ({
                   }}
                   role="menuitem"
                 >
-                  <Maximize2 className="w-4 h-4 text-slate-600" />
+                  <Maximize2 className="w-4 h-4 text-fg-secondary" />
                   {t('templateMarket.preview.menu.resetZoom')}
                 </button>
               </div>,
@@ -829,14 +798,14 @@ const TemplatePreviewModal = ({
           : null}
         <div className="flex flex-col gap-4 md:h-full md:min-h-0">
           <div className="flex-shrink-0">
-            <p className="text-xs uppercase text-slate-400 tracking-widest">{t('templateMarket.preview.infoTitle')}</p>
-            <h3 className="text-xl font-black text-slate-900 mt-2">{template.title}</h3>
+            <p className="text-xs uppercase text-fg-muted tracking-widest">{t('templateMarket.preview.infoTitle')}</p>
+            <h3 className="text-xl font-black text-fg-primary mt-2">{template.title}</h3>
             <div className="flex flex-wrap gap-2 mt-3">
-              <span className="px-2.5 py-1 rounded-full text-xs bg-slate-100 text-slate-600">
+              <span className="px-2.5 py-1 rounded-full text-xs bg-surface-tertiary text-fg-secondary">
                 {getFilterLabel(template.ratio, t)}
               </span>
               {template.materials?.map((item) => (
-                <span key={item} className="px-2.5 py-1 rounded-full text-xs bg-slate-100 text-slate-600">
+                <span key={item} className="px-2.5 py-1 rounded-full text-xs bg-surface-tertiary text-fg-secondary">
                   {getFilterLabel(item, t)}
                 </span>
               ))}
@@ -845,23 +814,23 @@ const TemplatePreviewModal = ({
           <div className="md:flex-1 md:min-h-0 overflow-y-auto overscroll-contain scrollbar-none pr-1">
             <div className="space-y-4">
               {template.source?.name && (
-                <div className="flex items-center gap-2 text-xs text-slate-500">
-                  <span className="text-xs uppercase text-slate-400 tracking-widest">{t('templateMarket.preview.source')}</span>
-                  <div className="flex items-center gap-2 bg-white/70 border border-white/60 rounded-full px-3 py-1">
+                <div className="flex items-center gap-2 text-xs text-fg-muted">
+                  <span className="text-xs uppercase text-fg-muted tracking-widest">{t('templateMarket.preview.source')}</span>
+                  <div className="flex items-center gap-2 bg-surface-secondary/70 border border-white/60 rounded-full px-3 py-1">
                     {renderSourceIcon(template.source)}
                     {template.source.url ? (
                       <button
                         type="button"
                         onClick={() => openExternalUrl(template.source?.url ?? '')}
-                        className="text-blue-600 hover:underline"
+                        className="text-primary hover:underline"
                       >
                         {formatSourceName(template.source.name)}
                       </button>
                     ) : (
-                      <span className="text-slate-700">{formatSourceName(template.source.name)}</span>
+                      <span className="text-fg-secondary">{formatSourceName(template.source.name)}</span>
                     )}
                     {template.source.label && (
-                      <span className="text-slate-400">{template.source.label}</span>
+                      <span className="text-fg-muted">{template.source.label}</span>
                     )}
                   </div>
                 </div>
@@ -875,7 +844,7 @@ const TemplatePreviewModal = ({
                     </div>
                   )}
                   {template.tips && (
-                    <div className="rounded-2xl border border-blue-200/70 bg-blue-50/70 p-4">
+                    <div className="rounded-2xl border border-blue-200/70 bg-primary/10/70 p-4">
                       <div className="flex items-center justify-between text-[11px] font-semibold text-blue-700 tracking-widest">
                         <div className="flex items-center gap-2">
                           <Sparkles className="w-3.5 h-3.5" />
@@ -884,16 +853,16 @@ const TemplatePreviewModal = ({
                         <button
                           type="button"
                           onClick={handleCopyTips}
-                          className="text-blue-600 hover:text-blue-700 font-semibold"
+                          className="text-primary hover:text-blue-700 font-semibold"
                         >
                           {t('common.copy')}
                         </button>
                       </div>
-                      <p className="text-sm text-slate-700 mt-2 leading-relaxed">{template.tips}</p>
+                      <p className="text-sm text-fg-secondary mt-2 leading-relaxed">{template.tips}</p>
                     </div>
                   )}
                   {template.requirements && (
-                    <div className="rounded-2xl border border-amber-200/70 bg-amber-50/70 p-4">
+                    <div className="rounded-2xl border border-warning/30/70 bg-warning/10/70 p-4">
                       <div className="flex items-center justify-between text-[11px] font-semibold text-amber-700 tracking-widest">
                         <div className="flex items-center gap-2">
                           <AlertTriangle className="w-3.5 h-3.5" />
@@ -902,17 +871,17 @@ const TemplatePreviewModal = ({
                         <button
                           type="button"
                           onClick={handleCopyRequirements}
-                          className="text-blue-600 hover:text-blue-700 font-semibold"
+                          className="text-primary hover:text-blue-700 font-semibold"
                         >
                           {t('common.copy')}
                         </button>
                       </div>
-                      <p className="text-sm text-slate-700 mt-2 leading-relaxed">{template.requirements.note}</p>
+                      <p className="text-sm text-fg-secondary mt-2 leading-relaxed">{template.requirements.note}</p>
                     </div>
                   )}
                   {template.prompt && (
-                    <div className="rounded-2xl border border-slate-200/70 bg-white/80 p-4">
-                      <div className="flex items-center justify-between text-[11px] font-semibold text-slate-600 tracking-widest">
+                    <div className="rounded-2xl border border-border/70 bg-surface-secondary/80 p-4">
+                      <div className="flex items-center justify-between text-[11px] font-semibold text-fg-secondary tracking-widest">
                         <div className="flex items-center gap-2">
                           <MessageCircle className="w-3.5 h-3.5" />
                           {t('templateMarket.preview.prompt')}
@@ -920,13 +889,13 @@ const TemplatePreviewModal = ({
                         <button
                           type="button"
                           onClick={handleCopyPrompt}
-                          className="text-blue-600 hover:text-blue-700 font-semibold"
+                          className="text-primary hover:text-blue-700 font-semibold"
                         >
                           {t('common.copy')}
                         </button>
                       </div>
-                      <div className="mt-2 rounded-xl border border-slate-200/60 bg-slate-50/70 p-3">
-                        <p className="text-xs text-slate-700 leading-relaxed whitespace-pre-wrap font-mono">
+                      <div className="mt-2 rounded-xl border border-border/60 bg-surface-tertiary/70 p-3">
+                        <p className="text-xs text-fg-secondary leading-relaxed whitespace-pre-wrap font-mono">
                           {template.prompt}
                         </p>
                       </div>
@@ -977,7 +946,7 @@ const TemplateCard = React.memo(function TemplateCard({
 
   return (
     <div
-      className="bg-white/80 border border-white/60 rounded-3xl p-3 shadow-sm flex flex-col gap-3 h-full"
+      className="bg-surface-secondary/80 border border-white/60 rounded-3xl p-3 shadow-sm flex flex-col gap-3 h-full"
       style={{ contentVisibility: 'auto', containIntrinsicSize: '240px 260px' }}
     >
       <button
@@ -986,7 +955,7 @@ const TemplateCard = React.memo(function TemplateCard({
         className={`relative group ${canPreview ? '' : 'cursor-not-allowed'}`}
         disabled={!canPreview}
       >
-        <div className="relative rounded-2xl overflow-hidden bg-slate-100/70">
+        <div className="relative rounded-2xl overflow-hidden bg-surface-tertiary/70">
           {resolvedSrc && (
             <img
               src={resolvedSrc}
@@ -1007,19 +976,19 @@ const TemplateCard = React.memo(function TemplateCard({
           )}
           {status === 'loaded' ? (
             <div className="absolute inset-0 rounded-2xl pointer-events-none">
-              <span className="absolute bottom-2 right-2 rounded-full bg-white/85 text-slate-700 text-[11px] font-semibold px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <span className="absolute bottom-2 right-2 rounded-full bg-surface-secondary/85 text-fg-secondary text-[11px] font-semibold px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 {t('templateMarket.card.view')}
               </span>
             </div>
           ) : (
-            <div className="absolute inset-0 rounded-2xl flex items-center justify-center text-xs text-slate-500">
+            <div className="absolute inset-0 rounded-2xl flex items-center justify-center text-xs text-fg-muted">
               {status === 'error' ? (
-                <span className="px-2.5 py-1 rounded-full bg-white/85">
+                <span className="px-2.5 py-1 rounded-full bg-surface-secondary/85">
                   {hasPreview ? t('templateMarket.card.imageFailed') : t('templateMarket.card.imageEmpty')}
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/85">
-                  <Loader2 className="w-4 h-4 text-slate-500 animate-spin" />
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-secondary/85">
+                  <Loader2 className="w-4 h-4 text-fg-muted animate-spin" />
                   {t('templateMarket.card.loading')}
                 </span>
               )}
@@ -1028,11 +997,11 @@ const TemplateCard = React.memo(function TemplateCard({
         </div>
       </button>
       <div className="flex-1">
-        <h4 className="text-sm font-bold text-slate-800 line-clamp-2">{item.title}</h4>
-        <p className="text-xs text-slate-400 mt-1">{getFilterLabel(item.ratio, t)}</p>
+        <h4 className="text-sm font-bold text-fg-primary line-clamp-2">{item.title}</h4>
+        <p className="text-xs text-fg-muted mt-1">{getFilterLabel(item.ratio, t)}</p>
       </div>
       {item.requirements && (
-        <div className="text-[11px] text-amber-600 bg-amber-50 rounded-full px-2 py-1">
+        <div className="text-[11px] text-warning bg-warning/10 rounded-full px-2 py-1">
           {item.requirements.note}
         </div>
       )}
@@ -1086,8 +1055,6 @@ export function TemplateMarketDrawer({
   const [isFiltering, setIsFiltering] = useState(false);
   const dragStartRef = useRef(0);
   const toastOnceRef = useRef(false);
-  const previousOverflowRef = useRef<string | null>(null);
-  const previousOverscrollRef = useRef<string | null>(null);
   const requestIdRef = useRef(0);
   const listRef = useRef<HTMLDivElement | null>(null);
   const templateDataRef = useRef(templateData);
@@ -1210,7 +1177,7 @@ export function TemplateMarketDrawer({
     } finally {
       if (requestId === requestIdRef.current) setIsLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchTemplates();
@@ -1252,15 +1219,18 @@ export function TemplateMarketDrawer({
 
   useEffect(() => {
     const element = document.documentElement;
-    if (isOpen) {
-      previousOverflowRef.current = element.style.overflow;
-      previousOverscrollRef.current = element.style.overscrollBehavior;
-      element.style.overflow = 'hidden';
-      element.style.overscrollBehavior = 'contain';
-    } else if (previousOverflowRef.current !== null) {
-      element.style.overflow = previousOverflowRef.current;
-      element.style.overscrollBehavior = previousOverscrollRef.current ?? '';
-    }
+    if (!isOpen) return;
+
+    const prevOverflow = element.style.overflow;
+    const prevOverscroll = element.style.overscrollBehavior;
+    element.style.overflow = 'hidden';
+    element.style.overscrollBehavior = 'contain';
+
+    return () => {
+      // 关闭或组件卸载时恢复滚动
+      element.style.overflow = prevOverflow;
+      element.style.overscrollBehavior = prevOverscroll;
+    };
   }, [isOpen]);
 
   const handlePointerDown = (event: React.PointerEvent<HTMLButtonElement>) => {
@@ -1364,23 +1334,23 @@ export function TemplateMarketDrawer({
   return (
     <>
       {!isOpen && (
-        <div className="absolute right-10 top-2 z-40 hidden md:flex flex-col items-center select-none" data-onboarding="template-market">
+        <div className="absolute right-10 top-2 z-40 hidden md:flex flex-col items-center select-none">
         <div className="w-[2px] bg-slate-400/80 rounded-full" style={{ height: ropeLength }} />
         <button
-          type="button"
-          onClick={handleOpen}
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
+            type="button"
+            onClick={handleOpen}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerUp}
-          className={`w-6 h-6 rounded-full border border-slate-300 shadow-md bg-white/95 transition-all flex items-center justify-center ${
+          className={`w-6 h-6 rounded-full border border-border shadow-md bg-surface-secondary/95 transition-all flex items-center justify-center ${
             isDragging ? 'scale-110' : ''
           }`}
           title={t('templateMarket.toggle.title')}
         >
-          <span className="w-2 h-2 rounded-full bg-blue-500/80 shadow-sm" />
+          <span className="w-2 h-2 rounded-full bg-primary/100/80 shadow-sm" />
         </button>
-        <span className="mt-1 text-[11px] text-slate-500 tracking-[0.25em] font-semibold">{t('templateMarket.toggle.label')}</span>
+        <span className="mt-1 text-[11px] text-fg-muted tracking-[0.25em] font-semibold">{t('templateMarket.toggle.label')}</span>
       </div>
       )}
 
@@ -1392,7 +1362,7 @@ export function TemplateMarketDrawer({
       )}
 
       <aside
-        className={`absolute inset-0 bg-white/80 backdrop-blur-xl shadow-xl z-30 flex flex-col transition-transform duration-300 ${
+        className={`absolute inset-0 bg-surface-secondary/80 backdrop-blur-xl shadow-xl z-30 flex flex-col transition-transform duration-300 ${
           isOpen
             ? 'translate-y-0 opacity-100 pointer-events-auto'
             : '-translate-y-full opacity-0 pointer-events-none'
@@ -1400,14 +1370,14 @@ export function TemplateMarketDrawer({
       >
         <div className="flex items-center justify-between px-8 py-5 border-b border-white/60">
           <div>
-            <p className="text-xs text-slate-400 tracking-[0.3em]">TEMPLATE</p>
-            <h2 className="text-xl font-black text-slate-900">{t('templateMarket.title')}</h2>
+            <p className="text-xs text-fg-muted tracking-[0.3em]">TEMPLATE</p>
+            <h2 className="text-xl font-black text-fg-primary">{t('templateMarket.title')}</h2>
           </div>
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={handleCloseToGenerate}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold bg-white/80 text-slate-600 hover:bg-white"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold bg-surface-secondary/80 text-fg-secondary hover:bg-surface-secondary"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               {t('templateMarket.actions.backToGenerate')}
@@ -1415,7 +1385,7 @@ export function TemplateMarketDrawer({
             <button
               type="button"
               onClick={handleCloseToPrevious}
-              className="w-9 h-9 rounded-full bg-white/80 text-slate-400 hover:text-slate-700 hover:bg-white flex items-center justify-center"
+              className="w-9 h-9 rounded-full bg-surface-secondary/80 text-fg-muted hover:text-fg-secondary hover:bg-surface-secondary flex items-center justify-center"
             >
               <X className="w-4 h-4" />
             </button>
@@ -1423,45 +1393,49 @@ export function TemplateMarketDrawer({
         </div>
 
         {(isLoading || loadError) && (
-          <div className="px-8 py-2 text-xs text-slate-500 bg-white/60 border-b border-white/60">
+          <div className="px-8 py-2 text-xs text-fg-muted bg-surface-secondary/60 border-b border-white/60">
             {isLoading ? t('templateMarket.loading.fetching') : loadError}
           </div>
         )}
 
-        <div ref={listRef} className="flex-1 min-h-0 flex flex-col px-6 pb-6 overflow-y-auto">
-          <div className="pt-6 space-y-6">
-            <div className="relative">
-              <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder={t('templateMarket.searchPlaceholder')}
-                className="pl-10 bg-white/80"
-              />
-            </div>
-            <div className="flex items-center gap-2 overflow-x-auto flex-nowrap min-h-[34px] pb-1">
-              <span className="text-xs text-slate-400 shrink-0">{t('templateMarket.activeFilters.title')}</span>
-              {hasActiveFilters ? (
-                <>
-                  {activeFilters.map((filter) => (
-                    <ActiveFilterChip key={filter.label} label={filter.label} onClear={filter.onClear} />
-                  ))}
-                  <button
-                    type="button"
-                    onClick={clearAllFilters}
-                    className="text-xs text-blue-600 hover:underline shrink-0"
-                  >
-                    {t('templateMarket.actions.clearFilters')}
-                  </button>
-                </>
-              ) : (
-                <span className="text-xs text-slate-400 shrink-0">{t('templateMarket.activeFilters.empty')}</span>
-              )}
-            </div>
+        {/* 搜索栏和已选分类置顶 */}
+        <div className="px-6 pt-6 pb-4 space-y-4">
+          <div className="relative">
+            <Search className="w-4 h-4 text-fg-muted absolute left-4 top-1/2 -translate-y-1/2" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={t('templateMarket.searchPlaceholder')}
+              className="pl-10 bg-surface-secondary/80"
+            />
+          </div>
+          <div className="flex items-center gap-2 overflow-x-auto flex-nowrap min-h-[34px] pb-1 scrollbar-none">
+            <span className="text-xs text-fg-muted shrink-0">{t('templateMarket.activeFilters.title')}</span>
+            {hasActiveFilters ? (
+              <>
+                {activeFilters.map((filter) => (
+                  <ActiveFilterChip key={filter.label} label={filter.label} onClear={filter.onClear} />
+                ))}
+                <button
+                  type="button"
+                  onClick={clearAllFilters}
+                  className="text-xs text-primary hover:underline shrink-0"
+                >
+                  {t('templateMarket.actions.clearFilters')}
+                </button>
+              </>
+            ) : (
+              <span className="text-xs text-fg-muted shrink-0">{t('templateMarket.activeFilters.empty')}</span>
+            )}
+          </div>
+        </div>
 
+        {/* 分类筛选和模板列表可滚动 */}
+        <div ref={listRef} className="flex-1 min-h-0 overflow-y-auto px-6 pb-6">
+          <div className="space-y-6">
             <div className="space-y-4">
               <div>
-                <p className="text-xs uppercase text-slate-400 tracking-widest mb-2">{t('templateMarket.filters.channel')}</p>
+                <p className="text-xs uppercase text-fg-muted tracking-widest mb-2">{t('templateMarket.filters.channel')}</p>
                 <div className="flex flex-wrap gap-2">
                   {normalizedMeta.channels.map((item) => (
                     <FilterChip
@@ -1474,7 +1448,7 @@ export function TemplateMarketDrawer({
                 </div>
               </div>
               <div>
-                <p className="text-xs uppercase text-slate-400 tracking-widest mb-2">{t('templateMarket.filters.material')}</p>
+                <p className="text-xs uppercase text-fg-muted tracking-widest mb-2">{t('templateMarket.filters.material')}</p>
                 <div className="flex flex-wrap gap-2">
                   {normalizedMeta.materials.map((item) => (
                     <FilterChip
@@ -1487,7 +1461,7 @@ export function TemplateMarketDrawer({
                 </div>
               </div>
               <div>
-                <p className="text-xs uppercase text-slate-400 tracking-widest mb-2">{t('templateMarket.filters.industry')}</p>
+                <p className="text-xs uppercase text-fg-muted tracking-widest mb-2">{t('templateMarket.filters.industry')}</p>
                 <div className="flex flex-wrap gap-2">
                   {normalizedMeta.industries.map((item) => (
                     <FilterChip
@@ -1500,7 +1474,7 @@ export function TemplateMarketDrawer({
                 </div>
               </div>
               <div>
-                <p className="text-xs uppercase text-slate-400 tracking-widest mb-2">{t('templateMarket.filters.ratio')}</p>
+                <p className="text-xs uppercase text-fg-muted tracking-widest mb-2">{t('templateMarket.filters.ratio')}</p>
                 <div className="flex flex-wrap gap-2">
                   {normalizedMeta.ratios.map((item) => (
                     <FilterChip
@@ -1516,7 +1490,7 @@ export function TemplateMarketDrawer({
 
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-fg-muted">
                   {isLoading ? t('templateMarket.list.loading') : t('templateMarket.list.count', { count: filteredTemplates.length })}
                 </p>
               </div>
@@ -1524,7 +1498,7 @@ export function TemplateMarketDrawer({
                 type="button"
                 onClick={() => fetchTemplates(true)}
                 disabled={isLoading}
-                className="w-8 h-8 rounded-full bg-white/70 border border-white/60 flex items-center justify-center text-slate-500 hover:text-blue-600 hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-8 h-8 rounded-full bg-surface-secondary/70 border border-white/60 flex items-center justify-center text-fg-muted hover:text-primary hover:bg-surface-secondary disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
               </button>
@@ -1540,26 +1514,26 @@ export function TemplateMarketDrawer({
                 {Array.from({ length: 8 }).map((_, index) => (
                   <div
                     key={`skeleton-${index}`}
-                    className="bg-white/70 border border-white/60 rounded-3xl p-3 shadow-sm flex flex-col gap-3 animate-pulse"
+                    className="bg-surface-secondary/70 border border-white/60 rounded-3xl p-3 shadow-sm flex flex-col gap-3 animate-pulse"
                   >
-                    <div className="h-36 w-full rounded-2xl bg-slate-200/70" />
+                    <div className="h-36 w-full rounded-2xl bg-surface-tertiary/70" />
                     <div className="space-y-2">
-                      <div className="h-3 w-3/4 rounded-full bg-slate-200/70" />
-                      <div className="h-2 w-1/2 rounded-full bg-slate-200/60" />
+                      <div className="h-3 w-3/4 rounded-full bg-surface-tertiary/70" />
+                      <div className="h-2 w-1/2 rounded-full bg-surface-tertiary/60" />
                     </div>
-                    <div className="h-8 rounded-full bg-slate-200/70" />
+                    <div className="h-8 rounded-full bg-surface-tertiary/70" />
                   </div>
                 ))}
               </div>
             ) : filteredTemplates.length === 0 ? (
-              <div className="text-sm text-slate-500 bg-white/70 border border-white/60 rounded-2xl p-6 text-center">
+              <div className="text-sm text-fg-muted bg-surface-secondary/70 border border-white/60 rounded-2xl p-6 text-center">
                 {t('templateMarket.list.empty')}
                 {hasActiveFilters && (
                   <div className="mt-3">
                     <button
                       type="button"
                       onClick={clearAllFilters}
-                      className="text-xs text-blue-600 hover:underline"
+                      className="text-xs text-primary hover:underline"
                     >
                       {t('templateMarket.actions.clearFilters')}
                     </button>

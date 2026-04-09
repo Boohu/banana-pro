@@ -18,8 +18,8 @@ export const HistoryItem = React.memo(function HistoryItem({ item, onDelete }: H
   const imageUrl = firstImage ? getImageUrl(firstImage.id) : '';
 
   return (
-    <div className="group flex gap-4 p-4 bg-white rounded-lg border border-gray-100 hover:border-gray-200 hover:shadow-sm transition-all">
-      <div className="w-24 h-24 flex-shrink-0 bg-gray-100 rounded-md overflow-hidden relative">
+    <div className="group flex gap-4 p-4 bg-surface-secondary rounded-lg border border-border hover:border-border hover:shadow-sm transition-all">
+      <div className="w-24 h-24 flex-shrink-0 bg-surface-tertiary rounded-md overflow-hidden relative">
         {imageUrl ? (
             <img
                 src={imageUrl}
@@ -29,7 +29,7 @@ export const HistoryItem = React.memo(function HistoryItem({ item, onDelete }: H
                 decoding="async"
             />
         ) : (
-            <div className="w-full h-full flex items-center justify-center text-xs text-gray-400 bg-gray-50">
+            <div className="w-full h-full flex items-center justify-center text-xs text-fg-muted bg-surface-tertiary">
                 {t('history.noImage')}
             </div>
         )}
@@ -39,8 +39,8 @@ export const HistoryItem = React.memo(function HistoryItem({ item, onDelete }: H
       </div>
       <div className="flex-1 min-w-0 flex flex-col justify-between py-1">
         <div>
-            <p className="text-sm text-gray-900 font-medium line-clamp-2 mb-1">{item.prompt}</p>
-            <div className="flex items-center gap-3 text-xs text-gray-500">
+            <p className="text-sm text-fg-primary font-medium line-clamp-2 mb-1">{item.prompt}</p>
+            <div className="flex items-center gap-3 text-xs text-fg-muted">
                 <span>{item.model}</span>
                 <span>•</span>
                 <span>{formatDateTime(item.createdAt)}</span>
@@ -50,7 +50,7 @@ export const HistoryItem = React.memo(function HistoryItem({ item, onDelete }: H
         <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity justify-end">
             <button
                 onClick={() => onDelete(item.id)}
-                className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                className="p-1.5 text-fg-muted hover:text-error hover:bg-error/10 rounded-md transition-colors"
                 title={t('history.actions.deleteTask')}
             >
                 <Trash2 className="w-4 h-4" />

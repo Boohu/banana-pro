@@ -71,7 +71,11 @@ const isEmptyTask = (task: GenerationTask): boolean => {
     return !hasAnyPath;
 };
 
-export function HistoryList() {
+interface HistoryListProps {
+  padding?: number;
+}
+
+export function HistoryList({ padding: paddingProp }: HistoryListProps = {}) {
   const { t } = useTranslation();
   const { items, loading, hasMore, loadMore } = useHistoryStore(
     useShallow((s) => ({
@@ -243,7 +247,7 @@ export function HistoryList() {
 
   if (items.length === 0) {
       return (
-          <div className="text-center py-12 text-gray-500 text-sm">
+          <div className="text-center py-12 text-fg-muted text-sm">
               {t('history.empty')}
           </div>
       );
@@ -256,7 +260,7 @@ export function HistoryList() {
             className="h-full w-full"
             renderProp={({ width, height }) => {
               if (!width || !height) return null;
-              const padding = 16;
+              const padding = paddingProp ?? 16;
               const innerWidth = Math.max(0, width - padding * 2);
               const innerHeight = Math.max(0, height - padding * 2);
               if (innerWidth <= 0 || innerHeight <= 0) return null;
@@ -287,7 +291,7 @@ export function HistoryList() {
               return (
                 <div
                   style={{ padding }}
-                  className="h-full"
+                  className="h-full overflow-x-hidden"
                   onContextMenu={(event) => event.preventDefault()}
                 >
                   <Grid
@@ -299,7 +303,7 @@ export function HistoryList() {
                     cellComponent={Cell}
                     cellProps={cellProps}
                     overscanCount={2}
-                    style={{ height: innerHeight, width: innerWidth }}
+                    style={{ height: innerHeight, width: innerWidth, overflowX: 'hidden' }}
                     onScroll={handleScroll}
                     onCellsRendered={(_, allCells) => {
                       if (hasMore && !loading && allCells.rowStopIndex >= rowCount - 1) {

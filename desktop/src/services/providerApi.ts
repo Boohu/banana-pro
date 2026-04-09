@@ -9,7 +9,6 @@ export interface ProviderConfig {
     model_id?: string;
     models?: string;
     timeout_seconds?: number;
-    max_retries?: number;
 }
 
 export const getProviders = async (): Promise<ProviderConfig[]> => {

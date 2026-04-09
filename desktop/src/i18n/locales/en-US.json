@@ -20,9 +20,7 @@
   },
   "common": {
     "copy": "Copy",
-    "copied": "Copied",
-    "yes": "Yes",
-    "no": "No",
+"copied": "Copied",
     "disabled": "Disabled",
     "enabled": "Enabled",
     "close": "Close",
@@ -50,10 +48,7 @@
     "copyFailed": "Copy failed",
     "deleteFailed": "Delete failed",
     "imageSrcEmpty": "Image source is empty",
-    "imageFetchFailed": "Failed to fetch image: {{status}}",
-    "downloadSuccess": "Downloaded successfully",
-    "downloadFailed": "Download failed",
-    "fileTooLarge": "File is too large (max 5MB)"
+    "imageFetchFailed": "Failed to fetch image: {{status}}"
   },
   "preview": {
     "copyImage": "Copy image",
@@ -76,32 +71,13 @@
     "prompt": {
       "label": "Prompt",
       "copied": "Copied",
-      "empty": "No prompt",
-      "optimizedLabel": "Optimized prompt",
-      "originalLabel": "Original prompt",
-      "expand": "Expand",
-      "collapse": "Collapse"
+      "empty": "No prompt"
     },
     "meta": {
       "model": "Model",
       "unknown": "Unknown",
       "size": "Size",
       "time": "Time"
-    },
-    "failed": {
-      "title": "Generation failed",
-      "summary": "Summary",
-      "detailsTitle": "Details",
-      "errorCode": "Error code",
-      "errorCategory": "Category",
-      "requestId": "Request ID",
-      "retryable": "Retry suggested",
-      "errorDetail": "Detail",
-      "rawError": "Raw error",
-      "taskId": "Task ID",
-      "model": "Model",
-      "errorCopied": "Error details copied",
-      "copyError": "Copy error details"
     },
     "downloadOriginal": "Download original"
   },
@@ -157,24 +133,18 @@
       "adding": "Adding images...",
       "pasteFailed": "Paste failed: {{message}}",
       "deduped": "Duplicate images filtered",
-      "timeout": "Operation timed out ({{seconds}}s)",
-      "chatConfigMissing": "Please configure a vision model in Settings first",
-      "extractFailed": "Failed to extract prompt",
-      "promptExtracted": "Prompt extracted"
+      "timeout": "Operation timed out ({{seconds}}s)"
     },
     "compressReason": {
       "fileTooLarge": "File too large ({{size}}MB)",
       "dimensions": "Dimensions too large ({{width}}x{{height}})"
-    },
-    "extractPrompt": "Extract Prompt"
+    }
   },
   "settings": {
     "title": "Settings",
     "tabs": {
       "image": "Image Model",
-      "chat": "Chat Model",
-      "vision": "Vision Model",
-      "notifications": "Notifications"
+      "chat": "Chat Model"
     },
     "language": {
       "label": "Language",
@@ -185,44 +155,25 @@
       "recommended": "Recommended:",
       "yunwu": "Yunwu API",
       "openaiImageLimit": "OpenAI providers currently support only 1K images",
-      "geminiBasePathHint": "For Gemini, use only the host as Base URL (avoid /v1 or endpoint paths).",
-      "yunwuMissingV1Hint": "For Yunwu API, Base URL should include /v1",
-      "yunwuExtraPathHint": "For Yunwu API, keep Base URL at /v1 only (no deeper path)"
+      "geminiBasePathHint": "For Gemini, use only the host as Base URL (avoid /v1 or endpoint paths)."
     },
     "model": {
       "default": "Default Model",
       "chat": "Chat Model",
       "custom": "Custom",
-      "customPlaceholder": "Enter custom model ID",
-      "vision": "Vision Model"
+      "customPlaceholder": "Enter custom model ID"
     },
     "vision": {
-      "title": "Vision Config",
-      "hint": "Used for image-to-prompt and other vision features",
-      "apiKeyPlaceholder": "Enter vision API key",
-      "apiKeyHint": "Must match the Base URL and model above"
+      "title": "Vision Config"
     },
     "timeout": {
       "image": "Image timeout (s)",
-      "chat": "Text timeout (s)",
-      "vision": "Vision timeout (s)"
-    },
-    "retry": {
-      "image": "Image Retry Count",
-      "chat": "Text Retry Count",
-      "vision": "Vision Retry Count",
-      "hint": "Only applies when the upstream closes the connection right after send; set 0 to disable auto retry"
+      "chat": "Text timeout (s)"
     },
     "refImageCompression": {
       "label": "Reference Image Compression",
       "hint": "When enabled, reference images will be automatically compressed to save bandwidth and storage",
       "speedHint": "Only improves generation speed when using reference images; it should not affect image quality."
-    },
-    "promptOptimizeDefault": {
-      "label": "Default Prompt Optimization",
-      "hint": "When enabled, image generation first optimizes the prompt inside the backend task, then continues generating without overwriting the current editor input.",
-      "textMode": "Text optimization",
-      "jsonMode": "JSON optimization"
     },
     "update": {
       "title": "Updates",
@@ -244,30 +195,14 @@
       "verboseLabel": "Enable verbose logs (more diagnostic info)",
       "help": "If you encounter issues, please send app.log and server.log to the developer (logs may include prompts)."
     },
-    "notifications": {
-      "title": "System Notifications",
-      "hint": "Send desktop notifications when a generation task finishes. The message prefers the optimized prompt summary so you can tell which image it refers to.",
-      "enable": "Enable system notifications",
-      "enableHint": "Available on macOS and Windows desktop builds.",
-      "backgroundOnly": "Notify only in background",
-      "backgroundOnlyHint": "Skip notifications when the window is visible and focused; notify only when hidden, unfocused, or in the background.",
-      "failure": "Also notify on failures",
-      "failureHint": "When enabled, failed and partially completed tasks will also trigger notifications.",
-      "permissionDenied": "System notification permission is disabled. Please allow notifications for this app in system settings.",
-      "testButton": "Test notification",
-      "testHint": "Use this to verify whether macOS/Windows has registered notification permission correctly.",
-      "testProbeBody": "This is a test notification to verify that system notifications can appear correctly.",
-      "testSent": "Test notification sent. Please check your system notification center.",
-      "testFailed": "Failed to send test notification: {{message}}"
-    },
-    "save": "Save Config",
+    "save": "Sync and Save",
     "toast": {
       "fetchFailed": "Failed to fetch backend config",
       "imageConfigIncomplete": "Please complete the image model config",
       "chatConfigIncomplete": "Please complete the chat model config",
       "openaiGeminiUnsupported": "OpenAI base URL does not support Gemini models. Please use a compatible endpoint.",
       "geminiBasePathWarning": "Gemini Base URL contains a path (such as /v1). It is recommended to use a host-only URL.",
-      "saveSuccess": "Configuration saved successfully",
+      "saveSuccess": "Config synced to server",
       "saveFailed": "Save failed: {{msg}}",
       "checkNetwork": "Please check your network",
       "logDirDesktopOnly": "Log folder is available on desktop only",
@@ -277,16 +212,7 @@
       "logDirCopyFailed": "Failed to copy log path",
       "verboseEnabled": "Verbose logs enabled",
       "verboseDisabled": "Verbose logs disabled",
-      "openLinkFailed": "Failed to open link",
-      "timeoutTooSmall": "Timeout must be at least {{min}} seconds"
-    },
-    "onboarding": {
-      "label": "Onboarding Tour",
-      "hint": "Replay the feature tour to quickly revisit the workflow",
-      "restart": "Restart Tour",
-      "confirmTitle": "Restart onboarding",
-      "confirmHint": "The tour will start from step one. Continue?",
-      "confirmStart": "Start Tour"
+      "openLinkFailed": "Failed to open link"
     }
   },
   "versionBadge": {
@@ -416,8 +342,7 @@
       "failed": "Generation failed",
       "failedWith": "Generation failed: {{message}}",
       "partial": "Task partially completed",
-      "recovered": "Generation progress restored",
-      "timeout": "Operation timed out ({{seconds}}s)"
+      "recovered": "Generation progress restored"
     }
   },
   "config": {
@@ -431,21 +356,16 @@
       "aspectRatio": "Aspect Ratio",
       "ratio": {
         "1_1": "1:1 (Square)",
-        "1_4": "1:4 (Tall Portrait)",
-        "1_8": "1:8 (Ultra-tall Portrait)",
         "2_3": "2:3 (Portrait 2:3)",
         "3_2": "3:2 (Landscape 3:2)",
         "3_4": "3:4 (Portrait 3:4)",
-        "4_1": "4:1 (Panorama)",
         "4_3": "4:3 (Standard 4:3)",
         "4_5": "4:5 (Portrait 4:5)",
         "5_4": "5:4 (Landscape 5:4)",
-        "8_1": "8:1 (Ultra-wide Panorama)",
         "9_16": "9:16 (Mobile)",
         "16_9": "16:9 (Widescreen)",
         "21_9": "21:9 (Ultra-wide)"
-      },
-      "ratioAutoAdjusted": "Aspect ratio {{from}} is unsupported and was adjusted to {{to}}"
+      }
     },
     "apiKeyHint": "Please configure the image API key in the top-right settings first"
   },
@@ -458,91 +378,13 @@
     "imageLoadFailed": "Image failed to load",
     "responseStreamMissing": "Response stream unavailable"
   },
-  "errorMapping": {
-    "requestIdLine": "Request ID: {{requestId}}",
-    "codes": {
-      "unknown": "Generation failed. Please try again later.",
-      "queue_full": "The task queue is full. Please try again later.",
-      "app_interrupted": "The task was interrupted by an app restart or exit. Please start it again.",
-      "task_timeout": "Generation timed out before the result was returned. Please try again later.",
-      "request_canceled": "The request was canceled before generation completed.",
-      "prompt_optimize_auth_missing": "Default prompt optimization is missing the chat model API key. Please complete it in Settings and save again.",
-      "prompt_optimize_model_missing": "Default prompt optimization has no available chat model. Please complete it in Settings and save again.",
-      "prompt_optimize_provider_missing": "The chat provider config for default prompt optimization is missing. Please complete it in Settings and save again.",
-      "local_permission_denied": "The app does not have permission to write to the local file or folder. Please check the save path, disk permissions, or system authorization.",
-      "policy_blocked": "The upstream returned text but no image. This may have triggered safety or policy restrictions. Please adjust the prompt or reference image and try again.",
-      "no_image_data": "The upstream returned a response, but it did not contain image data. Please try again later.",
-      "quota_exceeded": "The upstream quota is exhausted or restricted. Please check your balance, plan, or permissions.",
-      "bad_request": "The upstream rejected the request format or parameters. Please check the prompt, model, image parameters, or request content.",
-      "unauthorized": "Upstream authentication failed. Please check whether the API key or token is correct or has expired.",
-      "forbidden": "The upstream rejected the request. This is usually caused by insufficient permission, account restrictions, or model access limits.",
-      "not_found": "The requested resource was not found. The model, endpoint, or upstream path may not exist.",
-      "request_timeout": "The upstream request timed out before the image result was returned. Please try again later.",
-      "request_too_large": "The request body is too large. Please reduce image size, the number of reference images, or overly long input content, then try again.",
-      "rate_limited": "The upstream is busy or rate limiting the request. Please try again later.",
-      "internal_server_error": "The upstream service encountered an internal error. This is usually a server-side issue. Please try again later.",
-      "bad_gateway": "The upstream gateway failed and the result was not returned correctly. Please try again later.",
-      "service_unavailable": "The upstream service is temporarily unavailable, possibly due to maintenance or overload. Please try again later.",
-      "gateway_timeout": "The upstream gateway timed out before the result was returned. Please try again later.",
-      "tls_error": "A secure connection to the upstream failed. Please try again later.",
-      "dns_error": "Failed to resolve the upstream address. Please check the network or service address configuration.",
-      "connection_refused": "Could not connect to the upstream service. Please check the service address or network connectivity.",
-      "upstream_connection_closed": "The upstream connection was closed early, so the image result was not returned to the app. Please try again later.",
-      "timeout": "The request timed out before the image result was returned. Please try again later."
-    },
-    "categories": {
-      "unknown": "Unknown",
-      "local": "Local",
-      "local_config": "Local config",
-      "local_storage": "Local storage",
-      "upstream_policy": "Upstream policy",
-      "upstream_response": "Upstream response",
-      "upstream_quota": "Upstream quota",
-      "upstream_request": "Upstream request",
-      "upstream_auth": "Upstream auth",
-      "upstream_permission": "Upstream permission",
-      "upstream_network": "Upstream network",
-      "upstream_capacity": "Upstream capacity",
-      "upstream_server": "Upstream server",
-      "upstream_gateway": "Upstream gateway"
-    }
-  },
   "layout": {
     "loadingModule": "Loading module...",
     "backendBanner": "Backend not ready. Some features may be unavailable.",
-    "backendRecovering": "Recovering backend connection and syncing task status. Please wait.",
     "toast": {
       "backendUnavailable": "Backend unavailable. Please try again later."
     },
     "generateConfigTitle": "Generation Settings"
-  },
-  "notifications": {
-    "status": {
-      "completed": {
-        "title": "Image generation complete",
-        "body": "The generation task has completed.",
-        "bodyWithPrompt": "Completed: {{prompt}}",
-        "batchTitle": "{{count}} generation tasks completed",
-        "batchBody": "{{count}} generation tasks completed.",
-        "batchBodyWithPrompt": "{{prompt}} and {{additionalCount}} more tasks completed"
-      },
-      "partial": {
-        "title": "Image generation partially completed",
-        "body": "{{completed}}/{{total}} images completed.",
-        "bodyWithPrompt": "{{completed}}/{{total}} completed: {{prompt}}",
-        "batchTitle": "{{count}} generation tasks partially completed",
-        "batchBody": "{{count}} generation tasks partially completed.",
-        "batchBodyWithPrompt": "{{prompt}} and {{additionalCount}} more tasks partially completed"
-      },
-      "failed": {
-        "title": "Image generation failed",
-        "body": "The generation task failed.",
-        "bodyWithPrompt": "Failed: {{prompt}}",
-        "batchTitle": "{{count}} generation tasks failed",
-        "batchBody": "{{count}} generation tasks failed.",
-        "batchBodyWithPrompt": "{{prompt}} and {{additionalCount}} more tasks failed"
-      }
-    }
   },
   "history": {
     "searchPlaceholder": "Search prompt or model",
@@ -621,8 +463,7 @@
       "backToFolders": "Back to folders",
       "emptyInFolder": "No images in this folder",
       "moveButton": "Move",
-      "moveButtonTitle": "Move image to folder",
-      "selectFolder": "Select target folder"
+      "moveButtonTitle": "Move image to folder"
     }
   },
   "templateMarket": {
@@ -787,84 +628,12 @@
       "ratio9_16": "9:16",
       "ratio16_9": "16:9",
       "ratio21_9": "21:9",
-      "ratioAutoAdjusted": "Aspect ratio {{from}} not supported, auto-adjusted to {{to}}"
-    }
-  },
-  "onboarding": {
-    "progress": "Step {{current}} of {{total}}",
-    "buttons": {
-      "next": "Next",
-      "back": "Back",
-      "skip": "Skip",
-      "finish": "Finish"
-    },
-    "welcome": {
-      "title": "Welcome to Banana AI",
-      "content": "This quick tour introduces the core workflow in about a minute."
-    },
-    "settings": {
-      "title": "Settings entry",
-      "content": "Configure models, API keys, language, updates, and more."
-    },
-    "prompt": {
-      "title": "Enter your prompt",
-      "content": "Describe the image you want to generate in natural language."
-    },
-    "optimizeNormal": {
-      "title": "Prompt optimize",
-      "content": "Refines plain text prompts for more stable generation results."
-    },
-    "optimizeJson": {
-      "title": "JSON optimize",
-      "content": "Outputs structured prompts for fine-grained control."
-    },
-    "resolution": {
-      "title": "Resolution and ratio",
-      "content": "Set image quality and aspect ratio here."
-    },
-    "refImageUpload": {
-      "title": "Upload reference images",
-      "content": "Drag, drop, or paste references for image-to-image generation."
-    },
-    "refImageExtract": {
-      "title": "Image to prompt",
-      "content": "Extract prompt ideas from a reference image to get started faster."
-    },
-    "templateMarket": {
-      "title": "Template market",
-      "content": "Reuse popular templates to speed up generation."
-    },
-    "generate": {
-      "title": "Start generation",
-      "content": "Review parameters and click to generate images."
-    },
-    "historyTab": {
-      "title": "History tab",
-      "content": "Browse and manage your generated images."
-    },
-    "historyViewToggle": {
-      "title": "View mode switch",
-      "content": "Switch between timeline and album views."
-    },
-    "historyAlbumCards": {
-      "title": "Album cards",
-      "content": "Organize images by folders for batch management."
-    },
-    "historyCreateFolder": {
-      "title": "Create folder",
-      "content": "Create custom folders to organize images."
-    },
-    "historyOpenFolderImages": {
-      "title": "Open folder images",
-      "content": "Click a folder to view images inside it."
-    },
-    "historyMoveToFolder": {
-      "title": "Move to folder",
-      "content": "Move selected images into a target folder."
-    },
-    "historyDragToRef": {
-      "title": "Drag back to reference area",
-      "content": "Drag history images to the reference area to continue generating."
+      "ratioAutoAdjusted": "Aspect ratio {{from}} not supported, auto-adjusted to {{to}}",
+      "ratio3_4": "3:4",
+      "ratio4_5": "4:5",
+      "ratio9_16": "9:16",
+      "ratio16_9": "16:9",
+      "ratio2_3": "2:3"
     }
   }
 }

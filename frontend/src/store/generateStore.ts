@@ -58,6 +58,7 @@ interface GenerateState {
   selectedIds: Set<string>;
   error: string | null;
   startTime: number | null;
+  taskType: 'task' | 'batch';
   // 新增：连接模式和最后消息时间
   connectionMode: 'websocket' | 'polling' | 'none';
   lastMessageTime: number | null;
@@ -76,6 +77,7 @@ interface GenerateState {
   clearImages: () => void;
   removeImage: (id: string) => void;
   // 新增：切换连接模式和更新消息时间
+  setTaskType: (type: 'task' | 'batch') => void;
   setConnectionMode: (mode: 'websocket' | 'polling' | 'none') => void;
   updateLastMessageTime: () => void;
   setSubmitting: (isSubmitting: boolean) => void;
@@ -92,6 +94,7 @@ export const useGenerateStore = create<GenerateState>()(
       isSidebarOpen: true, // 默认展开
       isSubmitting: false,
       taskId: null,
+      taskType: 'task',
       status: 'idle',
       totalCount: 0,
       completedCount: 0,
@@ -209,9 +212,13 @@ export const useGenerateStore = create<GenerateState>()(
       }),
       failTask: (error) => set((state) => {
         const finishedTaskId = state.taskId;
-        const images = finishedTaskId
-          ? state.images.filter((img) => !(img.taskId === finishedTaskId && img.status === 'pending'))
-          : state.images;
+        // 将当前任务的所有 pending 图片标记为 failed，而不是删除
+        const images = state.images.map((img) => {
+          if (finishedTaskId && img.taskId === finishedTaskId && img.status === 'pending') {
+            return { ...img, status: 'failed' as const };
+          }
+          return img;
+        });
 
         return {
           status: 'failed',
@@ -247,6 +254,8 @@ export const useGenerateStore = create<GenerateState>()(
         };
       }),
 
+      // 设置任务类型
+      setTaskType: (taskType) => set({ taskType }),
       // 新增：设置连接模式
       setConnectionMode: (mode) => set({ connectionMode: mode }),
 
@@ -300,6 +309,7 @@ export const useGenerateStore = create<GenerateState>()(
           isSidebarOpen: state.isSidebarOpen,
           // 只在 processing 时保存任务相关状态，其他情况清空避免状态不一致
           taskId: state.status === 'processing' ? state.taskId : null,
+          taskType: state.status === 'processing' ? state.taskType : 'task',
           startTime: state.status === 'processing' ? state.startTime : null,
           status: state.status === 'processing' ? 'processing' : 'idle'
       }),

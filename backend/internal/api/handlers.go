@@ -606,6 +606,20 @@ func GenerateWithImagesHandler(c *gin.Context) {
 		ConfigSnapshot:     buildConfigSnapshot(req.Provider, modelID, taskParams),
 	}
 
+	// 关联批次（如果提供了 batch_id）
+	if req.BatchID != "" {
+		var batch model.Batch
+		if err := model.DB.Where("batch_id = ?", req.BatchID).First(&batch).Error; err != nil {
+			Error(c, http.StatusBadRequest, 400, "批次未找到: "+req.BatchID)
+			return
+		}
+		taskModel.BatchID = req.BatchID
+		// 推进批次状态
+		if batch.Status == "draft" || batch.Status == "pending" {
+			model.DB.Model(&batch).Update("status", "processing")
+		}
+	}
+
 	if err := model.DB.Create(taskModel).Error; err != nil {
 		Error(c, http.StatusInternalServerError, 500, "创建任务失败")
 		return
@@ -649,6 +663,9 @@ func GenerateWithImagesHandler(c *gin.Context) {
 			"status":        "failed",
 			"error_message": "任务队列已满，请稍后再试",
 		})
+		if req.BatchID != "" {
+			model.RecomputeBatchStatus(model.DB, req.BatchID)
+		}
 		Error(c, http.StatusServiceUnavailable, 503, "服务器繁忙，请稍后再试")
 		return
 	}

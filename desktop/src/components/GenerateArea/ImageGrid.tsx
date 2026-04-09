@@ -7,7 +7,6 @@ import { GeneratedImage } from '../../types';
 import { useTranslation } from 'react-i18next';
 
 interface ImageGridProps {
-  images: GeneratedImage[];
   onPreview: (image: GeneratedImage) => void;
 }
 
@@ -38,15 +37,15 @@ const getColumnCount = (containerWidth: number, viewportWidth: number | undefine
 const getGapSize = (width: number) => (width >= 640 ? 16 : 12);
 const getRowExtraHeight = (width: number) => (width >= 640 ? 96 : 88);
 
-export function ImageGrid({ images, onPreview }: ImageGridProps) {
+export function ImageGrid({ onPreview }: ImageGridProps) {
   const { t } = useTranslation();
-  const { selectedIds, toggleSelect } = useGenerateStore(
+  const { images, selectedIds, toggleSelect } = useGenerateStore(
     useShallow((s) => ({
+      images: s.images,
       selectedIds: s.selectedIds,
       toggleSelect: s.toggleSelect
     }))
   );
-
   // 限制最大显示数量，防止 DOM 爆炸
   const displayedImages = useMemo(() => {
     return images.slice(0, MAX_IMAGES);
@@ -63,8 +62,8 @@ export function ImageGrid({ images, onPreview }: ImageGridProps) {
 
   if (images.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-gray-400">
-        <div className="w-24 h-24 bg-gray-100 rounded-full mb-4 flex items-center justify-center">
+      <div className="flex flex-col items-center justify-center h-full text-fg-muted">
+        <div className="w-24 h-24 bg-surface-tertiary rounded-full mb-4 flex items-center justify-center">
           <svg className="w-10 h-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
@@ -75,7 +74,7 @@ export function ImageGrid({ images, onPreview }: ImageGridProps) {
   }
 
   return (
-    <div className="h-full min-h-0 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
+    <div className="h-full min-h-0 overflow-y-auto scrollbar-thin scrollbar-thumb-neutral-600 scrollbar-track-transparent">
       <AutoSizer
         className="h-full w-full"
         renderProp={({ width }) => {
@@ -122,10 +121,10 @@ export function ImageGrid({ images, onPreview }: ImageGridProps) {
 
       {/* 超过限制时的提示 */}
       {hasOverflow && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 m-6 mt-0">
+        <div className="bg-primary/10 border border-blue-200 rounded-lg p-3 m-6 mt-0">
           <p className="text-sm text-blue-800 text-center">
             {t('generate.grid.limitNotice', { max: MAX_IMAGES, total: images.length })}
-            <span className="block text-xs text-blue-600 mt-1">
+            <span className="block text-xs text-primary mt-1">
               {t('generate.grid.limitHint')}
             </span>
           </p>

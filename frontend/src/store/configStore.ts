@@ -26,10 +26,13 @@ export const IMAGE_MODEL_CONFIG: Record<string, { aspectRatios: string[] }> = {
   }
 };
 
+// Default aspect ratios for custom/unknown models
+const DEFAULT_ASPECT_RATIOS = ['1:1', '2:3', '3:2', '3:4', '4:3', '4:5', '5:4', '9:16', '16:9', '21:9'];
+
 // Helper function to get supported aspect ratios for a model
 export const getModelAspectRatios = (model: string): string[] => {
   const ratios = IMAGE_MODEL_CONFIG[model]?.aspectRatios;
-  return (ratios && ratios.length > 0) ? ratios : ['1:1'];
+  return (ratios && ratios.length > 0) ? ratios : DEFAULT_ASPECT_RATIOS;
 };
 
 interface ConfigState {
@@ -75,6 +78,7 @@ interface ConfigState {
   aspectRatio: string;
   refFiles: File[];
   refImageEntries: PersistedRefImage[];
+  draftBatchId: string | null;
 
   setImageProvider: (provider: string) => void;
   setImageApiBaseUrl: (url: string) => void;
@@ -105,6 +109,7 @@ interface ConfigState {
   removeRefFile: (index: number) => void;
   clearRefFiles: () => void;
   setRefImageEntries: (entries: PersistedRefImage[]) => void;
+  setDraftBatchId: (id: string | null) => void;
 
   reset: () => void;
 }
@@ -139,6 +144,7 @@ export const useConfigStore = create<ConfigState>()(
       aspectRatio: '1:1',
       refFiles: [],
       refImageEntries: [],
+      draftBatchId: null,
 
       setImageProvider: (imageProvider) => set({ imageProvider }),
       setImageApiBaseUrl: (imageApiBaseUrl) => set({ imageApiBaseUrl }),
@@ -166,6 +172,7 @@ export const useConfigStore = create<ConfigState>()(
       setAspectRatio: (aspectRatio) => set({ aspectRatio }),
       setRefFiles: (refFiles) => set({ refFiles }),
       setRefImageEntries: (refImageEntries) => set({ refImageEntries }),
+      setDraftBatchId: (draftBatchId) => set({ draftBatchId }),
 
       addRefFiles: (files) => set((state) => ({
           // 限制最多 10 张
@@ -200,12 +207,13 @@ export const useConfigStore = create<ConfigState>()(
         aspectRatio: '1:1',
         refFiles: [],
         refImageEntries: [],
+        draftBatchId: null,
       })
     }),
     {
       name: 'app-config-storage',
       storage: createJSONStorage(() => localStorage),
-      version: 10,
+      version: 11,
       // 关键：不要将 File 对象序列化到 localStorage（File 对象无法序列化）
       partialize: (state) => {
           const { refFiles, ...rest } = state;
@@ -275,7 +283,9 @@ export const useConfigStore = create<ConfigState>()(
             };
           }
         }
-
+        if (version < 11) {
+          next = { ...next, draftBatchId: next.draftBatchId ?? null };
+        }
 
         return next;
       },

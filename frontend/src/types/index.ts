@@ -67,6 +67,7 @@ export interface HistoryQueryParams {
     page?: number;
     pageSize?: number;
     keyword?: string;
+    folder_id?: string;
 }
 
 // 历史列表响应
@@ -159,6 +160,37 @@ export interface BackendTask {
   total_count?: number;
   error_message?: string;
   config_snapshot?: string;
+}
+
+// 后端 Batch 模型（用于批次 API 响应）
+export interface BackendBatch {
+  batch_id: string;
+  prompt: string;
+  provider_name: string;
+  model_id: string;
+  total_count: number;
+  completed_count: number;
+  failed_count: number;
+  status: 'draft' | 'pending' | 'processing' | 'completed' | 'failed' | 'partial';
+  config_snapshot?: string;
+  folder_id?: string;
+  created_at: string;
+  updated_at?: string;
+  tasks?: BackendTask[];
+}
+
+// 创建/更新草稿批次请求
+export interface DraftBatchRequest {
+  batch_id?: string;
+  prompt: string;
+  provider: string;
+  model_id: string;
+  params: {
+    count: number;
+    aspectRatio: string;
+    imageSize: string;
+    prompt_optimize_mode?: string;
+  };
 }
 
 // 后端历史列表响应

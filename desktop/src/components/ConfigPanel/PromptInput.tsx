@@ -178,45 +178,43 @@ export function PromptInput() {
   return (
     <div className="flex flex-col gap-2 h-full">
       <div className="flex items-center justify-between gap-3 flex-shrink-0">
-        <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+        <label className="text-sm font-medium text-fg-secondary flex items-center gap-2">
           <MessageSquare className="w-4 h-4" />
           {t('prompt.label')}
         </label>
         <div className="flex items-center gap-1.5">
           <button
             type="button"
-            data-onboarding="optimize-normal"
             onClick={() => runOptimize('normal')}
             disabled={isOptimizing}
             title={t('prompt.optimize')}
             className={`p-1.5 rounded-lg transition-all ${
               isOptimizing
-                ? 'opacity-50 cursor-not-allowed bg-slate-100'
-                : 'bg-slate-100 text-slate-700 hover:bg-white'
+                ? 'opacity-50 cursor-not-allowed bg-surface-tertiary'
+                : 'bg-surface-tertiary text-fg-secondary hover:bg-surface-secondary'
             }`}
           >
             {isOptimizing && optimizingMode === 'normal' ? (
-              <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+              <Loader2 className="w-4 h-4 animate-spin text-primary" />
             ) : (
-              <Sparkles className="w-4 h-4 text-blue-600" />
+              <Sparkles className="w-4 h-4 text-primary" />
             )}
           </button>
           <button
             type="button"
-            data-onboarding="optimize-json"
             onClick={() => runOptimize('json')}
             disabled={isOptimizing}
             title={t('prompt.optimizeJson')}
             className={`p-1.5 rounded-lg transition-all ${
               isOptimizing
-                ? 'opacity-50 cursor-not-allowed bg-slate-100'
-                : 'bg-slate-100 text-slate-700 hover:bg-white'
+                ? 'opacity-50 cursor-not-allowed bg-surface-tertiary'
+                : 'bg-surface-tertiary text-fg-secondary hover:bg-surface-secondary'
             }`}
           >
             {isOptimizing && optimizingMode === 'json' ? (
-              <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+              <Loader2 className="w-4 h-4 animate-spin text-primary" />
             ) : (
-              <FileJson className="w-4 h-4 text-blue-600" />
+              <FileJson className="w-4 h-4 text-primary" />
             )}
           </button>
           <button
@@ -226,8 +224,8 @@ export function PromptInput() {
             title={t('prompt.undo')}
             className={`p-1.5 rounded-lg transition-all ${
               canUndo && !isOptimizing
-                ? 'bg-slate-100 text-slate-700 hover:bg-white'
-                : 'opacity-40 cursor-not-allowed bg-slate-100'
+                ? 'bg-surface-tertiary text-fg-secondary hover:bg-surface-secondary'
+                : 'opacity-40 cursor-not-allowed bg-surface-tertiary'
             }`}
           >
             <Undo2 className="w-4 h-4" />
@@ -239,20 +237,20 @@ export function PromptInput() {
             title={t('prompt.redo')}
             className={`p-1.5 rounded-lg transition-all ${
               canRedo && !isOptimizing
-                ? 'bg-slate-100 text-slate-700 hover:bg-white'
-                : 'opacity-40 cursor-not-allowed bg-slate-100'
+                ? 'bg-surface-tertiary text-fg-secondary hover:bg-surface-secondary'
+                : 'opacity-40 cursor-not-allowed bg-surface-tertiary'
             }`}
           >
             <Redo2 className="w-4 h-4" />
           </button>
         </div>
       </div>
-      <div className="relative flex-1" data-onboarding="prompt-input">
+      <div className="relative flex-1">
         <textarea
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           placeholder={t('prompt.placeholder')}
-          className="w-full h-full rounded-2xl border-none bg-slate-100 px-4 py-3 pt-4 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all duration-200 resize-none min-h-[80px]"
+          className="w-full h-full rounded-2xl border-none bg-surface-tertiary px-4 py-3 pt-4 text-sm text-fg-primary placeholder:text-fg-muted focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-surface-secondary transition-all duration-200 resize-none min-h-[80px]"
         />
       </div>
     </div>
