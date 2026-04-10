@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -13,6 +15,7 @@ import (
 	"image-gen-service/internal/model"
 	"image-gen-service/internal/promptopt"
 	"image-gen-service/internal/provider"
+	"image-gen-service/internal/storage"
 	"image-gen-service/internal/worker"
 
 	"github.com/gin-gonic/gin"
@@ -308,6 +311,26 @@ func DeleteBatchHandler(c *gin.Context) {
 	Success(c, gin.H{"deleted": true})
 }
 
+// PauseBatchHandler 暂停批次
+// POST /batches/:batch_id/pause
+func PauseBatchHandler(c *gin.Context) {
+	batchID := c.Param("batch_id")
+	worker.Pool.PauseBatch(batchID)
+	// 更新数据库状态
+	model.DB.Model(&model.Batch{}).Where("batch_id = ?", batchID).Update("status", "paused")
+	Success(c, gin.H{"paused": true})
+}
+
+// ResumeBatchHandler 恢复批次
+// POST /batches/:batch_id/resume
+func ResumeBatchHandler(c *gin.Context) {
+	batchID := c.Param("batch_id")
+	worker.Pool.ResumeBatch(batchID)
+	// 重算批次状态
+	model.RecomputeBatchStatus(model.DB, batchID)
+	Success(c, gin.H{"resumed": true})
+}
+
 // ---------- Batch SSE Streaming ----------
 
 const (
@@ -415,6 +438,276 @@ func writeBatchEvent(w http.ResponseWriter, flusher http.Flusher, batch *model.B
 	}
 	flusher.Flush()
 	return true
+}
+
+// ProcessBatchHandler 批量图生图：接收多张图片，每张图创建一个图生图 Task
+// POST /batches/process
+func ProcessBatchHandler(c *gin.Context) {
+	// 解析 multipart
+	if err := c.Request.ParseMultipartForm(200 << 20); err != nil { // 200MB 上限
+		Error(c, http.StatusBadRequest, 400, "解析请求失败: "+err.Error())
+		return
+	}
+	form := c.Request.MultipartForm
+
+	prompt := strings.TrimSpace(c.PostForm("prompt"))
+	if prompt == "" {
+		Error(c, http.StatusBadRequest, 400, "提示词不能为空")
+		return
+	}
+	providerName := c.PostForm("provider")
+	requestModelID := c.PostForm("model_id")
+	aspectRatio := c.PostForm("aspectRatio")
+	imageSize := c.PostForm("imageSize")
+	promptOptimizeMode := c.PostForm("prompt_optimize_mode")
+	outputFormat := c.PostForm("outputFormat")       // PNG/JPG/WebP
+	qualityStr := c.PostForm("quality")              // 10-100
+	concurrencyStr := c.PostForm("concurrency")      // 1-6
+	namingRule := c.PostForm("namingRule")            // 命名规则
+	keepOriginalSize := c.PostForm("keepOriginalSize") // true/false
+	autoRetry := c.PostForm("autoRetry")             // true/false
+	outputDir := c.PostForm("outputDir")             // 输出目录（桌面端）
+	folderId := c.PostForm("folderId")               // 指定文件夹 ID
+
+	quality := 90
+	if v, err := strconv.Atoi(qualityStr); err == nil && v >= 10 && v <= 100 {
+		quality = v
+	}
+	concurrency := 3
+	if v, err := strconv.Atoi(concurrencyStr); err == nil && v >= 1 && v <= 6 {
+		concurrency = v
+	}
+
+	// 获取上传的文件
+	files := form.File["files"]
+	if len(files) == 0 {
+		Error(c, http.StatusBadRequest, 400, "至少上传一张图片")
+		return
+	}
+
+	// 验证 Provider
+	p := provider.GetProvider(providerName)
+	if p == nil {
+		Error(c, http.StatusBadRequest, 400, "未找到指定的 Provider: "+providerName)
+		return
+	}
+
+	resolved := provider.ResolveModelID(provider.ModelResolveOptions{
+		ProviderName: providerName,
+		RequestModel: requestModelID,
+	})
+	modelID := resolved.ID
+
+	// 构建配置快照
+	configParams := map[string]interface{}{
+		"aspectRatio":      aspectRatio,
+		"imageSize":        imageSize,
+		"count":            1,
+		"output_format":    outputFormat,
+		"quality":          quality,
+		"concurrency":      concurrency,
+		"naming_rule":      namingRule,
+		"keep_original_size": keepOriginalSize == "true",
+		"auto_retry":       autoRetry == "true",
+	}
+	if promptOptimizeMode != "" {
+		configParams["prompt_optimize_mode"] = promptOptimizeMode
+	}
+	configSnapshot := buildConfigSnapshot(providerName, modelID, configParams)
+
+	// 创建 Batch 记录
+	batchID := uuid.New().String()
+	batch := model.Batch{
+		BatchID:        batchID,
+		Prompt:         prompt,
+		ProviderName:   providerName,
+		ModelID:        modelID,
+		TotalCount:     len(files),
+		Status:         "pending",
+		ConfigSnapshot: configSnapshot,
+	}
+
+	// 确定文件夹：优先用户指定 > 自动创建月份文件夹
+	folderID := ""
+	if folderId != "" {
+		folderID = folderId
+	} else {
+		monthFolder, folderErr := getOrCreateMonthFolder(model.DB, time.Now())
+		if folderErr != nil {
+			log.Printf("[BatchProcess] 警告: 获取或创建月份文件夹失败: %v\n", folderErr)
+		} else {
+			folderID = strconv.FormatUint(uint64(monthFolder.ID), 10)
+		}
+	}
+	batch.FolderID = folderID
+
+	if err := model.DB.Create(&batch).Error; err != nil {
+		Error(c, http.StatusInternalServerError, 500, "创建批次失败: "+err.Error())
+		return
+	}
+
+	// 读取每个文件内容并创建 Task
+	tasks := make([]*model.Task, 0, len(files))
+	fileContents := make([][]byte, 0, len(files))
+
+	for _, fh := range files {
+		f, err := fh.Open()
+		if err != nil {
+			log.Printf("[BatchProcess] 打开文件失败 %s: %v\n", fh.Filename, err)
+			continue
+		}
+		content, err := readAllAndClose(f)
+		if err != nil {
+			log.Printf("[BatchProcess] 读取文件失败 %s: %v\n", fh.Filename, err)
+			continue
+		}
+
+		// 保存原始参考图到磁盘
+		taskID := uuid.New().String()
+		originalImagePath := ""
+		if baseDir := storage.GetBaseDir(); baseDir != "" {
+			origDir := filepath.Join(baseDir, "originals")
+			_ = os.MkdirAll(origDir, 0755)
+			ext := filepath.Ext(fh.Filename)
+			if ext == "" {
+				ext = ".jpg"
+			}
+			origPath := filepath.Join(origDir, "orig_"+taskID+ext)
+			if writeErr := os.WriteFile(origPath, content, 0644); writeErr != nil {
+				log.Printf("[BatchProcess] 保存原始图失败 %s: %v\n", fh.Filename, writeErr)
+			} else {
+				originalImagePath = "/storage/originals/orig_" + taskID + ext
+			}
+		}
+
+		taskModel := &model.Task{
+			TaskID:             taskID,
+			BatchID:            batchID,
+			Prompt:             prompt,
+			PromptOriginal:     prompt,
+			PromptOptimizeMode: promptOptimizeMode,
+			ProviderName:       providerName,
+			ModelID:            modelID,
+			TotalCount:         1,
+			Status:             "pending",
+			FolderID:           folderID,
+			ConfigSnapshot:     configSnapshot,
+			OriginalFileName:   fh.Filename,
+			OriginalImagePath:  originalImagePath,
+		}
+		tasks = append(tasks, taskModel)
+		fileContents = append(fileContents, content)
+	}
+
+	if len(tasks) == 0 {
+		Error(c, http.StatusBadRequest, 400, "没有可处理的图片文件")
+		return
+	}
+
+	// 更新实际任务数（可能有文件读取失败的）
+	if len(tasks) != batch.TotalCount {
+		batch.TotalCount = len(tasks)
+		model.DB.Model(&batch).Update("total_count", len(tasks))
+	}
+
+	// 事务批量创建 Task
+	err := model.DB.Transaction(func(tx *gorm.DB) error {
+		for _, t := range tasks {
+			if err := tx.Create(t).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		Error(c, http.StatusInternalServerError, 500, "创建子任务失败: "+err.Error())
+		return
+	}
+
+	// 构建所有 Worker 任务
+	workerTasks := make([]*worker.Task, 0, len(tasks))
+	for i, taskModel := range tasks {
+		taskParams := map[string]interface{}{
+			"prompt":             prompt,
+			"provider":           providerName,
+			"model_id":           modelID,
+			"aspect_ratio":       aspectRatio,
+			"resolution_level":   imageSize,
+			"count":              1,
+			"reference_images":   []interface{}{fileContents[i]},
+			"output_format":      outputFormat,
+			"quality":            quality,
+			"naming_rule":        namingRule,
+			"original_file_name": taskModel.OriginalFileName,
+			"keep_original_size": keepOriginalSize == "true",
+			"auto_retry":        autoRetry == "true",
+			"output_dir":        outputDir,
+			"batch_concurrency":  concurrency,
+		}
+		if promptOptimizeMode != "" {
+			taskParams["prompt_optimize_mode"] = promptOptimizeMode
+		}
+		diagnostic.AttachTaskID(taskParams, taskModel.TaskID)
+
+		workerTasks = append(workerTasks, &worker.Task{
+			TaskModel: taskModel,
+			Params:    taskParams,
+		})
+	}
+
+	// 按并发数提交：先提交 concurrency 个，剩余放入待提交队列
+	submittedCount := 0
+	for i, wt := range workerTasks {
+		if i < concurrency {
+			if worker.Pool.Submit(wt) {
+				submittedCount++
+			} else {
+				model.DB.Model(wt.TaskModel).Updates(map[string]interface{}{
+					"status":        "failed",
+					"error_message": "任务队列已满",
+				})
+			}
+		} else {
+			// 放入待提交队列，任务完成时会自动提交下一个
+			worker.Pool.EnqueuePending(batchID, wt)
+		}
+	}
+
+	// 重算批次状态
+	model.RecomputeBatchStatus(model.DB, batchID)
+
+	// 返回结果
+	var updatedBatch model.Batch
+	model.DB.Where("batch_id = ?", batchID).First(&updatedBatch)
+
+	var taskList []model.Task
+	model.DB.Where("batch_id = ?", batchID).Order("created_at ASC").Find(&taskList)
+	sanitizeTaskImagePathsBatch(taskList)
+
+	Success(c, BatchResponse{
+		Batch: updatedBatch,
+		Tasks: taskList,
+	})
+}
+
+// readAllAndClose 读取文件内容并关闭
+func readAllAndClose(f interface{ Read([]byte) (int, error); Close() error }) ([]byte, error) {
+	defer f.Close()
+	var buf []byte
+	tmp := make([]byte, 32*1024)
+	for {
+		n, err := f.Read(tmp)
+		if n > 0 {
+			buf = append(buf, tmp[:n]...)
+		}
+		if err != nil {
+			if err.Error() == "EOF" {
+				break
+			}
+			return nil, err
+		}
+	}
+	return buf, nil
 }
 
 func batchSignature(batch *model.Batch) string {

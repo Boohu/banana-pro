@@ -49,6 +49,8 @@ type Task struct {
 	Width               int            `json:"width"`                                            // 图片宽度
 	Height              int            `json:"height"`                                           // 图片高度
 	BatchID             string         `gorm:"index" json:"batch_id,omitempty"`                  // 所属批次 ID（可选）
+	OriginalFileName    string         `json:"original_file_name,omitempty"`                     // 批量处理时的原始文件名
+	OriginalImagePath   string         `json:"original_image_path,omitempty"`                    // 批量处理时的原始参考图路径
 	TotalCount          int            `gorm:"default:1" json:"total_count"`                     // 申请生成的数量
 	ConfigSnapshot      string         `json:"config_snapshot"`                                  // 生成时的配置快照
 	CreatedAt           time.Time      `gorm:"index:idx_status_created;index" json:"created_at"` // 创建时间

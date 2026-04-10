@@ -301,6 +301,9 @@ func main() {
 		v1.GET("/batches/:batch_id/stream", api.StreamBatchHandler)    // SSE 批次进度推送
 		v1.GET("/batches", api.ListBatchesHandler)                     // 分页查询批次列表
 		v1.DELETE("/batches/:batch_id", api.DeleteBatchHandler)        // 删除批次
+		v1.POST("/batches/process", api.ProcessBatchHandler)            // 批量图生图处理
+		v1.POST("/batches/:batch_id/pause", api.PauseBatchHandler)     // 暂停批次
+		v1.POST("/batches/:batch_id/resume", api.ResumeBatchHandler)   // 恢复批次
 	}
 
 	// 静态资源访问 (将 storage 目录整体暴露，以匹配数据库中的 storage/local/xxx.jpg 路径)

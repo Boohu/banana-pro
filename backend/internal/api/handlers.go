@@ -713,9 +713,14 @@ func ListImagesHandler(c *gin.Context) {
 		pageSize = 100
 	}
 	keyword := c.Query("keyword")
+	folderID := c.Query("folder_id")
 
 	var tasks []model.Task
 	query := model.DB.Model(&model.Task{})
+
+	if folderID != "" {
+		query = query.Where("folder_id = ?", folderID)
+	}
 
 	if keyword != "" {
 		like := "%" + keyword + "%"

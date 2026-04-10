@@ -160,6 +160,8 @@ export interface BackendTask {
   total_count?: number;
   error_message?: string;
   config_snapshot?: string;
+  original_file_name?: string;
+  original_image_path?: string;
 }
 
 // 后端 Batch 模型（用于批次 API 响应）

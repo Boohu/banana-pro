@@ -5,7 +5,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"image"
+	"image/jpeg"
+	"image/png"
+	"io"
 	"log"
+	"os"
+	"path/filepath"
 	"runtime/debug"
 	"strings"
 	"sync"
@@ -17,6 +23,9 @@ import (
 	"image-gen-service/internal/promptopt"
 	"image-gen-service/internal/provider"
 	"image-gen-service/internal/storage"
+
+	"github.com/disintegration/imaging"
+	_ "golang.org/x/image/webp"
 )
 
 // Task 表示一个生成任务
@@ -33,6 +42,11 @@ type WorkerPool struct {
 	ctx         context.Context
 	cancel      context.CancelFunc
 	stopping    int32
+
+	// 批量处理并发控制：每个 batchID 维护一个待提交队列
+	pendingMu      sync.Mutex
+	pendingQueue   map[string][]*Task // batchID → 待提交的任务
+	pausedBatches  map[string]bool    // 暂停的批次
 }
 
 var Pool *WorkerPool
@@ -41,10 +55,12 @@ var Pool *WorkerPool
 func InitPool(workerCount, queueSize int) {
 	ctx, cancel := context.WithCancel(context.Background())
 	Pool = &WorkerPool{
-		workerCount: workerCount,
-		taskQueue:   make(chan *Task, queueSize),
-		ctx:         ctx,
-		cancel:      cancel,
+		workerCount:  workerCount,
+		taskQueue:    make(chan *Task, queueSize),
+		ctx:          ctx,
+		cancel:       cancel,
+		pendingQueue:  make(map[string][]*Task),
+		pausedBatches: make(map[string]bool),
 	}
 }
 
@@ -294,8 +310,16 @@ func (wp *WorkerPool) processTask(task *Task) {
 	// 4. 存储图片（含缩略图生成）
 	// 文件后缀由 storage 层根据实际图片格式自动确定
 	if len(result.Images) > 0 {
-		// 传入基础文件名（无后缀），storage 会根据实际格式添加正确后缀
-		baseFileName := task.TaskModel.TaskID
+		// 批量处理后处理：格式转换、质量调整、保留原始尺寸
+		if _, hasFmt := task.Params["output_format"]; hasFmt {
+			result.Images[0] = postProcessImage(result.Images[0], task.Params)
+		}
+
+		// 批量处理命名规则
+		baseFileName := buildBatchFileName(task.Params)
+		if baseFileName == "" {
+			baseFileName = task.TaskModel.TaskID
+		}
 		// 警告：当前只保存第一张图片，其余丢弃
 		if len(result.Images) > 1 {
 			log.Printf("任务 %s 生成了 %d 张图片，当前只保存第1张，其余 %d 张已丢弃", task.TaskModel.TaskID, len(result.Images), len(result.Images)-1)
@@ -310,6 +334,17 @@ func (wp *WorkerPool) processTask(task *Task) {
 		if err != nil {
 			wp.failTask(task, err)
 			return
+		}
+
+		// 如果指定了 outputDir，额外复制一份到目标目录
+		if outputDir, ok := task.Params["output_dir"].(string); ok && outputDir != "" {
+			go func() {
+				if copyErr := copyFileToOutputDir(localPath, outputDir, baseFileName); copyErr != nil {
+					log.Printf("[BatchProcess] 复制到输出目录失败: %v", copyErr)
+				} else {
+					log.Printf("[BatchProcess] 已复制到输出目录: %s", outputDir)
+				}
+			}()
 		}
 
 		// 5. 更新成功状态
@@ -349,9 +384,10 @@ func (wp *WorkerPool) processTask(task *Task) {
 				now.Format(time.RFC3339Nano),
 			)
 		}
-		// 更新批次聚合状态
+		// 更新批次聚合状态并提交下一个待处理任务
 		if task.TaskModel.BatchID != "" {
 			model.RecomputeBatchStatus(model.DB, task.TaskModel.BatchID)
+			wp.submitNextPending(task.TaskModel.BatchID)
 		}
 	} else {
 		wp.failTask(task, fmt.Errorf("未生成任何图片"))
@@ -478,10 +514,197 @@ func (wp *WorkerPool) failTask(task *Task, err error) {
 	}); dbResult.Error != nil {
 		log.Printf("任务 %s 写入失败状态到数据库时出错: %v", taskModel.TaskID, dbResult.Error)
 	}
-	// 更新批次聚合状态
+	// 更新批次聚合状态并提交下一个待处理任务
 	if taskModel.BatchID != "" {
 		model.RecomputeBatchStatus(model.DB, taskModel.BatchID)
+		wp.submitNextPending(taskModel.BatchID)
+
+		// 自动重试：如果启用且未超过最大重试次数
+		if autoRetry, ok := task.Params["auto_retry"].(bool); ok && autoRetry {
+			retryCount := 0
+			if v, ok := task.Params["retry_count"].(int); ok {
+				retryCount = v
+			}
+			if retryCount < 2 {
+				log.Printf("[AutoRetry] 任务 %s 第 %d 次重试", taskModel.TaskID, retryCount+1)
+				// 重置状态
+				model.DB.Model(taskModel).Updates(map[string]interface{}{
+					"status":        "pending",
+					"error_message": "",
+				})
+				task.Params["retry_count"] = retryCount + 1
+				wp.Submit(task)
+			}
+		}
 	}
+}
+
+// EnqueuePending 将任务放入批次待提交队列（并发控制用）
+func (wp *WorkerPool) EnqueuePending(batchID string, task *Task) {
+	wp.pendingMu.Lock()
+	defer wp.pendingMu.Unlock()
+	wp.pendingQueue[batchID] = append(wp.pendingQueue[batchID], task)
+}
+
+// PauseBatch 暂停批次：停止提交后续任务
+func (wp *WorkerPool) PauseBatch(batchID string) {
+	wp.pendingMu.Lock()
+	defer wp.pendingMu.Unlock()
+	wp.pausedBatches[batchID] = true
+	log.Printf("[WorkerPool] 批次 %s 已暂停", batchID)
+}
+
+// ResumeBatch 恢复批次：继续提交待处理任务
+func (wp *WorkerPool) ResumeBatch(batchID string) {
+	wp.pendingMu.Lock()
+	delete(wp.pausedBatches, batchID)
+	wp.pendingMu.Unlock()
+	log.Printf("[WorkerPool] 批次 %s 已恢复", batchID)
+	// 立即尝试提交下一个
+	wp.submitNextPending(batchID)
+}
+
+// IsBatchPaused 检查批次是否暂停
+func (wp *WorkerPool) IsBatchPaused(batchID string) bool {
+	wp.pendingMu.Lock()
+	defer wp.pendingMu.Unlock()
+	return wp.pausedBatches[batchID]
+}
+
+// submitNextPending 从待提交队列取出下一个任务并提交
+func (wp *WorkerPool) submitNextPending(batchID string) {
+	wp.pendingMu.Lock()
+	// 暂停中则不提交
+	if wp.pausedBatches[batchID] {
+		wp.pendingMu.Unlock()
+		return
+	}
+	queue, ok := wp.pendingQueue[batchID]
+	if !ok || len(queue) == 0 {
+		wp.pendingMu.Unlock()
+		return
+	}
+	next := queue[0]
+	wp.pendingQueue[batchID] = queue[1:]
+	if len(wp.pendingQueue[batchID]) == 0 {
+		delete(wp.pendingQueue, batchID)
+	}
+	wp.pendingMu.Unlock()
+
+	if !wp.Submit(next) {
+		model.DB.Model(next.TaskModel).Updates(map[string]interface{}{
+			"status":        "failed",
+			"error_message": "任务队列已满",
+		})
+		model.RecomputeBatchStatus(model.DB, batchID)
+	}
+}
+
+// postProcessImage 批量处理图片后处理：格式转换、质量调整、保留原始尺寸
+func postProcessImage(imageData []byte, params map[string]interface{}) []byte {
+	outputFormat, _ := params["output_format"].(string)
+	quality, _ := params["quality"].(int)
+	keepOriginal, _ := params["keep_original_size"].(bool)
+
+	outputFormat = strings.ToUpper(strings.TrimSpace(outputFormat))
+	if outputFormat == "" || (outputFormat != "JPG" && outputFormat != "PNG" && outputFormat != "WEBP") {
+		// 不需要转换，检查是否需要保留原始尺寸
+		if !keepOriginal {
+			return imageData
+		}
+	}
+
+	// 解码生成的图片
+	resultImg, _, err := image.Decode(bytes.NewReader(imageData))
+	if err != nil {
+		log.Printf("[PostProcess] 解码图片失败，跳过后处理: %v", err)
+		return imageData
+	}
+
+	// 保留原始尺寸：将结果图缩放到参考图的尺寸
+	if keepOriginal {
+		if refImages, ok := params["reference_images"].([]interface{}); ok && len(refImages) > 0 {
+			if refBytes, ok := refImages[0].([]byte); ok {
+				refImg, _, refErr := image.Decode(bytes.NewReader(refBytes))
+				if refErr == nil {
+					refBounds := refImg.Bounds()
+					if refBounds.Dx() > 0 && refBounds.Dy() > 0 {
+						resultImg = imaging.Resize(resultImg, refBounds.Dx(), refBounds.Dy(), imaging.Lanczos)
+					}
+				}
+			}
+		}
+	}
+
+	// 编码为目标格式
+	var buf bytes.Buffer
+	switch outputFormat {
+	case "JPG":
+		q := jpeg.DefaultQuality
+		if quality > 0 && quality <= 100 {
+			q = quality
+		}
+		if err := jpeg.Encode(&buf, resultImg, &jpeg.Options{Quality: q}); err != nil {
+			return imageData
+		}
+	case "PNG":
+		if err := png.Encode(&buf, resultImg); err != nil {
+			return imageData
+		}
+	default:
+		// WebP 或未知格式：回退为 PNG
+		if err := png.Encode(&buf, resultImg); err != nil {
+			return imageData
+		}
+	}
+	return buf.Bytes()
+}
+
+// buildBatchFileName 根据命名规则生成输出文件名（不含后缀）
+func buildBatchFileName(params map[string]interface{}) string {
+	namingRule, _ := params["naming_rule"].(string)
+	originalName, _ := params["original_file_name"].(string)
+
+	if originalName == "" {
+		return ""
+	}
+
+	// 去掉原始文件后缀
+	baseName := strings.TrimSuffix(originalName, filepath.Ext(originalName))
+
+	switch namingRule {
+	case "原文件名_时间戳":
+		return fmt.Sprintf("%s_%d", baseName, time.Now().UnixMilli())
+	case "序号":
+		// 序号模式下用 taskID 保证唯一，实际序号由前端根据顺序展示
+		return ""
+	default: // "原文件名_edited"
+		return baseName + "_edited"
+	}
+}
+
+// copyFileToOutputDir 将生成的图片复制到用户指定的输出目录
+func copyFileToOutputDir(srcPath, outputDir, baseName string) error {
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		return fmt.Errorf("创建输出目录失败: %w", err)
+	}
+	ext := filepath.Ext(srcPath)
+	dstPath := filepath.Join(outputDir, baseName+ext)
+
+	src, err := os.Open(srcPath)
+	if err != nil {
+		return err
+	}
+	defer src.Close()
+
+	dst, err := os.Create(dstPath)
+	if err != nil {
+		return err
+	}
+	defer dst.Close()
+
+	_, err = io.Copy(dst, src)
+	return err
 }
 
 func fetchProviderTimeout(providerName string) time.Duration {

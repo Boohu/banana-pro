@@ -12,8 +12,8 @@ interface NavItem {
 const mainNavItems: NavItem[] = [
   { id: 'generate', icon: Image, label: 'AI 绘图' },
   { id: 'batch', icon: Layers, label: '批量处理' },
-  { id: 'history', icon: FolderOpen, label: '历史记录' },
-  { id: 'templates', icon: LayoutTemplate, label: '模板市场' },
+  { id: 'history', icon: FolderOpen, label: '生成记录' },
+  { id: 'templates', icon: LayoutTemplate, label: '灵感广场' },
 ];
 
 export function Sidebar() {

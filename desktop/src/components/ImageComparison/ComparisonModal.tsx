@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { X, Columns2, Maximize, Download, Copy, RefreshCw, ImagePlus } from 'lucide-react';
+import { X, Columns2, Maximize, Download, Copy, RefreshCw, ImagePlus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
 import { getImageUrl } from '@/services/api';
@@ -11,6 +11,11 @@ type ViewMode = 'compare' | 'result';
 interface ComparisonModalProps {
   image: GeneratedImage;
   onClose: () => void;
+  originalImageUrl?: string;
+  onPrev?: () => void;
+  onNext?: () => void;
+  onRegenerate?: () => void;
+  onUseAsRef?: () => void;
 }
 
 function ImageSlider({ leftSrc, rightSrc }: { leftSrc: string; rightSrc: string }) {
@@ -93,60 +98,85 @@ function RefImagesSection() {
   );
 }
 
-export function ComparisonModal({ image, onClose }: ComparisonModalProps) {
+export function ComparisonModal({ image, onClose, originalImageUrl, onPrev, onNext, onRegenerate, onUseAsRef }: ComparisonModalProps) {
   const { t } = useTranslation();
-  const [viewMode, setViewMode] = useState<ViewMode>('compare');
+  const refFiles = useConfigStore((s) => s.refFiles);
+  // 原图来源：外部传入 > configStore 参考图 > 无
+  const hasOriginal = Boolean(originalImageUrl) || refFiles.length > 0;
+  const [viewMode, setViewMode] = useState<ViewMode>(hasOriginal ? 'compare' : 'result');
 
   const imageUrl = image.url || getImageUrl(image.filePath);
-  const thumbnailUrl = image.thumbnailUrl || getImageUrl(image.thumbnailPath);
-  // For comparison, use thumbnail as "original" placeholder since we don't have the actual original
-  const originalUrl = thumbnailUrl || imageUrl;
+  // 对比原图
+  const [refObjectUrl, setRefObjectUrl] = useState<string | null>(null);
+  React.useEffect(() => {
+    if (originalImageUrl) {
+      setRefObjectUrl(null); // 外部传入时不需要 objectUrl
+      return;
+    }
+    if (refFiles.length > 0) {
+      const url = URL.createObjectURL(refFiles[0]);
+      setRefObjectUrl(url);
+      return () => URL.revokeObjectURL(url);
+    }
+    setRefObjectUrl(null);
+  }, [refFiles, originalImageUrl]);
+  const originalUrl = originalImageUrl || refObjectUrl || imageUrl;
+
+  // 键盘快捷键：左右切换
+  React.useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft' && onPrev) onPrev();
+      if (e.key === 'ArrowRight' && onNext) onNext();
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onPrev, onNext, onClose]);
+
+  const [copySuccess, setCopySuccess] = useState(false);
 
   const handleDownload = async () => {
-    if (!imageUrl) return;
-    const isTauri = typeof window !== 'undefined' && Boolean((window as any).__TAURI_INTERNALS__);
-    if (isTauri) {
-      try {
-        const { invoke } = await import('@tauri-apps/api/core' as any);
-        const { save } = await import('@tauri-apps/plugin-dialog');
-        const { getImageDownloadUrl } = await import('@/services/api');
-        const { toast } = await import('@/store/toastStore');
-        const ext = image.mimeType?.includes('png') ? 'png' : 'jpg';
-        const fileName = `generated-${image.id.slice(0, 8)}.${ext}`;
-        // 记住上次保存目录
-        const lastDir = localStorage.getItem('banana-last-save-dir') || '';
-        const defaultPath = lastDir ? `${lastDir}/${fileName}` : fileName;
-        const destPath = await save({
-          defaultPath,
-          filters: [{ name: '图片', extensions: ['png', 'jpg', 'jpeg', 'webp'] }],
-        });
-        if (!destPath) return;
-        // 保存目录记忆
-        const dir = destPath.substring(0, destPath.lastIndexOf('/'));
-        if (dir) localStorage.setItem('banana-last-save-dir', dir);
-        await invoke('download_file_to_path', { url: getImageDownloadUrl(image.id), destPath });
-        toast.success('图片已保存到 ' + destPath.split('/').pop());
-        return;
-      } catch (e) {
-        console.error('Tauri download failed:', e);
-        const { toast } = await import('@/store/toastStore');
-        toast.error('保存失败');
-      }
-    }
-    // Web fallback
-    const a = document.createElement('a');
-    a.href = imageUrl;
-    a.download = `generated-${image.id}.png`;
-    a.click();
-  };
-
-  const handleCopy = async () => {
     if (!imageUrl) return;
     try {
       const res = await fetch(imageUrl);
       const blob = await res.blob();
-      await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      // 从 URL 提取实际文件后缀
+      const ext = imageUrl.match(/\.\w+$/)?.[0] || '.png';
+      a.download = `generated-${image.id}${ext}`;
+      a.click();
+      URL.revokeObjectURL(url);
     } catch {}
+  };
+
+  const handleCopy = async () => {
+    const prompt = image.prompt || '';
+    if (!prompt) return;
+    try {
+      await navigator.clipboard.writeText(prompt);
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 1500);
+    } catch (err) {
+      console.error('[ComparisonModal] 复制提示词失败:', err);
+    }
+  };
+
+  const handleUseAsRef = async () => {
+    if (!imageUrl) return;
+    try {
+      const res = await fetch(imageUrl);
+      const blob = await res.blob();
+      const refExt = imageUrl.match(/\.\w+$/)?.[0] || '.png';
+      const file = new File([blob], `generated-${image.id}${refExt}`, { type: blob.type });
+      useConfigStore.getState().addRefFiles([file]);
+      onClose();
+      // 如果有外部回调也调一下
+      onUseAsRef?.();
+    } catch (err) {
+      console.error('[ComparisonModal] 用作参考图失败:', err);
+    }
   };
 
   return (
@@ -177,6 +207,25 @@ export function ComparisonModal({ image, onClose }: ComparisonModalProps) {
               {t('结果大图', '结果大图')}
             </button>
             <div className="flex-1" />
+            {/* 上一张/下一张 */}
+            {(onPrev || onNext) && (
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={onPrev}
+                  disabled={!onPrev}
+                  className="w-8 h-8 rounded-full bg-surface-tertiary flex items-center justify-center text-fg-secondary hover:text-fg-primary disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={onNext}
+                  disabled={!onNext}
+                  className="w-8 h-8 rounded-full bg-surface-tertiary flex items-center justify-center text-fg-secondary hover:text-fg-primary disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            )}
             <button onClick={onClose} className="w-8 h-8 rounded-full bg-surface-tertiary flex items-center justify-center text-fg-secondary hover:text-fg-primary">
               <X className="w-4 h-4" />
             </button>
@@ -254,15 +303,25 @@ export function ComparisonModal({ image, onClose }: ComparisonModalProps) {
               </button>
               <button onClick={handleCopy} className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg bg-surface-tertiary border border-border text-sm text-fg-secondary hover:text-fg-primary transition-colors">
                 <Copy className="w-4 h-4" />
-                {t('复制', '复制')}
+                {copySuccess ? t('已复制', '已复制') : t('复制提示词', '复制提示词')}
               </button>
             </div>
             <div className="flex gap-2">
-              <button className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg bg-surface-tertiary border border-border text-sm text-fg-secondary hover:text-fg-primary transition-colors">
+              <button
+                onClick={() => { onRegenerate?.(); onClose(); }}
+                className={cn(
+                  'flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg bg-surface-tertiary border border-border text-sm transition-colors',
+                  onRegenerate ? 'text-fg-secondary hover:text-fg-primary cursor-pointer' : 'text-fg-muted/50 cursor-not-allowed'
+                )}
+                disabled={!onRegenerate}
+              >
                 <RefreshCw className="w-4 h-4" />
                 {t('重新生成', '重新生成')}
               </button>
-              <button className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg bg-surface-tertiary border border-border text-sm text-fg-secondary hover:text-fg-primary transition-colors">
+              <button
+                onClick={handleUseAsRef}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg bg-surface-tertiary border border-border text-sm text-fg-secondary hover:text-fg-primary transition-colors"
+              >
                 <ImagePlus className="w-4 h-4" />
                 {t('用作参考图', '用作参考图')}
               </button>

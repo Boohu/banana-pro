@@ -1,8 +1,13 @@
-import React, { useState, useRef } from 'react';
-import { FolderOpen, Play, Pause, Plus, ChevronDown, X, ArrowRight, Loader2, ImagePlus, Image as ImageIcon, Trash2, Folder, CircleCheck, Download } from 'lucide-react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { FolderOpen, Play, Pause, Plus, ChevronDown, X, ArrowRight, Loader2, ImagePlus, Image as ImageIcon, Trash2, Folder, CircleCheck, Download, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
 import { IMAGE_MODEL_OPTIONS, CUSTOM_MODEL_VALUE, useConfigStore } from '@/store/configStore';
+import { useHistoryStore } from '@/store/historyStore';
+import { processBatch, listBatches, getBatchStatus, deleteBatch, pauseBatch, resumeBatch } from '@/services/generateApi';
+import { getImageUrl } from '@/services/api';
+import { BASE_URL } from '@/services/api';
+import { ComparisonModal } from '@/components/ImageComparison/ComparisonModal';
 
 interface BatchFile {
   file: File;
@@ -10,6 +15,8 @@ interface BatchFile {
   status: 'pending' | 'processing' | 'completed' | 'failed';
   progress: number;
   resultUrl?: string;
+  taskId?: string;
+  errorMessage?: string;
 }
 
 interface BatchJob {
@@ -27,8 +34,10 @@ interface BatchJob {
   promptOptEnabled: boolean;
   autoRetry: boolean;
   outputDir: string;
+  outputFolderId: string;
   namingRule: string;
   status: 'pending' | 'processing' | 'completed';
+  backendBatchId?: string;
 }
 
 const createBatchJob = (name: string, defaultModel?: string): BatchJob => ({
@@ -42,17 +51,18 @@ const createBatchJob = (name: string, defaultModel?: string): BatchJob => ({
   quality: 90,
   concurrency: 3,
   outputFormat: 'PNG',
-  keepOriginalSize: true,
-  promptOptEnabled: true,
+  keepOriginalSize: false,
+  promptOptEnabled: false,
   autoRetry: false,
   outputDir: '',
+  outputFolderId: '',
   namingRule: '原文件名_edited',
   status: 'pending',
 });
 
 // ---- Batch List Sidebar ----
-function BatchListSidebar({ batches, selectedId, onSelect, onAdd }: {
-  batches: BatchJob[]; selectedId: string | null; onSelect: (id: string) => void; onAdd: () => void;
+function BatchListSidebar({ batches, selectedId, onSelect, onAdd, onDelete }: {
+  batches: BatchJob[]; selectedId: string | null; onSelect: (id: string) => void; onAdd: () => void; onDelete: (id: string) => void;
 }) {
   const { t } = useTranslation();
   return (
@@ -73,11 +83,11 @@ function BatchListSidebar({ batches, selectedId, onSelect, onAdd }: {
           const isProcessing = batch.status === 'processing';
 
           return (
-            <button
+            <div
               key={batch.id}
               onClick={() => onSelect(batch.id)}
               className={cn(
-                'w-full text-left px-3.5 py-3 rounded-xl space-y-2 transition-colors',
+                'w-full text-left px-3.5 py-3 rounded-xl space-y-2 transition-colors cursor-pointer group relative',
                 isSelected ? 'bg-primary/10 ring-1 ring-primary' : 'bg-surface-secondary hover:bg-surface-tertiary'
               )}
             >
@@ -87,7 +97,13 @@ function BatchListSidebar({ batches, selectedId, onSelect, onAdd }: {
                 ) : (
                   <Folder className={cn('w-4 h-4 shrink-0', isSelected ? 'text-primary' : 'text-fg-muted')} />
                 )}
-                <span className={cn('text-[13px] font-medium truncate', isCompleted ? 'text-fg-secondary' : 'text-fg-primary')}>{batch.name}</span>
+                <span className={cn('text-[13px] font-medium truncate flex-1', isCompleted ? 'text-fg-secondary' : 'text-fg-primary')}>{batch.name}</span>
+                <button
+                  onClick={(e) => { e.stopPropagation(); onDelete(batch.id); }}
+                  className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-error/15 text-fg-muted hover:text-error transition-all shrink-0"
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
               </div>
               <div className="flex items-center gap-2.5">
                 <span className="text-[11px] text-fg-secondary">{totalCount} 张</span>
@@ -106,7 +122,7 @@ function BatchListSidebar({ batches, selectedId, onSelect, onAdd }: {
                   <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-surface-tertiary text-fg-muted">排队中</span>
                 )}
               </div>
-            </button>
+            </div>
           );
         })}
       </div>
@@ -118,10 +134,18 @@ function BatchListSidebar({ batches, selectedId, onSelect, onAdd }: {
 function BatchConfigPanel({ batch, onChange }: { batch: BatchJob; onChange: (updates: Partial<BatchJob>) => void }) {
   const { t } = useTranslation();
   const currentImageModel = useConfigStore((s) => s.imageModel);
-  const isCustomModel = !IMAGE_MODEL_OPTIONS.some((opt) => opt.value === currentImageModel);
-  const modelOptions = isCustomModel
-    ? [...IMAGE_MODEL_OPTIONS, { value: currentImageModel, label: `自定义 (${currentImageModel})` }]
-    : IMAGE_MODEL_OPTIONS;
+  const folders = useHistoryStore((s) => s.folders);
+  const loadFolders = useHistoryStore((s) => s.loadFolders);
+  useEffect(() => { void loadFolders(); }, [loadFolders]);
+  // 读取自定义模型列表（和设置页共享 localStorage）
+  const [customModels] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem('banana-custom-models') || '[]'); } catch { return []; }
+  });
+  const builtinValues = new Set(IMAGE_MODEL_OPTIONS.map((o) => o.value as string));
+  const modelOptions: { value: string; label: string }[] = [
+    ...IMAGE_MODEL_OPTIONS.map((o) => ({ value: o.value as string, label: o.label })),
+    ...customModels.filter((m) => !builtinValues.has(m)).map((m) => ({ value: m, label: m })),
+  ];
   const selectStyle = { backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2371717A' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' };
 
   const isTauri = typeof window !== 'undefined' && Boolean((window as any).__TAURI_INTERNALS__);
@@ -245,34 +269,56 @@ function BatchConfigPanel({ batch, onChange }: { batch: BatchJob; onChange: (upd
 
       <div className="h-px bg-border" />
 
-      {/* Output directory */}
+      {/* Output target */}
       <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-medium text-fg-secondary">{t('输出目录', '输出目录')}</label>
-        <div className="flex items-center gap-2 bg-surface-tertiary border border-border rounded-[10px] px-3 py-2.5">
-          <input
-            type="text"
-            value={batch.outputDir}
-            onChange={(e) => onChange({ outputDir: e.target.value })}
-            placeholder={isTauri ? '/Users/photos/output' : '留空则保存到默认目录'}
-            className="flex-1 bg-transparent text-[13px] text-fg-primary font-mono placeholder:text-fg-muted outline-none"
-          />
-          {isTauri && (
-            <button
-              onClick={async () => {
-                try {
-                  const mod = await (Function('return import("@tauri-apps/plugin-dialog")')() as Promise<any>);
-                  const selected = await mod.open({ directory: true, multiple: false });
-                  if (selected && typeof selected === 'string') onChange({ outputDir: selected });
-                } catch {}
-              }}
-              className="p-1 rounded hover:bg-surface-secondary transition-colors"
-            >
-              <FolderOpen className="w-3.5 h-3.5 text-fg-secondary" />
-            </button>
-          )}
-        </div>
-        {!isTauri && <span className="text-[10px] text-fg-muted">{t('Web 版自动保存到服务器存储目录', 'Web 版自动保存到服务器存储目录')}</span>}
+        <label className="text-xs font-medium text-fg-secondary">{t('输出到', '输出到')}</label>
+        <select
+          value={batch.outputFolderId || ''}
+          onChange={async (e) => {
+            const val = e.target.value;
+            if (val === '__local__') {
+              // 桌面端：弹出文件夹选择
+              try {
+                const mod = await (Function('return import("@tauri-apps/plugin-dialog")')() as Promise<any>);
+                const selected = await mod.open({ directory: true, multiple: false });
+                if (selected && typeof selected === 'string') {
+                  onChange({ outputFolderId: '__local__', outputDir: selected });
+                }
+              } catch {}
+            } else if (val === '') {
+              onChange({ outputFolderId: '', outputDir: '' });
+            } else {
+              onChange({ outputFolderId: val, outputDir: '' });
+            }
+          }}
+          className="w-full bg-surface-tertiary border border-border rounded-[10px] px-3 py-2.5 text-[13px] text-fg-primary outline-none appearance-none cursor-pointer focus:border-primary"
+          style={selectStyle}
+        >
+          <option value="">{t('默认（当月文件夹）', '默认（当月文件夹）')}</option>
+          {folders.map((f) => (
+            <option key={f.id} value={String(f.id)}>{f.name}</option>
+          ))}
+          {isTauri && <option value="__local__">{t('本地文件夹...', '本地文件夹...')}</option>}
+        </select>
       </div>
+      {/* 已选择本地文件夹时显示路径 */}
+      {batch.outputFolderId === '__local__' && batch.outputDir && (
+        <div className="flex items-center gap-2 bg-surface-tertiary border border-border rounded-[10px] px-3 py-2.5">
+          <span className="flex-1 text-[13px] text-fg-primary font-mono truncate">{batch.outputDir}</span>
+          <button
+            onClick={async () => {
+              try {
+                const mod = await (Function('return import("@tauri-apps/plugin-dialog")')() as Promise<any>);
+                const selected = await mod.open({ directory: true, multiple: false });
+                if (selected && typeof selected === 'string') onChange({ outputDir: selected });
+              } catch {}
+            }}
+            className="p-1 rounded hover:bg-surface-secondary transition-colors shrink-0"
+          >
+            <FolderOpen className="w-3.5 h-3.5 text-fg-secondary" />
+          </button>
+        </div>
+      )}
 
       {/* Naming rule */}
       <div className="flex flex-col gap-1.5">
@@ -315,6 +361,72 @@ export function BatchPage() {
   const currentImageModel = useConfigStore((s) => s.imageModel);
   const [batches, setBatches] = useState<BatchJob[]>([createBatchJob('批次 1', currentImageModel)]);
   const [selectedBatchId, setSelectedBatchId] = useState<string>(batches[0].id);
+  const loadedRef = useRef(false);
+
+  // 进入页面时从后端加载批次历史
+  useEffect(() => {
+    if (loadedRef.current) return;
+    loadedRef.current = true;
+
+    listBatches(1, 50).then(async (res) => {
+      const batchList = (res.list || []).filter((b) => b.status !== 'draft');
+      if (batchList.length === 0) return;
+
+      // 逐个拿批次详情（含 tasks）
+      const details = await Promise.all(
+        batchList.map((b) => getBatchStatus(b.batch_id).catch(() => null))
+      );
+
+      const backendBatches: BatchJob[] = details
+        .filter((d): d is NonNullable<typeof d> => d !== null)
+        .map((b, i) => {
+          const tasks = b.tasks || [];
+          const files: BatchFile[] = tasks.map((t) => ({
+            file: new File([], t.original_file_name || `task-${t.task_id.substring(0, 8)}`),
+            previewUrl: t.original_image_path ? getImageUrl(t.original_image_path) : (t.thumbnail_url || (t.thumbnail_path ? getImageUrl(t.thumbnail_path) : '')),
+            status: (t.status === 'completed' ? 'completed' : t.status === 'failed' ? 'failed' : 'pending') as BatchFile['status'],
+            progress: t.status === 'completed' ? 100 : 0,
+            resultUrl: t.image_url || (t.local_path ? getImageUrl(t.local_path) : undefined),
+            taskId: t.task_id,
+            errorMessage: t.error_message,
+          }));
+          const promptLabel = b.prompt.length > 20 ? b.prompt.substring(0, 20) + '...' : b.prompt;
+          // 从 config_snapshot 还原配置
+          let snapshot: Record<string, any> = {};
+          try { if (b.config_snapshot) snapshot = JSON.parse(b.config_snapshot); } catch {}
+          return {
+            ...createBatchJob(promptLabel || `历史批次 ${i + 1}`, b.model_id),
+            id: b.batch_id,
+            backendBatchId: b.batch_id,
+            files,
+            prompt: b.prompt,
+            model: b.model_id,
+            aspectRatio: snapshot.aspectRatio || '1:1',
+            resolution: snapshot.imageSize || '2K',
+            outputFormat: (snapshot.output_format || 'PNG') as BatchJob['outputFormat'],
+            quality: typeof snapshot.quality === 'number' ? snapshot.quality : 90,
+            concurrency: typeof snapshot.concurrency === 'number' ? snapshot.concurrency : 3,
+            namingRule: snapshot.naming_rule || '原文件名_edited',
+            keepOriginalSize: snapshot.keep_original_size === true,
+            promptOptEnabled: (snapshot.prompt_optimize_mode || 'off') !== 'off',
+            autoRetry: snapshot.auto_retry === true,
+            status: b.status === 'completed' || b.status === 'partial' ? 'completed' as const : 'pending' as const,
+          };
+        });
+
+      if (backendBatches.length > 0) {
+        setBatches((prev) => {
+          const existingIds = new Set(prev.map((b) => b.backendBatchId).filter(Boolean));
+          const newFromBackend = backendBatches.filter((b) => !existingIds.has(b.id));
+          // 最新的批次排在前面（新建空批次在最前，历史批次按时间倒序）
+          // 历史批次（已按时间倒序）在前，新建空批次在后
+          return [...newFromBackend, ...prev];
+        });
+      }
+    }).catch((err) => {
+      console.error('[BatchPage] 加载批次历史失败:', err);
+    });
+  }, []);
 
   const selectedBatch = batches.find((b) => b.id === selectedBatchId) || batches[0];
 
@@ -328,6 +440,74 @@ export function BatchPage() {
     setSelectedBatchId(newBatch.id);
   };
 
+  const handleDeleteBatch = useCallback((id: string) => {
+    const batch = batches.find((b) => b.id === id);
+    if (!batch) return;
+    // 后端有记录则调删除接口
+    if (batch.backendBatchId) {
+      deleteBatch(batch.backendBatchId).catch((err) => {
+        console.error('[BatchPage] 删除批次失败:', err);
+      });
+    }
+    setBatches((prev) => {
+      const next = prev.filter((b) => b.id !== id);
+      // 如果删的是当前选中的，切到第一个或新建一个
+      if (selectedBatchId === id) {
+        if (next.length > 0) {
+          setSelectedBatchId(next[0].id);
+        } else {
+          const newBatch = createBatchJob('批次 1', currentImageModel);
+          next.push(newBatch);
+          setSelectedBatchId(newBatch.id);
+        }
+      }
+      return next;
+    });
+  }, [batches, selectedBatchId, currentImageModel]);
+
+  // 图片预览状态
+  const [previewIndex, setPreviewIndex] = useState<number | null>(null);
+  const completedFiles = selectedBatch.files.filter((f) => f.status === 'completed' && f.resultUrl);
+  const previewFile = previewIndex !== null ? completedFiles[previewIndex] : null;
+
+  // 重试失败的文件
+  const handleRetryFile = useCallback(async (fileIndex: number) => {
+    if (!selectedBatch) return;
+    const file = selectedBatch.files[fileIndex];
+    if (!file || file.status !== 'failed') return;
+
+    const provider = useConfigStore.getState().imageProvider || 'gemini';
+    const formData = new FormData();
+    formData.append('files', file.file);
+    formData.append('prompt', selectedBatch.prompt);
+    formData.append('provider', provider);
+    formData.append('model_id', selectedBatch.model);
+    formData.append('aspectRatio', selectedBatch.aspectRatio);
+    formData.append('imageSize', selectedBatch.resolution);
+    formData.append('outputFormat', selectedBatch.outputFormat);
+    formData.append('quality', String(selectedBatch.quality));
+    formData.append('concurrency', '1');
+
+    // 标记为处理中
+    const updatedFiles = [...selectedBatch.files];
+    updatedFiles[fileIndex] = { ...file, status: 'processing', progress: 0, errorMessage: undefined };
+    updateBatch(selectedBatch.id, { files: updatedFiles });
+
+    try {
+      const res = await processBatch(formData);
+      const task = res.tasks?.[0];
+      if (task) {
+        updatedFiles[fileIndex] = { ...updatedFiles[fileIndex], taskId: task.task_id };
+        updateBatch(selectedBatch.id, { files: [...updatedFiles] });
+        // 连接 SSE 监听这个新批次
+        connectSSE(selectedBatch.id, res.batch_id);
+      }
+    } catch (err: any) {
+      updatedFiles[fileIndex] = { ...file, status: 'failed', errorMessage: err?.message || '重试失败' };
+      updateBatch(selectedBatch.id, { files: [...updatedFiles] });
+    }
+  }, [selectedBatch]);
+
   const handleSelectFiles = (selectedFiles: FileList | null) => {
     if (!selectedFiles || !selectedBatch) return;
     const newFiles: BatchFile[] = Array.from(selectedFiles)
@@ -340,6 +520,128 @@ export function BatchPage() {
       }));
     updateBatch(selectedBatch.id, { files: [...selectedBatch.files, ...newFiles] });
   };
+
+  const sseRef = useRef<EventSource | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // 清理 SSE 连接
+  useEffect(() => {
+    return () => { sseRef.current?.close(); };
+  }, []);
+
+  // 开始批量处理
+  const handleStart = useCallback(async () => {
+    if (!selectedBatch || selectedBatch.files.length === 0 || !selectedBatch.prompt.trim()) return;
+    setIsSubmitting(true);
+
+    // 获取 provider 配置
+    const provider = useConfigStore.getState().imageProvider || 'gemini';
+
+    // 构建 FormData（传递全部配置参数）
+    const formData = new FormData();
+    selectedBatch.files.forEach((f) => formData.append('files', f.file));
+    formData.append('prompt', selectedBatch.prompt);
+    formData.append('provider', provider);
+    formData.append('model_id', selectedBatch.model);
+    formData.append('aspectRatio', selectedBatch.aspectRatio);
+    formData.append('imageSize', selectedBatch.resolution);
+    formData.append('outputFormat', selectedBatch.outputFormat);
+    formData.append('quality', String(selectedBatch.quality));
+    formData.append('concurrency', String(selectedBatch.concurrency));
+    formData.append('namingRule', selectedBatch.namingRule);
+    formData.append('keepOriginalSize', String(selectedBatch.keepOriginalSize));
+    formData.append('autoRetry', String(selectedBatch.autoRetry));
+    if (selectedBatch.outputFolderId === '__local__' && selectedBatch.outputDir) {
+      formData.append('outputDir', selectedBatch.outputDir);
+    } else if (selectedBatch.outputFolderId && selectedBatch.outputFolderId !== '__local__') {
+      formData.append('folderId', selectedBatch.outputFolderId);
+    }
+    if (selectedBatch.promptOptEnabled) {
+      formData.append('prompt_optimize_mode', 'text');
+    }
+
+    try {
+      const res = await processBatch(formData);
+      const batchId = res.batch_id;
+      const tasks = res.tasks || [];
+
+      // 用 original_file_name 匹配文件，记录 taskId
+      const updatedFiles = selectedBatch.files.map((f) => {
+        const matched = tasks.find((t) => t.original_file_name === f.file.name);
+        return { ...f, taskId: matched?.task_id, status: 'processing' as const };
+      });
+      updateBatch(selectedBatch.id, {
+        backendBatchId: batchId,
+        files: updatedFiles,
+        status: 'processing',
+      });
+
+      // 启动 SSE 监听
+      connectSSE(selectedBatch.id, batchId);
+    } catch (err: any) {
+      console.error('[BatchPage] 提交失败:', err);
+      const msg = err?.response?.data?.message || err?.message || '提交失败，请检查后端是否运行';
+      alert(`批量处理提交失败: ${msg}`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [selectedBatch]);
+
+  // SSE 连接监听批次进度
+  const connectSSE = useCallback((frontendBatchId: string, backendBatchId: string) => {
+    sseRef.current?.close();
+    const url = `${BASE_URL}/batches/${backendBatchId}/stream`;
+    const es = new EventSource(url);
+    sseRef.current = es;
+
+    es.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        const tasks: any[] = data.tasks || [];
+
+        setBatches((prev) => prev.map((b) => {
+          if (b.id !== frontendBatchId) return b;
+          const updatedFiles = b.files.map((f) => {
+            const matched = tasks.find((t: any) =>
+              t.task_id === f.taskId || t.original_file_name === f.file.name
+            );
+            if (!matched) return f;
+            const resultUrl = matched.image_url || (matched.local_path ? getImageUrl(matched.local_path) : undefined);
+            return {
+              ...f,
+              status: matched.status === 'completed' ? 'completed' as const
+                : matched.status === 'failed' ? 'failed' as const
+                : 'processing' as const,
+              resultUrl,
+              errorMessage: matched.error_message,
+              progress: matched.status === 'completed' ? 100 : matched.status === 'failed' ? 0 : 50,
+            };
+          });
+
+          const completedCount = updatedFiles.filter((f) => f.status === 'completed').length;
+          const failedCount = updatedFiles.filter((f) => f.status === 'failed').length;
+          const allDone = completedCount + failedCount >= updatedFiles.length;
+
+          return {
+            ...b,
+            files: updatedFiles,
+            status: allDone ? 'completed' as const : 'processing' as const,
+          };
+        }));
+
+        // 批次完成时关闭 SSE
+        if (data.status === 'completed' || data.status === 'failed' || data.status === 'partial') {
+          es.close();
+          sseRef.current = null;
+        }
+      } catch {}
+    };
+
+    es.onerror = () => {
+      es.close();
+      sseRef.current = null;
+    };
+  }, []);
 
   const removeFile = (index: number) => {
     if (!selectedBatch) return;
@@ -361,6 +663,7 @@ export function BatchPage() {
         selectedId={selectedBatchId}
         onSelect={setSelectedBatchId}
         onAdd={addBatch}
+        onDelete={handleDeleteBatch}
       />
 
       {/* Center: file list for selected batch */}
@@ -432,7 +735,18 @@ export function BatchPage() {
                     )}
                   </div>
                   <ArrowRight className="w-4 h-4 text-fg-muted shrink-0" />
-                  <div className="w-12 h-12 rounded-lg bg-surface-tertiary flex items-center justify-center shrink-0">
+                  <div
+                    className={cn(
+                      'w-12 h-12 rounded-lg bg-surface-tertiary flex items-center justify-center shrink-0',
+                      item.status === 'completed' && item.resultUrl && 'cursor-pointer hover:ring-2 hover:ring-primary'
+                    )}
+                    onClick={() => {
+                      if (item.status === 'completed' && item.resultUrl) {
+                        const idx = completedFiles.findIndex((f) => f.resultUrl === item.resultUrl);
+                        if (idx >= 0) setPreviewIndex(idx);
+                      }
+                    }}
+                  >
                     {item.status === 'completed' && item.resultUrl ? (
                       <img src={item.resultUrl} alt="" className="w-full h-full rounded-lg object-cover" />
                     ) : item.status === 'processing' ? (
@@ -454,15 +768,30 @@ export function BatchPage() {
                   </div>
                   {item.status === 'completed' && item.resultUrl && (
                     <button
-                      onClick={() => {
-                        const a = document.createElement('a');
-                        a.href = item.resultUrl!;
-                        a.download = item.file.name.replace(/\.[^.]+$/, '_edited$&');
-                        a.click();
+                      onClick={async () => {
+                        try {
+                          const res = await fetch(item.resultUrl!);
+                          const blob = await res.blob();
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = item.file.name.replace(/\.[^.]+$/, '_edited$&');
+                          a.click();
+                          URL.revokeObjectURL(url);
+                        } catch {}
                       }}
                       className="text-fg-muted hover:text-success transition-colors shrink-0"
                     >
                       <Download className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                  {item.status === 'failed' && (
+                    <button
+                      onClick={() => handleRetryFile(i)}
+                      className="text-fg-muted hover:text-primary transition-colors shrink-0"
+                      title="重试"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
                     </button>
                   )}
                   <button onClick={() => removeFile(i)} className="text-fg-muted hover:text-error transition-colors shrink-0">
@@ -485,28 +814,64 @@ export function BatchPage() {
             </div>
             <span className="text-xs font-semibold text-primary font-mono">{completedCount} / {selectedBatch.files.length}</span>
             <button
-              disabled={selectedBatch.files.length === 0 || !selectedBatch.prompt.trim()}
+              onClick={handleStart}
+              disabled={selectedBatch.files.length === 0 || !selectedBatch.prompt.trim() || isSubmitting || selectedBatch.status === 'processing'}
               className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              <Play className="w-3.5 h-3.5" />
-              开始
+              {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
+              {isSubmitting ? '提交中...' : selectedBatch.status === 'processing' ? '处理中...' : '开始'}
             </button>
-            <button className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-surface-tertiary border border-border text-xs text-fg-secondary hover:text-fg-primary transition-colors">
-              <Pause className="w-3.5 h-3.5" />
-              暂停
-            </button>
+            {selectedBatch.status === 'processing' && selectedBatch.backendBatchId && (
+              <button
+                onClick={async () => {
+                  try {
+                    await pauseBatch(selectedBatch.backendBatchId!);
+                    updateBatch(selectedBatch.id, { status: 'pending' });
+                  } catch (err) {
+                    console.error('[BatchPage] 暂停失败:', err);
+                  }
+                }}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-warning/15 text-warning text-xs font-semibold hover:bg-warning/25 transition-colors"
+              >
+                <Pause className="w-3.5 h-3.5" />
+                暂停
+              </button>
+            )}
+            {selectedBatch.status === 'pending' && selectedBatch.backendBatchId && (
+              <button
+                onClick={async () => {
+                  try {
+                    await resumeBatch(selectedBatch.backendBatchId!);
+                    updateBatch(selectedBatch.id, { status: 'processing' });
+                    connectSSE(selectedBatch.id, selectedBatch.backendBatchId!);
+                  } catch (err) {
+                    console.error('[BatchPage] 恢复失败:', err);
+                  }
+                }}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-primary/15 text-primary text-xs font-semibold hover:bg-primary/25 transition-colors"
+              >
+                <Play className="w-3.5 h-3.5" />
+                继续
+              </button>
+            )}
             {completedCount > 0 && (
               <button
-                onClick={() => {
-                  // 逐个下载已完成的图片
-                  selectedBatch.files.forEach((f) => {
+                onClick={async () => {
+                  // 逐个下载已完成的图片（fetch blob 避免跨域打开）
+                  for (const f of selectedBatch.files) {
                     if (f.status === 'completed' && f.resultUrl) {
-                      const a = document.createElement('a');
-                      a.href = f.resultUrl;
-                      a.download = f.file.name.replace(/\.[^.]+$/, '_edited$&');
-                      a.click();
+                      try {
+                        const res = await fetch(f.resultUrl);
+                        const blob = await res.blob();
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = f.file.name.replace(/\.[^.]+$/, '_edited$&');
+                        a.click();
+                        URL.revokeObjectURL(url);
+                      } catch {}
                     }
-                  });
+                  }
                 }}
                 className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-success/15 text-success text-xs font-semibold hover:bg-success/25 transition-colors"
               >
@@ -520,6 +885,29 @@ export function BatchPage() {
 
       {/* Right config panel */}
       <BatchConfigPanel batch={selectedBatch} onChange={(updates) => updateBatch(selectedBatch.id, updates)} />
+
+      {/* 图片预览对比弹窗 */}
+      {previewFile && previewIndex !== null && (
+        <ComparisonModal
+          image={{
+            id: previewFile.taskId || '',
+            taskId: previewFile.taskId || '',
+            filePath: '',
+            thumbnailPath: '',
+            fileSize: 0,
+            width: 0,
+            height: 0,
+            mimeType: '',
+            createdAt: '',
+            url: previewFile.resultUrl,
+            prompt: selectedBatch.prompt,
+          }}
+          originalImageUrl={previewFile.previewUrl || undefined}
+          onClose={() => setPreviewIndex(null)}
+          onPrev={previewIndex > 0 ? () => setPreviewIndex(previewIndex - 1) : undefined}
+          onNext={previewIndex < completedFiles.length - 1 ? () => setPreviewIndex(previewIndex + 1) : undefined}
+        />
+      )}
     </div>
   );
 }

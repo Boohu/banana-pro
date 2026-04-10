@@ -151,7 +151,7 @@ export function TemplatesPage() {
       <div className="p-6 pb-4 space-y-5">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold text-fg-primary">{t('模板市场', '模板市场')}</h2>
+          <h2 className="text-xl font-bold text-fg-primary">{t('灵感广场', '灵感广场')}</h2>
           <div className="w-72 flex items-center gap-2.5 bg-surface-secondary border border-border rounded-lg px-3.5 py-2">
             <Search className="w-4 h-4 text-fg-muted" />
             <input

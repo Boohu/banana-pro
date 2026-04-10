@@ -359,6 +359,7 @@ function TaskQueueBar({ expanded, onToggle }: { expanded: boolean; onToggle: () 
 // ---- Main Generate Page ----
 export function GeneratePage() {
   const { t } = useTranslation();
+  const { generate } = useGenerate();
   const [previewImage, setPreviewImage] = useState<GeneratedImage | null>(null);
   const [queueExpanded, setQueueExpanded] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -514,6 +515,7 @@ export function GeneratePage() {
         <ComparisonModal
           image={previewImage}
           onClose={() => setPreviewImage(null)}
+          onRegenerate={() => { generate(); }}
         />
       )}
     </div>

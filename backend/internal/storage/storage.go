@@ -475,9 +475,16 @@ func (c *CompositeStorage) Delete(name string) error {
 }
 
 var GlobalStorage Storage
+var globalBaseDir string
+
+// GetBaseDir 获取本地存储根目录
+func GetBaseDir() string {
+	return globalBaseDir
+}
 
 // InitStorage 初始化存储组件
 func InitStorage(localDir string, ossConfig map[string]string) {
+	globalBaseDir = localDir
 	local := &LocalStorage{BaseDir: localDir}
 
 	var ossStorage *OSSStorage

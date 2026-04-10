@@ -44,7 +44,7 @@ export function HistoryPage() {
                 void loadHistory();
               }
             }}
-            placeholder={t('history.search', '搜索历史记录... (回车搜索)')}
+            placeholder={t('history.search', '搜索生成记录... (回车搜索)')}
             className="flex-1 bg-transparent text-sm text-fg-primary placeholder:text-fg-muted outline-none"
           />
           {searchKeyword && (
@@ -102,6 +102,7 @@ export function HistoryPage() {
       <CreateFolderDialog
         isOpen={isCreateFolderDialogOpen}
         onClose={() => setIsCreateFolderDialogOpen(false)}
+        onSuccess={() => { void loadFolders(); }}
       />
     </div>
   );

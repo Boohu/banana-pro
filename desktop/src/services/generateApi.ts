@@ -48,3 +48,27 @@ export const listBatches = async (page = 1, pageSize = 20): Promise<{ total: num
   const res = await api.get<{ total: number; list: BackendBatch[] }>('/batches', { params: { page, page_size: pageSize } });
   return res as unknown as { total: number; list: BackendBatch[] };
 };
+
+// 删除批次
+export const deleteBatch = async (batchId: string): Promise<void> => {
+  await api.delete(`/batches/${batchId}`);
+};
+
+// 暂停批次
+export const pauseBatch = async (batchId: string): Promise<void> => {
+  await api.post(`/batches/${batchId}/pause`);
+};
+
+// 恢复批次
+export const resumeBatch = async (batchId: string): Promise<void> => {
+  await api.post(`/batches/${batchId}/resume`);
+};
+
+// ---------- 批量图生图 API ----------
+
+// 批量图生图处理：提交多张图片 + 统一提示词
+// 后端 BatchResponse 是扁平结构（Batch 字段内嵌 + tasks 字段）
+export const processBatch = async (formData: FormData): Promise<BackendBatch & { tasks: BackendTask[] }> => {
+  const res = await api.post('/batches/process', formData, { timeout: 300000 });
+  return res as unknown as BackendBatch & { tasks: BackendTask[] };
+};
