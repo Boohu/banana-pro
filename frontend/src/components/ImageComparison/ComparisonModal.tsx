@@ -18,7 +18,7 @@ interface ComparisonModalProps {
   onUseAsRef?: () => void;
 }
 
-function ImageSlider({ leftSrc, rightSrc }: { leftSrc: string; rightSrc: string }) {
+function ImageSlider({ leftSrc, rightSrc, leftLabel, rightLabel }: { leftSrc: string; rightSrc: string; leftLabel?: string; rightLabel?: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [sliderPos, setSliderPos] = useState(50);
   const dragging = useRef(false);
@@ -55,10 +55,10 @@ function ImageSlider({ leftSrc, rightSrc }: { leftSrc: string; rightSrc: string 
 
       {/* Labels */}
       <div className="absolute top-4 left-4 px-3 py-1.5 rounded-lg bg-black/60 text-xs font-semibold text-white">
-        原图
+        {leftLabel || 'Original'}
       </div>
       <div className="absolute top-4 right-4 px-3 py-1.5 rounded-lg bg-black/60 text-xs font-semibold text-white">
-        生成结果
+        {rightLabel || 'Generated'}
       </div>
 
       {/* Slider line */}
@@ -85,7 +85,7 @@ function RefImagesSection() {
     <>
       <div className="h-px bg-border my-4" />
       <div className="space-y-2">
-        <h4 className="text-sm font-semibold text-fg-primary">{t('参考图', '参考图')}（{refFiles.length} 张）</h4>
+        <h4 className="text-sm font-semibold text-fg-primary">{t('comparison.refImages')}（{refFiles.length} 张）</h4>
         <div className="flex gap-2">
           {refFiles.map((file, i) => (
             <div key={i} className="w-16 h-16 rounded-lg overflow-hidden bg-surface-tertiary shrink-0">
@@ -194,7 +194,7 @@ export function ComparisonModal({ image, onClose, originalImageUrl, onPrev, onNe
               )}
             >
               <Columns2 className="w-3.5 h-3.5" />
-              {t('对比', '对比')}
+              {t('comparison.compare')}
             </button>
             <button
               onClick={() => setViewMode('result')}
@@ -204,7 +204,7 @@ export function ComparisonModal({ image, onClose, originalImageUrl, onPrev, onNe
               )}
             >
               <Maximize className="w-3.5 h-3.5" />
-              {t('结果大图', '结果大图')}
+              {t('comparison.result')}
             </button>
             <div className="flex-1" />
             {/* 上一张/下一张 */}
@@ -234,7 +234,7 @@ export function ComparisonModal({ image, onClose, originalImageUrl, onPrev, onNe
           {/* Image area */}
           <div className="flex-1 min-h-0 bg-surface-primary">
             {viewMode === 'compare' ? (
-              <ImageSlider leftSrc={originalUrl} rightSrc={imageUrl} />
+              <ImageSlider leftSrc={originalUrl} rightSrc={imageUrl} leftLabel={t('comparison.original')} rightLabel={t('comparison.generated')} />
             ) : (
               <div className="w-full h-full flex items-center justify-center p-4">
                 <img src={imageUrl} alt="result" className="max-w-full max-h-full object-contain rounded-lg" />
@@ -245,31 +245,31 @@ export function ComparisonModal({ image, onClose, originalImageUrl, onPrev, onNe
 
         {/* Right: details */}
         <div className="w-80 shrink-0 flex flex-col p-6 overflow-y-auto border-l border-border">
-          <h3 className="text-base font-semibold text-fg-primary mb-4">{t('图片详情', '图片详情')}</h3>
+          <h3 className="text-base font-semibold text-fg-primary mb-4">{t('comparison.imageDetails')}</h3>
 
           {/* Info rows */}
           <div className="space-y-2.5 text-sm">
             {image.width > 0 && (
               <div className="flex justify-between">
-                <span className="text-fg-muted">{t('尺寸', '尺寸')}</span>
+                <span className="text-fg-muted">{t('comparison.dimensions')}</span>
                 <span className="text-fg-primary font-mono">{image.width} × {image.height}</span>
               </div>
             )}
             {image.fileSize > 0 && (
               <div className="flex justify-between">
-                <span className="text-fg-muted">{t('文件大小', '文件大小')}</span>
+                <span className="text-fg-muted">{t('comparison.fileSize')}</span>
                 <span className="text-fg-primary font-mono">{(image.fileSize / 1024 / 1024).toFixed(1)} MB</span>
               </div>
             )}
             {image.mimeType && (
               <div className="flex justify-between">
-                <span className="text-fg-muted">{t('格式', '格式')}</span>
+                <span className="text-fg-muted">{t('comparison.format')}</span>
                 <span className="text-fg-primary">{image.mimeType.split('/')[1]?.toUpperCase()}</span>
               </div>
             )}
             {image.createdAt && (
               <div className="flex justify-between">
-                <span className="text-fg-muted">{t('生成时间', '生成时间')}</span>
+                <span className="text-fg-muted">{t('comparison.generatedAt')}</span>
                 <span className="text-fg-primary text-xs">{new Date(image.createdAt).toLocaleString('zh-CN')}</span>
               </div>
             )}
@@ -283,7 +283,7 @@ export function ComparisonModal({ image, onClose, originalImageUrl, onPrev, onNe
             <>
               <div className="h-px bg-border my-4" />
               <div className="space-y-2">
-                <h4 className="text-sm font-semibold text-fg-primary">{t('使用的提示词', '使用的提示词')}</h4>
+                <h4 className="text-sm font-semibold text-fg-primary">{t('comparison.usedPrompt')}</h4>
                 <div className="bg-surface-tertiary rounded-lg p-3">
                   <p className="text-xs text-fg-secondary leading-relaxed break-words">{image.prompt}</p>
                 </div>
@@ -299,11 +299,11 @@ export function ComparisonModal({ image, onClose, originalImageUrl, onPrev, onNe
             <div className="flex gap-2">
               <button onClick={handleDownload} className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors">
                 <Download className="w-4 h-4" />
-                {t('保存', '保存')}
+                {t('comparison.save')}
               </button>
               <button onClick={handleCopy} className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg bg-surface-tertiary border border-border text-sm text-fg-secondary hover:text-fg-primary transition-colors">
                 <Copy className="w-4 h-4" />
-                {copySuccess ? t('已复制', '已复制') : t('复制提示词', '复制提示词')}
+                {copySuccess ? t('comparison.copied') : t('comparison.copyPrompt')}
               </button>
             </div>
             <div className="flex gap-2">
@@ -316,14 +316,14 @@ export function ComparisonModal({ image, onClose, originalImageUrl, onPrev, onNe
                 disabled={!onRegenerate}
               >
                 <RefreshCw className="w-4 h-4" />
-                {t('重新生成', '重新生成')}
+                {t('comparison.regenerate')}
               </button>
               <button
                 onClick={handleUseAsRef}
                 className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg bg-surface-tertiary border border-border text-sm text-fg-secondary hover:text-fg-primary transition-colors"
               >
                 <ImagePlus className="w-4 h-4" />
-                {t('用作参考图', '用作参考图')}
+                {t('comparison.useAsRef')}
               </button>
             </div>
           </div>

@@ -68,10 +68,10 @@ function BatchListSidebar({ batches, selectedId, onSelect, onAdd, onDelete }: {
   return (
     <div className="w-[280px] shrink-0 border-r border-border flex flex-col">
       <div className="flex items-center justify-between px-4 py-3">
-        <h3 className="text-sm font-semibold text-fg-primary">{t('批次列表', '批次列表')}</h3>
+        <h3 className="text-sm font-semibold text-fg-primary">{t('batch.list')}</h3>
         <button onClick={onAdd} className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-primary text-primary-foreground text-[11px] font-semibold hover:bg-primary/90 transition-colors">
           <Plus className="w-3.5 h-3.5" />
-          {t('新建', '新建')}
+          {t('batch.new')}
         </button>
       </div>
       <div className="flex-1 overflow-y-auto px-2 pt-2 pb-2 space-y-1.5">
@@ -116,10 +116,10 @@ function BatchListSidebar({ batches, selectedId, onSelect, onAdd, onDelete }: {
                   </>
                 )}
                 {isCompleted && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-success/15 text-success">已完成</span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-success/15 text-success">{t('batch.status.completed')}</span>
                 )}
                 {batch.status === 'pending' && totalCount > 0 && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-surface-tertiary text-fg-muted">排队中</span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-surface-tertiary text-fg-muted">{t('batch.status.queued')}</span>
                 )}
               </div>
             </div>
@@ -160,23 +160,23 @@ function BatchConfigPanel({ batch, onChange }: { batch: BatchJob; onChange: (upd
     <aside className="w-80 shrink-0 bg-surface-secondary border-l border-border p-[18px] flex flex-col gap-3 overflow-y-auto hidden lg:flex">
       <div className="flex items-center gap-2">
         <Folder className="w-4 h-4 text-primary" />
-        <h3 className="text-[15px] font-semibold text-fg-primary">{t('批次配置', '批次配置')}</h3>
+        <h3 className="text-[15px] font-semibold text-fg-primary">{t('batch.config')}</h3>
       </div>
 
       {/* Prompt */}
       <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-medium text-fg-secondary">{t('提示词', '提示词')}</label>
+        <label className="text-xs font-medium text-fg-secondary">{t('batch.prompt')}</label>
         <textarea
           value={batch.prompt}
           onChange={(e) => onChange({ prompt: e.target.value })}
-          placeholder="描述你希望对图片做的处理..."
+          placeholder={t('batch.promptPlaceholder')}
           className="w-full h-20 rounded-[10px] bg-surface-tertiary border border-border px-3.5 py-2.5 text-[13px] text-fg-primary placeholder:text-fg-muted outline-none resize-none focus:border-primary transition-colors"
         />
       </div>
 
       {/* Model */}
       <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-medium text-fg-secondary">{t('模型', '模型')}</label>
+        <label className="text-xs font-medium text-fg-secondary">{t('batch.model')}</label>
         <select
           value={batch.model}
           onChange={(e) => onChange({ model: e.target.value })}
@@ -191,7 +191,7 @@ function BatchConfigPanel({ batch, onChange }: { batch: BatchJob; onChange: (upd
 
       {/* Aspect Ratio */}
       <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-medium text-fg-secondary">{t('尺寸', '尺寸')}</label>
+        <label className="text-xs font-medium text-fg-secondary">{t('batch.aspectRatio')}</label>
         <select
           value={batch.aspectRatio}
           onChange={(e) => onChange({ aspectRatio: e.target.value })}
@@ -206,7 +206,7 @@ function BatchConfigPanel({ batch, onChange }: { batch: BatchJob; onChange: (upd
 
       {/* Resolution */}
       <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-medium text-fg-secondary">{t('分辨率', '分辨率')}</label>
+        <label className="text-xs font-medium text-fg-secondary">{t('batch.resolution')}</label>
         <select
           value={batch.resolution}
           onChange={(e) => onChange({ resolution: e.target.value })}
@@ -220,7 +220,7 @@ function BatchConfigPanel({ batch, onChange }: { batch: BatchJob; onChange: (upd
 
       {/* Output format */}
       <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-medium text-fg-secondary">{t('输出格式', '输出格式')}</label>
+        <label className="text-xs font-medium text-fg-secondary">{t('batch.outputFormat')}</label>
         <div className="flex gap-1.5">
           {(['PNG', 'JPG', 'WebP'] as const).map((fmt) => (
             <button
@@ -240,7 +240,7 @@ function BatchConfigPanel({ batch, onChange }: { batch: BatchJob; onChange: (upd
       {/* Quality */}
       <div className="flex flex-col gap-1.5">
         <div className="flex items-center justify-between">
-          <label className="text-xs font-medium text-fg-secondary">{t('图片质量', '图片质量')}</label>
+          <label className="text-xs font-medium text-fg-secondary">{t('batch.quality')}</label>
           <span className="text-xs font-semibold text-primary font-mono">{batch.quality}%</span>
         </div>
         <input
@@ -253,7 +253,7 @@ function BatchConfigPanel({ batch, onChange }: { batch: BatchJob; onChange: (upd
       {/* Concurrency */}
       <div className="flex flex-col gap-1.5">
         <div className="flex items-center justify-between">
-          <label className="text-xs font-medium text-fg-secondary">{t('并发数量', '并发数量')}</label>
+          <label className="text-xs font-medium text-fg-secondary">{t('batch.concurrency')}</label>
           <span className="text-xs font-semibold text-primary font-mono">{batch.concurrency}</span>
         </div>
         <input
@@ -271,7 +271,7 @@ function BatchConfigPanel({ batch, onChange }: { batch: BatchJob; onChange: (upd
 
       {/* Output target */}
       <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-medium text-fg-secondary">{t('输出到', '输出到')}</label>
+        <label className="text-xs font-medium text-fg-secondary">{t('batch.outputTo')}</label>
         <select
           value={batch.outputFolderId || ''}
           onChange={async (e) => {
@@ -294,11 +294,11 @@ function BatchConfigPanel({ batch, onChange }: { batch: BatchJob; onChange: (upd
           className="w-full bg-surface-tertiary border border-border rounded-[10px] px-3 py-2.5 text-[13px] text-fg-primary outline-none appearance-none cursor-pointer focus:border-primary"
           style={selectStyle}
         >
-          <option value="">{t('默认（当月文件夹）', '默认（当月文件夹）')}</option>
+          <option value="">{t('batch.outputDefault')}</option>
           {folders.map((f) => (
             <option key={f.id} value={String(f.id)}>{f.name}</option>
           ))}
-          {isTauri && <option value="__local__">{t('本地文件夹...', '本地文件夹...')}</option>}
+          {isTauri && <option value="__local__">{t('batch.outputLocal')}</option>}
         </select>
       </div>
       {/* 已选择本地文件夹时显示路径 */}
@@ -322,7 +322,7 @@ function BatchConfigPanel({ batch, onChange }: { batch: BatchJob; onChange: (upd
 
       {/* Naming rule */}
       <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-medium text-fg-secondary">{t('命名规则', '命名规则')}</label>
+        <label className="text-xs font-medium text-fg-secondary">{t('batch.namingRule')}</label>
         <select
           value={batch.namingRule}
           onChange={(e) => onChange({ namingRule: e.target.value })}
@@ -339,15 +339,15 @@ function BatchConfigPanel({ batch, onChange }: { batch: BatchJob; onChange: (upd
 
       {/* Toggles */}
       <div className="flex items-center justify-between">
-        <label className="text-xs font-medium text-fg-secondary">{t('保留原始尺寸', '保留原始尺寸')}</label>
+        <label className="text-xs font-medium text-fg-secondary">{t('batch.keepOriginalSize')}</label>
         <Toggle checked={batch.keepOriginalSize} onToggle={() => onChange({ keepOriginalSize: !batch.keepOriginalSize })} />
       </div>
       <div className="flex items-center justify-between">
-        <label className="text-xs font-medium text-fg-secondary">{t('提示词优化', '提示词优化')}</label>
+        <label className="text-xs font-medium text-fg-secondary">{t('batch.promptOptimize')}</label>
         <Toggle checked={batch.promptOptEnabled} onToggle={() => onChange({ promptOptEnabled: !batch.promptOptEnabled })} />
       </div>
       <div className="flex items-center justify-between">
-        <label className="text-xs font-medium text-fg-secondary">{t('失败自动重试', '失败自动重试')}</label>
+        <label className="text-xs font-medium text-fg-secondary">{t('batch.autoRetry')}</label>
         <Toggle checked={batch.autoRetry} onToggle={() => onChange({ autoRetry: !batch.autoRetry })} />
       </div>
     </aside>
@@ -581,7 +581,7 @@ export function BatchPage() {
     } catch (err: any) {
       console.error('[BatchPage] 提交失败:', err);
       const msg = err?.response?.data?.message || err?.message || '提交失败，请检查后端是否运行';
-      alert(`批量处理提交失败: ${msg}`);
+      alert(`${t('batch.submitFailed')}: ${msg}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -674,7 +674,7 @@ export function BatchPage() {
             <Folder className="w-4 h-4 text-primary" />
             <h3 className="text-[15px] font-semibold text-fg-primary">{selectedBatch.name}</h3>
             <span className="text-[11px] px-2 py-0.5 rounded-full bg-primary/15 text-primary font-medium">
-              {selectedBatch.status === 'completed' ? '已完成' : selectedBatch.status === 'processing' ? '处理中' : '待处理'}
+              {selectedBatch.status === 'completed' ? t('batch.status.completed') : selectedBatch.status === 'processing' ? t('batch.status.processing') : t('batch.status.pending')}
             </span>
           </div>
           <div className="flex-1" />
@@ -694,14 +694,14 @@ export function BatchPage() {
               <div className="w-16 h-16 rounded-2xl bg-primary/15 flex items-center justify-center mb-4">
                 <ImagePlus className="w-8 h-8 text-primary" />
               </div>
-              <h2 className="text-lg font-semibold text-fg-primary mb-2">{t('添加图片', '添加图片到此批次')}</h2>
-              <p className="text-sm text-fg-muted mb-4">{t('选择要处理的图片文件', '选择要处理的图片文件')}</p>
+              <h2 className="text-lg font-semibold text-fg-primary mb-2">{t('batch.addImages')}</h2>
+              <p className="text-sm text-fg-muted mb-4">{t('batch.selectFiles')}</p>
               <button
                 onClick={() => fileInputRef.current?.click()}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-surface-secondary border border-border text-sm text-fg-secondary hover:text-fg-primary transition-colors"
               >
                 <Plus className="w-4 h-4" />
-                {t('选择文件', '选择文件')}
+                {t('batch.selectBtn')}
               </button>
             </div>
           ) : (
@@ -712,7 +712,7 @@ export function BatchPage() {
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-secondary border border-border text-[11px] text-fg-secondary hover:text-fg-primary transition-colors"
                 >
                   <Plus className="w-3.5 h-3.5" />
-                  添加更多
+                  {t('batch.addMore')}
                 </button>
               </div>
               {selectedBatch.files.map((item, i) => (
@@ -757,13 +757,13 @@ export function BatchPage() {
                   </div>
                   <div className="w-12 shrink-0 text-center">
                     {item.status === 'completed' ? (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-success/15 text-success">完成</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-success/15 text-success">{t('batch.status.done')}</span>
                     ) : item.status === 'processing' ? (
                       <span className="text-[10px] font-mono text-primary">{item.progress}%</span>
                     ) : item.status === 'failed' ? (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-error/15 text-error">失败</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-error/15 text-error">{t('batch.status.failed')}</span>
                     ) : (
-                      <span className="text-[10px] text-fg-muted">等待</span>
+                      <span className="text-[10px] text-fg-muted">{t('batch.status.waiting')}</span>
                     )}
                   </div>
                   {item.status === 'completed' && item.resultUrl && (
@@ -789,7 +789,7 @@ export function BatchPage() {
                     <button
                       onClick={() => handleRetryFile(i)}
                       className="text-fg-muted hover:text-primary transition-colors shrink-0"
-                      title="重试"
+                      title={t('batch.retry')}
                     >
                       <RefreshCw className="w-3.5 h-3.5" />
                     </button>
@@ -808,7 +808,7 @@ export function BatchPage() {
         {/* Bottom progress */}
         {selectedBatch.files.length > 0 && (
           <div className="flex items-center gap-3.5 px-5 py-3 bg-surface-secondary border-t border-border">
-            <span className="text-xs font-semibold text-fg-primary">{t('当前批次', '当前批次')}</span>
+            <span className="text-xs font-semibold text-fg-primary">{t('batch.currentBatch')}</span>
             <div className="flex-1 h-1.5 rounded-full bg-surface-tertiary">
               <div className="h-full rounded-full bg-primary transition-all" style={{ width: selectedBatch.files.length > 0 ? `${(completedCount / selectedBatch.files.length) * 100}%` : '0%' }} />
             </div>
@@ -819,7 +819,7 @@ export function BatchPage() {
               className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
-              {isSubmitting ? '提交中...' : selectedBatch.status === 'processing' ? '处理中...' : '开始'}
+              {isSubmitting ? t('batch.submitting') : selectedBatch.status === 'processing' ? t('batch.processing') : t('batch.start')}
             </button>
             {selectedBatch.status === 'processing' && selectedBatch.backendBatchId && (
               <button
@@ -834,7 +834,7 @@ export function BatchPage() {
                 className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-warning/15 text-warning text-xs font-semibold hover:bg-warning/25 transition-colors"
               >
                 <Pause className="w-3.5 h-3.5" />
-                暂停
+                {t('batch.pause')}
               </button>
             )}
             {selectedBatch.status === 'pending' && selectedBatch.backendBatchId && (
@@ -851,7 +851,7 @@ export function BatchPage() {
                 className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-primary/15 text-primary text-xs font-semibold hover:bg-primary/25 transition-colors"
               >
                 <Play className="w-3.5 h-3.5" />
-                继续
+                {t('batch.resume')}
               </button>
             )}
             {completedCount > 0 && (
@@ -876,7 +876,7 @@ export function BatchPage() {
                 className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-success/15 text-success text-xs font-semibold hover:bg-success/25 transition-colors"
               >
                 <Download className="w-3.5 h-3.5" />
-                下载全部 ({completedCount})
+                {t('batch.downloadAll')} ({completedCount})
               </button>
             )}
           </div>

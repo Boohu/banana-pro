@@ -20,25 +20,25 @@ export function TaskQueuePanel({ onClose }: TaskQueuePanelProps) {
     <div className="absolute bottom-0 left-0 right-0 bg-surface-secondary border-t border-border shadow-[0_-8px_32px_rgba(0,0,0,0.4)] z-20 flex flex-col" style={{ height: '360px' }}>
       {/* Header */}
       <div className="flex items-center gap-3 px-6 py-3 border-b border-border shrink-0">
-        <h3 className="text-sm font-semibold text-fg-primary">{t('任务队列', '任务队列')}</h3>
+        <h3 className="text-sm font-semibold text-fg-primary">{t('taskQueue.title')}</h3>
         <span className="text-[11px] px-2 py-0.5 rounded-full bg-primary/15 text-primary font-medium">
-          {images.length} {t('个任务', '个任务')}
+          {images.length} {t('taskQueue.tasks')}
         </span>
         <div className="flex-1" />
         <button className="flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] text-fg-muted hover:text-fg-secondary transition-colors">
           <Trash2 className="w-3 h-3" />
-          {t('清空已完成', '清空已完成')}
+          {t('taskQueue.clearCompleted')}
         </button>
         <button onClick={onClose} className="flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] text-fg-muted hover:text-fg-secondary transition-colors">
           <ChevronDown className="w-3.5 h-3.5" />
-          {t('收起', '收起')}
+          {t('taskQueue.collapse')}
         </button>
       </div>
 
       {/* Task list */}
       <div className="flex-1 overflow-y-auto px-4 py-2 space-y-1.5">
         {images.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-sm text-fg-muted">{t('暂无任务', '暂无任务')}</div>
+          <div className="flex items-center justify-center h-full text-sm text-fg-muted">{t('taskQueue.noTasks')}</div>
         ) : (
           images.map((img, i) => (
             <TaskQueueItem key={img.id || i} image={img} />

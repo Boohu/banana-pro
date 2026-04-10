@@ -9,6 +9,7 @@ import { communityTemplates, communityTemplateChannels } from '@/data/communityT
 import type { TemplateItem, TemplateListResponse } from '@/types';
 
 function TemplateCard({ item, onClick }: { item: TemplateItem; onClick: () => void }) {
+  const { t } = useTranslation();
   const previewUrl = item.preview || item.image || '';
   return (
     <button onClick={onClick} className="flex flex-col rounded-2xl bg-surface-secondary overflow-hidden hover:ring-1 hover:ring-primary/50 transition-all text-left group">
@@ -16,7 +17,7 @@ function TemplateCard({ item, onClick }: { item: TemplateItem; onClick: () => vo
         {previewUrl ? (
           <img src={previewUrl} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-fg-muted text-xs">无预览</div>
+          <div className="w-full h-full flex items-center justify-center text-fg-muted text-xs">{t('templates.noPreview')}</div>
         )}
       </div>
       <div className="p-3 space-y-1.5">
@@ -54,7 +55,7 @@ function TemplateDetailModal({ item, onClose }: { item: TemplateItem; onClose: (
           {previewUrl ? (
             <img src={previewUrl} alt={item.title} className="max-w-full max-h-full rounded-xl object-contain" />
           ) : (
-            <div className="text-fg-muted">无预览图</div>
+            <div className="text-fg-muted">{t('templates.noPreviewImage')}</div>
           )}
         </div>
 
@@ -74,7 +75,7 @@ function TemplateDetailModal({ item, onClose }: { item: TemplateItem; onClose: (
             <>
               <div className="h-px bg-border my-3" />
               <div className="space-y-2">
-                <h4 className="text-sm font-semibold text-fg-primary">{t('提示词模板', '提示词模板')}</h4>
+                <h4 className="text-sm font-semibold text-fg-primary">{t('templates.promptTemplate')}</h4>
                 <div className="bg-surface-tertiary rounded-lg p-3">
                   <p className="text-xs text-fg-secondary leading-relaxed">{item.prompt}</p>
                 </div>
@@ -86,7 +87,7 @@ function TemplateDetailModal({ item, onClose }: { item: TemplateItem; onClose: (
             <>
               <div className="h-px bg-border my-3" />
               <div className="space-y-2">
-                <h4 className="text-sm font-semibold text-fg-primary">{t('标签', '标签')}</h4>
+                <h4 className="text-sm font-semibold text-fg-primary">{t('templates.tags')}</h4>
                 <div className="flex gap-1.5 flex-wrap">
                   {item.tags.map((tag, i) => (
                     <span key={i} className="text-[11px] px-2.5 py-1 rounded-full bg-primary/10 text-primary">{tag}</span>
@@ -101,14 +102,14 @@ function TemplateDetailModal({ item, onClose }: { item: TemplateItem; onClose: (
           <div className="flex gap-3">
             <button onClick={useTemplate} className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors">
               <Wand2 className="w-4 h-4" />
-              {t('使用此模板', '使用此模板')}
+              {t('templates.useTemplate')}
             </button>
             <button
               onClick={() => { if (item.prompt) navigator.clipboard.writeText(item.prompt); }}
               className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-surface-tertiary border border-border text-sm text-fg-secondary hover:text-fg-primary transition-colors"
             >
               <Copy className="w-4 h-4" />
-              {t('复制', '复制')}
+              {t('templates.copy')}
             </button>
           </div>
         </div>
@@ -151,14 +152,14 @@ export function TemplatesPage() {
       <div className="p-6 pb-4 space-y-5">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold text-fg-primary">{t('灵感广场', '灵感广场')}</h2>
+          <h2 className="text-xl font-bold text-fg-primary">{t('templates.title')}</h2>
           <div className="w-72 flex items-center gap-2.5 bg-surface-secondary border border-border rounded-lg px-3.5 py-2">
             <Search className="w-4 h-4 text-fg-muted" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={t('搜索模板...', '搜索模板...')}
+              placeholder={t('templates.searchPlaceholder')}
               className="flex-1 bg-transparent text-sm text-fg-primary placeholder:text-fg-muted outline-none"
             />
           </div>
@@ -186,9 +187,9 @@ export function TemplatesPage() {
       {/* 模板列表可滚动 */}
       <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-6 pb-6">
         {loading ? (
-          <div className="flex items-center justify-center h-40 text-fg-muted text-sm">{t('加载中...', '加载中...')}</div>
+          <div className="flex items-center justify-center h-40 text-fg-muted text-sm">{t('templates.loading')}</div>
         ) : filteredItems.length === 0 ? (
-          <div className="flex items-center justify-center h-40 text-fg-muted text-sm">{t('暂无模板', '暂无模板')}</div>
+          <div className="flex items-center justify-center h-40 text-fg-muted text-sm">{t('templates.empty')}</div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {filteredItems.map((item) => (

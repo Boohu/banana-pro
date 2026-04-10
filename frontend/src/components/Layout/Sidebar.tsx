@@ -6,14 +6,14 @@ import { useTranslation } from 'react-i18next';
 interface NavItem {
   id: Page;
   icon: React.ElementType;
-  label: string;
+  labelKey: string;
 }
 
 const mainNavItems: NavItem[] = [
-  { id: 'generate', icon: Image, label: 'AI 绘图' },
-  { id: 'batch', icon: Layers, label: '批量处理' },
-  { id: 'history', icon: FolderOpen, label: '生成记录' },
-  { id: 'templates', icon: LayoutTemplate, label: '灵感广场' },
+  { id: 'generate', icon: Image, labelKey: 'sidebar.generate' },
+  { id: 'batch', icon: Layers, labelKey: 'sidebar.batch' },
+  { id: 'history', icon: FolderOpen, labelKey: 'sidebar.history' },
+  { id: 'templates', icon: LayoutTemplate, labelKey: 'sidebar.templates' },
 ];
 
 export function Sidebar() {
@@ -27,14 +27,14 @@ export function Sidebar() {
         <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
           <Sparkles className="w-5 h-5 text-primary-foreground" />
         </div>
-        <span className="text-lg font-bold text-fg-primary">筋斗云AI</span>
+        <span className="text-lg font-bold text-fg-primary">{t('sidebar.appName')}</span>
       </div>
 
       {/* Divider */}
       <div className="h-px bg-border" />
 
       {/* Nav label */}
-      <span className="text-xs font-medium text-fg-muted px-3">{t('工具', '工具')}</span>
+      <span className="text-xs font-medium text-fg-muted px-3">{t('sidebar.tools')}</span>
 
       {/* Main nav */}
       <nav className="flex flex-col gap-1">
@@ -53,7 +53,7 @@ export function Sidebar() {
               )}
             >
               <Icon className={cn('w-[18px] h-[18px]', isActive ? 'text-primary' : 'text-fg-muted')} />
-              {item.label}
+              {t(item.labelKey)}
             </button>
           );
         })}
@@ -76,7 +76,7 @@ export function Sidebar() {
         )}
       >
         <Settings className={cn('w-[18px] h-[18px]', currentPage === 'settings' ? 'text-primary' : 'text-fg-muted')} />
-        {t('设置', '设置')}
+        {t('sidebar.settings')}
       </button>
     </aside>
   );

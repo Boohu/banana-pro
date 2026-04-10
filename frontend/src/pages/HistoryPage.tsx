@@ -44,7 +44,7 @@ export function HistoryPage() {
                 void loadHistory();
               }
             }}
-            placeholder={t('history.search', '搜索生成记录... (回车搜索)')}
+            placeholder={t('history.search')}
             className="flex-1 bg-transparent text-sm text-fg-primary placeholder:text-fg-muted outline-none"
           />
           {searchKeyword && (
@@ -67,7 +67,7 @@ export function HistoryPage() {
             selectedFolderId === null ? 'bg-primary/15 text-primary' : 'bg-surface-secondary text-fg-secondary hover:text-fg-primary'
           )}
         >
-          {t('全部', '全部')}
+          {t('common.all', '全部')}
         </button>
         {folders.map((folder) => (
           <button
@@ -86,7 +86,7 @@ export function HistoryPage() {
           className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-surface-secondary text-fg-muted text-xs hover:text-fg-secondary transition-colors shrink-0"
         >
           <Plus className="w-3.5 h-3.5" />
-          {t('新建', '新建')}
+          {t('batch.new')}
         </button>
       </div>
 
