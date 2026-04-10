@@ -21,7 +21,9 @@ export function Sidebar() {
   const { t } = useTranslation();
 
   return (
-    <aside className="flex flex-col w-60 h-full bg-surface-secondary px-4 py-5 gap-4 shrink-0">
+    <aside className="flex flex-col w-60 h-full bg-surface-secondary px-4 pt-10 pb-5 gap-4 shrink-0 relative">
+      {/* Drag region for Tauri overlay titlebar */}
+      <div data-tauri-drag-region className="absolute top-0 left-0 w-60 h-8" />
       {/* Logo */}
       <div className="flex items-center gap-2.5 px-1">
         <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
