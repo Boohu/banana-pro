@@ -6,14 +6,16 @@ import { BatchPage } from '@/pages/BatchPage';
 import { HistoryPage } from '@/pages/HistoryPage';
 import { TemplatesPage } from '@/pages/TemplatesPage';
 import { SettingsPage } from '@/pages/SettingsPage';
+import { SubscriptionPage } from '@/pages/SubscriptionPage';
 
-const pageComponents = {
+const pageComponents: Record<string, React.ComponentType> = {
   generate: GeneratePage,
   batch: BatchPage,
   history: HistoryPage,
   templates: TemplatesPage,
   settings: SettingsPage,
-} as const;
+  subscription: SubscriptionPage,
+};
 
 export function AppLayout() {
   const currentPage = useNavigationStore((s) => s.currentPage);
@@ -23,8 +25,7 @@ export function AppLayout() {
   useTaskRecovery();
 
   return (
-    <div className="flex h-screen bg-surface-primary overflow-hidden relative">
-      <div data-tauri-drag-region className="absolute top-0 left-0 w-60 h-6 z-50" />
+    <div className="flex h-screen bg-surface-primary overflow-hidden">
       <Sidebar />
       <main className="flex-1 flex overflow-hidden">
         <PageComponent />

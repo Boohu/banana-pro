@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Mail, Phone, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useTranslation } from 'react-i18next';
+import { AUTH_URL } from '@/services/authApi';
 import logoImg from '@/assets/logo.png';
 
 type AuthMode = 'email' | 'phone';
@@ -20,6 +21,39 @@ export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [useCodeLogin, setUseCodeLogin] = useState(false); // 手机号登录时是否用验证码
+  const [codeSending, setCodeSending] = useState(false);
+  const [codeCountdown, setCodeCountdown] = useState(0);
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const handleSendCode = async () => {
+    if (!phone.trim() || codeCountdown > 0 || codeSending) return;
+    setCodeSending(true);
+    setError('');
+    try {
+      const res = await fetch(`${AUTH_URL}/auth/send-code`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ target: phone.trim(), type: formMode }),
+      });
+      const data = await res.json();
+      if (data.code === 200) {
+        setCodeCountdown(60);
+        countdownRef.current = setInterval(() => {
+          setCodeCountdown((prev) => {
+            if (prev <= 1) { clearInterval(countdownRef.current!); return 0; }
+            return prev - 1;
+          });
+        }, 1000);
+      } else {
+        setError(data.message || '发送失败');
+      }
+    } catch {
+      setError('网络错误');
+    } finally {
+      setCodeSending(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,13 +65,14 @@ export function LoginPage() {
         if (mode === 'email') {
           await register({ email, password, nickname });
         } else {
-          await register({ phone, code, nickname });
+          await register({ phone, code, password, nickname });
         }
       } else {
         if (mode === 'email') {
           await login({ email, password });
         } else {
-          await login({ phone, code });
+          // 手机号登录：优先密码，有验证码则用验证码
+          await login({ phone, password, code: code || undefined });
         }
       }
     } catch (err: any) {
@@ -121,23 +156,81 @@ export function LoginPage() {
                 required
                 className="w-full bg-surface-secondary border border-border rounded-xl px-4 py-3 text-sm text-fg-primary placeholder:text-fg-muted outline-none focus:border-primary transition-colors"
               />
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={code}
-                  onChange={(e) => setCode(e.target.value)}
-                  placeholder={t('login.codePlaceholder')}
-                  required
-                  maxLength={6}
-                  className="flex-1 bg-surface-secondary border border-border rounded-xl px-4 py-3 text-sm text-fg-primary placeholder:text-fg-muted outline-none focus:border-primary transition-colors"
-                />
+              {/* 注册时：验证码 + 设置密码 */}
+              {formMode === 'register' && (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={code}
+                    onChange={(e) => setCode(e.target.value)}
+                    placeholder={t('login.codePlaceholder')}
+                    required
+                    maxLength={6}
+                    className="flex-1 bg-surface-secondary border border-border rounded-xl px-4 py-3 text-sm text-fg-primary placeholder:text-fg-muted outline-none focus:border-primary transition-colors"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleSendCode}
+                    disabled={codeSending || codeCountdown > 0 || !phone.trim()}
+                    className="px-4 py-3 rounded-xl bg-primary/15 text-primary text-sm font-medium hover:bg-primary/25 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
+                  >
+                    {codeSending ? '...' : codeCountdown > 0 ? `${codeCountdown}s` : t('login.getCode')}
+                  </button>
+                </div>
+              )}
+              {/* 登录时：默认密码，可切换验证码 */}
+              {formMode === 'login' && useCodeLogin && (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={code}
+                    onChange={(e) => setCode(e.target.value)}
+                    placeholder={t('login.codePlaceholder')}
+                    required
+                    maxLength={6}
+                    className="flex-1 bg-surface-secondary border border-border rounded-xl px-4 py-3 text-sm text-fg-primary placeholder:text-fg-muted outline-none focus:border-primary transition-colors"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleSendCode}
+                    disabled={codeSending || codeCountdown > 0 || !phone.trim()}
+                    className="px-4 py-3 rounded-xl bg-primary/15 text-primary text-sm font-medium hover:bg-primary/25 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
+                  >
+                    {codeSending ? '...' : codeCountdown > 0 ? `${codeCountdown}s` : t('login.getCode')}
+                  </button>
+                </div>
+              )}
+              {/* 密码框（注册必填，登录默认显示） */}
+              {(formMode === 'register' || !useCodeLogin) && (
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder={formMode === 'register' ? '设置密码（至少6位）' : t('login.passwordPlaceholder')}
+                    required
+                    minLength={6}
+                    className="w-full bg-surface-secondary border border-border rounded-xl px-4 py-3 pr-11 text-sm text-fg-primary placeholder:text-fg-muted outline-none focus:border-primary transition-colors"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-muted hover:text-fg-secondary"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              )}
+              {/* 登录时切换密码/验证码 */}
+              {formMode === 'login' && (
                 <button
                   type="button"
-                  className="px-4 py-3 rounded-xl bg-primary/15 text-primary text-sm font-medium hover:bg-primary/25 transition-colors shrink-0"
+                  onClick={() => { setUseCodeLogin(!useCodeLogin); setCode(''); }}
+                  className="text-xs text-primary hover:underline"
                 >
-                  {t('login.getCode')}
+                  {useCodeLogin ? '使用密码登录' : '忘记密码？验证码登录'}
                 </button>
-              </div>
+              )}
             </>
           )}
 

@@ -168,14 +168,26 @@
                 class="cfg-input w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition" />
             </div>
             <div>
-              <label class="block text-sm text-gray-400 mb-1.5">商户私钥证书路径</label>
-              <input id="cfg-wechat_cert_path" type="text" placeholder="/path/to/apiclient_key.pem"
-                class="cfg-input w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition" />
+              <label class="block text-sm text-gray-400 mb-1.5">商户私钥证书 (apiclient_key.pem)</label>
+              <div class="flex gap-2">
+                <input id="cfg-wechat_cert_path" type="text" placeholder="上传后自动填入路径" readonly
+                  class="cfg-input flex-1 bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition" />
+                <label class="shrink-0 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm rounded-lg cursor-pointer transition">
+                  上传证书
+                  <input type="file" accept=".pem" class="hidden" onchange="uploadCert(this, 'wechat_cert_path')" />
+                </label>
+              </div>
             </div>
             <div>
-              <label class="block text-sm text-gray-400 mb-1.5">证书序列号</label>
-              <input id="cfg-wechat_serial_no" type="text" placeholder="商户证书序列号"
-                class="cfg-input w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition" />
+              <label class="block text-sm text-gray-400 mb-1.5">商户证书 (apiclient_cert.pem) — 用于提取序列号</label>
+              <div class="flex gap-2">
+                <input id="cfg-wechat_serial_no" type="text" placeholder="上传证书后自动提取，或手动填入"
+                  class="cfg-input flex-1 bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition" />
+                <label class="shrink-0 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm rounded-lg cursor-pointer transition">
+                  上传证书
+                  <input type="file" accept=".pem" class="hidden" onchange="uploadCert(this, 'wechat_serial_no')" />
+                </label>
+              </div>
             </div>
             <div>
               <label class="block text-sm text-gray-400 mb-1.5">支付回调地址</label>
@@ -966,6 +978,31 @@ async function loadConfig() {
   } catch (err) {
     showToast('加载配置失败: ' + err.message, 'error');
   }
+}
+
+// 上传证书
+async function uploadCert(input, configKey) {
+  const file = input.files[0];
+  if (!file) return;
+  const formData = new FormData();
+  formData.append('file', file);
+  try {
+    const res = await fetch(apiBase() + '/api/admin/upload-cert', {
+      method: 'POST',
+      headers: { 'X-Admin-Key': adminKey },
+      body: formData,
+    });
+    const data = await res.json();
+    if (data.code === 200) {
+      document.getElementById('cfg-' + configKey).value = data.data.path;
+      showToast('证书上传成功: ' + data.data.filename);
+    } else {
+      showToast(data.message || '上传失败', true);
+    }
+  } catch (e) {
+    showToast('上传失败: ' + e.message, true);
+  }
+  input.value = '';
 }
 
 // 保存配置

@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"math"
 	"net/http"
 	"strings"
 	"sync"
@@ -184,10 +185,25 @@ func Register(c *gin.Context) {
 		}
 
 		phonePtr := &req.Phone
+		// 手机号注册时也保存密码
+		var passwordHash string
+		if req.Password != "" {
+			if len(req.Password) < 6 {
+				c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "密码至少 6 位"})
+				return
+			}
+			h, err := util.HashPassword(req.Password)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "系统错误"})
+				return
+			}
+			passwordHash = h
+		}
 		user := model.User{
 			Phone:          phonePtr,
+			Password:       passwordHash,
 			Nickname:       req.Nickname,
-			TrialExpiresAt: time.Now().AddDate(0, 0, 3), // 保留旧字段兼容
+			TrialExpiresAt: time.Now().AddDate(0, 0, 3),
 		}
 		if user.Nickname == "" {
 			user.Nickname = "用户" + req.Phone[len(req.Phone)-4:]
@@ -256,11 +272,37 @@ func Login(c *gin.Context) {
 		}
 	} else if req.Phone != "" {
 		req.Phone = strings.TrimSpace(req.Phone)
-		if !verifyCode(req.Phone, req.Code, "login") {
-			recordLoginFailure(identity)
-			c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "验证码错误或已过期"})
+
+		if req.Code != "" {
+			// 验证码登录
+			if !verifyCode(req.Phone, req.Code, "login") {
+				recordLoginFailure(identity)
+				c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "验证码错误或已过期"})
+				return
+			}
+		} else if req.Password != "" {
+			// 密码登录
+			var existingUser model.User
+			if err := model.DB.Where("phone = ?", req.Phone).First(&existingUser).Error; err != nil {
+				recordLoginFailure(identity)
+				c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "手机号未注册"})
+				return
+			}
+			if existingUser.Password == "" {
+				recordLoginFailure(identity)
+				c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "该账号未设置密码，请使用验证码登录"})
+				return
+			}
+			if !util.CheckPassword(req.Password, existingUser.Password) {
+				recordLoginFailure(identity)
+				c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "密码错误"})
+				return
+			}
+		} else {
+			c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "请提供密码或验证码"})
 			return
 		}
+
 		if err := model.DB.Where("phone = ?", req.Phone).First(&user).Error; err != nil {
 			phonePtr := &req.Phone
 			user = model.User{
@@ -279,8 +321,9 @@ func Login(c *gin.Context) {
 	clearLoginAttempts(identity)
 
 	// 递增 token 版本号，踢掉旧设备
+	// 注意：GORM v2 的 Model(&user).Update() 会把新值回写到 user struct，
+	// 所以执行后 user.TokenVersion 已经是 +1 的值，不需要再手动 ++
 	model.DB.Model(&user).Update("token_version", user.TokenVersion+1)
-	user.TokenVersion++
 
 	token, err := util.GenerateToken(user.ID, ptrStr(user.Email), ptrStr(user.Phone), user.TokenVersion)
 	if err != nil {
@@ -378,7 +421,7 @@ func buildAccessInfo(user *model.User, appID string) *model.UserAccessInfo {
 	if trial != nil && now.Before(trial.ExpiresAt) {
 		info.HasAccess = true
 		info.AccessReason = "trial"
-		info.DaysLeft = int(trial.ExpiresAt.Sub(now).Hours()/24) + 1
+		info.DaysLeft = int(math.Ceil(trial.ExpiresAt.Sub(now).Hours() / 24))
 		return info
 	}
 
@@ -389,7 +432,7 @@ func buildAccessInfo(user *model.User, appID string) *model.UserAccessInfo {
 		info.HasAccess = true
 		info.AccessReason = "subscription"
 		info.Subscription = &sub
-		info.DaysLeft = int(sub.ExpiresAt.Sub(now).Hours()/24) + 1
+		info.DaysLeft = int(math.Ceil(sub.ExpiresAt.Sub(now).Hours() / 24))
 		return info
 	}
 

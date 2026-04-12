@@ -67,13 +67,19 @@ export function SubscriptionPage() {
             if (pollRef.current) clearInterval(pollRef.current);
             setPaying(false);
             setOrderInfo(null);
-            // 刷新用户状态
-            await checkAuth();
+            // 强制刷新用户状态（绕过 isAuthenticated 短路）
+            await checkAuth(true);
           }
         } catch {}
       }, 3000);
     } catch (err: any) {
-      alert(err?.response?.data?.message || t('subscription.createOrderFailed'));
+      const msg = err?.response?.data?.message || t('subscription.createOrderFailed');
+      if (err?.response?.status === 401) {
+        alert('登录已过期，请重新登录');
+        logout();
+      } else {
+        alert(msg);
+      }
     } finally {
       setLoading(false);
     }
@@ -192,7 +198,19 @@ export function SubscriptionPage() {
       )}
 
       {/* 底部 */}
-      <div className="mt-8">
+      <div className="mt-8 flex items-center gap-4">
+        {accessInfo?.has_access && (
+          <button
+            onClick={() => {
+              import('@/store/navigationStore').then(({ useNavigationStore }) => {
+                useNavigationStore.getState().setPage('settings');
+              });
+            }}
+            className="text-xs text-primary hover:underline"
+          >
+            ← 返回
+          </button>
+        )}
         <button onClick={logout} className="text-xs text-fg-muted hover:text-fg-secondary">
           {t('subscription.logout')}
         </button>

@@ -101,6 +101,8 @@ func main() {
 			admin.GET("/users", handler.AdminListUsers)
 			admin.GET("/orders", handler.AdminListOrders)
 			admin.POST("/users/:id/grant", handler.AdminGrantSubscription)
+			admin.POST("/users/:id/reset-password", handler.AdminResetPassword)
+			admin.POST("/upload-cert", handler.AdminUploadCert)
 			admin.GET("/config", handler.AdminGetConfig)
 			admin.POST("/config", handler.AdminSaveConfig)
 

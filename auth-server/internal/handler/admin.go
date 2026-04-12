@@ -2,11 +2,14 @@ package handler
 
 import (
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 
 	"auth-server/internal/model"
+	"auth-server/internal/util"
 
 	"github.com/gin-gonic/gin"
 )
@@ -139,6 +142,75 @@ func AdminGrantSubscription(c *gin.Context) {
 			"expires_at": sub.ExpiresAt,
 			"days":       days,
 		},
+	})
+}
+
+// AdminUploadCert 上传证书文件
+// POST /api/admin/upload-cert
+func AdminUploadCert(c *gin.Context) {
+	file, err := c.FormFile("file")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "请选择文件"})
+		return
+	}
+
+	// 只允许 .pem 文件
+	if !strings.HasSuffix(file.Filename, ".pem") {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "只支持 .pem 格式证书"})
+		return
+	}
+
+	// 保存到 certs 目录
+	certDir := "./certs"
+	os.MkdirAll(certDir, 0755)
+	savePath := certDir + "/" + file.Filename
+
+	if err := c.SaveUploadedFile(file, savePath); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "保存文件失败"})
+		return
+	}
+
+	// 返回文件路径（用于填入配置）
+	absPath, _ := filepath.Abs(savePath)
+	c.JSON(http.StatusOK, gin.H{
+		"code": 200,
+		"message": "证书上传成功",
+		"data": gin.H{
+			"filename": file.Filename,
+			"path":     absPath,
+		},
+	})
+}
+
+// AdminResetPassword 管理员重置用户密码
+// POST /api/admin/users/:id/reset-password
+func AdminResetPassword(c *gin.Context) {
+	userIDStr := c.Param("id")
+	userID, _ := strconv.ParseUint(userIDStr, 10, 32)
+
+	var req struct {
+		Password string `json:"password" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "请提供新密码"})
+		return
+	}
+	if len(req.Password) < 6 {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "密码至少 6 位"})
+		return
+	}
+
+	hash, err := util.HashPassword(req.Password)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "系统错误"})
+		return
+	}
+
+	model.DB.Model(&model.User{}).Where("id = ?", uint(userID)).Update("password_hash", hash)
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    200,
+		"message": "密码已重置",
 	})
 }
 

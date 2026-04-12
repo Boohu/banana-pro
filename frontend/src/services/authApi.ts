@@ -24,12 +24,8 @@ authApi.interceptors.request.use((config) => {
 authApi.interceptors.response.use(
   (response) => response.data,
   (error) => {
-    const data = error.response?.data;
-    // 被踢下线或 token 失效：清除本地 token，由 authStore 处理状态
-    if (error.response?.status === 401) {
-      localStorage.removeItem('auth_token');
-      // 不 reload，让 authStore 的 checkAuth 处理
-    }
+    // 401 不做任何自动处理，让调用方自己决定
+    // （避免拦截器和 login/checkAuth 竞态导致误清状态）
     return Promise.reject(error);
   }
 );

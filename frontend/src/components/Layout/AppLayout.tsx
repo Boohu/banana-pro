@@ -6,14 +6,16 @@ import { BatchPage } from '@/pages/BatchPage';
 import { HistoryPage } from '@/pages/HistoryPage';
 import { TemplatesPage } from '@/pages/TemplatesPage';
 import { SettingsPage } from '@/pages/SettingsPage';
+import { SubscriptionPage } from '@/pages/SubscriptionPage';
 
-const pageComponents = {
+const pageComponents: Record<string, React.ComponentType> = {
   generate: GeneratePage,
   batch: BatchPage,
   history: HistoryPage,
   templates: TemplatesPage,
   settings: SettingsPage,
-} as const;
+  subscription: SubscriptionPage,
+};
 
 export function AppLayout() {
   const currentPage = useNavigationStore((s) => s.currentPage);
