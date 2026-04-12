@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Key, Box, HardDrive, Globe, Info, Eye, EyeOff, Zap, Save, Loader2, X } from 'lucide-react';
 import logoImg from '@/assets/logo.png';
+import { useAuthStore } from '@/store/authStore';
 import { cn } from '@/lib/utils';
 import { useConfigStore, IMAGE_MODEL_OPTIONS, CUSTOM_MODEL_VALUE } from '@/store/configStore';
 import { getProviders, updateProviderConfig, type ProviderConfig } from '@/services/providerApi';
@@ -372,12 +373,55 @@ function ModelManageSection() {
 
 function AboutSection() {
   const { t } = useTranslation();
+  const { user, accessInfo, logout } = useAuthStore();
+
   return (
     <div className="space-y-6">
       <div>
         <h3 className="text-lg font-semibold text-fg-primary">{t('settingsPage.aboutTitle')}</h3>
         <p className="text-sm text-fg-muted mt-1">{t('settingsPage.aboutDesc')}</p>
       </div>
+
+      {/* 账号信息 */}
+      {user && (
+        <div className="bg-surface-secondary border border-border rounded-2xl p-5 space-y-3">
+          <h4 className="text-sm font-semibold text-fg-primary">账号信息</h4>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-fg-muted">昵称</span>
+              <span className="text-fg-primary">{user.nickname}</span>
+            </div>
+            {user.email && (
+              <div className="flex justify-between">
+                <span className="text-fg-muted">邮箱</span>
+                <span className="text-fg-primary">{user.email}</span>
+              </div>
+            )}
+            {user.phone && (
+              <div className="flex justify-between">
+                <span className="text-fg-muted">手机</span>
+                <span className="text-fg-primary">{user.phone}</span>
+              </div>
+            )}
+            <div className="flex justify-between">
+              <span className="text-fg-muted">状态</span>
+              <span className={accessInfo?.has_access ? 'text-success' : 'text-error'}>
+                {accessInfo?.access_reason === 'trial' ? `试用中（剩余 ${accessInfo.days_left} 天）` :
+                 accessInfo?.access_reason === 'subscription' ? `${accessInfo.subscription?.plan === 'yearly' ? '年卡' : '月卡'}会员（剩余 ${accessInfo.days_left} 天）` :
+                 '已过期'}
+              </span>
+            </div>
+          </div>
+          <button
+            onClick={logout}
+            className="w-full mt-2 py-2 rounded-lg bg-error/10 text-error text-sm font-medium hover:bg-error/20 transition-colors"
+          >
+            退出登录
+          </button>
+        </div>
+      )}
+
+      {/* 应用信息 */}
       <div className="bg-surface-secondary border border-border rounded-2xl p-5 space-y-4">
         <div className="flex items-center gap-3">
           <img src={logoImg} alt="logo" className="w-12 h-12 rounded-xl" />
