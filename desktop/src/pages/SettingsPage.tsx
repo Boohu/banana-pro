@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Key, Box, HardDrive, Globe, Info, Eye, EyeOff, Zap, Save, Loader2, X } from 'lucide-react';
+import logoImg from '@/assets/logo.png';
 import { cn } from '@/lib/utils';
 import { useConfigStore, IMAGE_MODEL_OPTIONS, CUSTOM_MODEL_VALUE } from '@/store/configStore';
 import { getProviders, updateProviderConfig, type ProviderConfig } from '@/services/providerApi';
@@ -10,11 +11,11 @@ import i18n from '@/i18n';
 
 type SettingsTab = 'api' | 'models' | 'language' | 'about';
 
-const tabs: { id: SettingsTab; icon: React.ElementType; label: string }[] = [
-  { id: 'api', icon: Key, label: 'API 配置' },
-  { id: 'models', icon: Box, label: '模型管理' },
-  { id: 'language', icon: Globe, label: '语言与外观' },
-  { id: 'about', icon: Info, label: '关于' },
+const tabKeys: { id: SettingsTab; icon: React.ElementType; labelKey: string }[] = [
+  { id: 'api', icon: Key, labelKey: 'settingsPage.apiConfig' },
+  { id: 'models', icon: Box, labelKey: 'settingsPage.modelManage' },
+  { id: 'language', icon: Globe, labelKey: 'settingsPage.appearance' },
+  { id: 'about', icon: Info, labelKey: 'settingsPage.about' },
 ];
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
@@ -370,25 +371,24 @@ function ModelManageSection() {
 }
 
 function AboutSection() {
+  const { t } = useTranslation();
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold text-fg-primary">关于</h3>
-        <p className="text-sm text-fg-muted mt-1">应用信息</p>
+        <h3 className="text-lg font-semibold text-fg-primary">{t('settingsPage.aboutTitle')}</h3>
+        <p className="text-sm text-fg-muted mt-1">{t('settingsPage.aboutDesc')}</p>
       </div>
       <div className="bg-surface-secondary border border-border rounded-2xl p-5 space-y-4">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center">
-            <span className="text-2xl">☁️</span>
-          </div>
+          <img src={logoImg} alt="logo" className="w-12 h-12 rounded-xl" />
           <div>
-            <h4 className="text-base font-semibold text-fg-primary">筋斗云AI</h4>
+            <h4 className="text-base font-semibold text-fg-primary">{t('sidebar.appName')}</h4>
             <p className="text-xs text-fg-muted">v2.7.4</p>
           </div>
         </div>
         <div className="space-y-2 text-sm text-fg-secondary">
-          <p>AI 驱动的图片生成与批量处理工具</p>
-          <p className="text-xs text-fg-muted">基于 Nano Banana Pro Web 开源项目</p>
+          <p>{t('onboarding.appDesc')}</p>
+          <p className="text-xs text-fg-muted">{t('settingsPage.appBasedOn')}</p>
         </div>
       </div>
     </div>
@@ -396,6 +396,7 @@ function AboutSection() {
 }
 
 export function SettingsPage() {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<SettingsTab>('api');
 
   const tabContent: Record<SettingsTab, React.ReactNode> = {
@@ -409,8 +410,8 @@ export function SettingsPage() {
     <div className="flex flex-1 overflow-hidden p-8 gap-8">
       {/* Left tabs */}
       <div className="w-52 shrink-0 space-y-2">
-        <h2 className="text-xl font-bold text-fg-primary mb-4">设置</h2>
-        {tabs.map((tab) => {
+        <h2 className="text-xl font-bold text-fg-primary mb-4">{t('settingsPage.title')}</h2>
+        {tabKeys.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
           return (
@@ -423,7 +424,7 @@ export function SettingsPage() {
               )}
             >
               <Icon className={cn('w-4 h-4', isActive ? 'text-primary' : 'text-fg-muted')} />
-              {tab.label}
+              {t(tab.labelKey)}
             </button>
           );
         })}
