@@ -86,6 +86,10 @@
           class="tab-btn px-4 py-2 rounded-md text-sm font-medium transition">
           应用管理
         </button>
+        <button id="tab-versions" onclick="switchTab('versions')"
+          class="tab-btn px-4 py-2 rounded-md text-sm font-medium transition">
+          版本管理
+        </button>
       </div>
     </div>
 
@@ -315,6 +319,95 @@
         </div>
       </div>
     </div>
+
+    <!-- 版本管理面板 -->
+    <div id="panel-versions" class="max-w-7xl mx-auto px-4 sm:px-6 py-4 hidden">
+      <div class="mb-4 flex justify-between items-center">
+        <p class="text-sm text-gray-400">管理桌面端自动更新版本，发布新版本后客户端自动检测</p>
+        <button onclick="openVersionModal()"
+          class="bg-brand hover:bg-brand-dark text-white font-medium px-4 py-2 rounded-lg text-sm transition active:scale-[0.98]">
+          发布新版本
+        </button>
+      </div>
+      <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-left text-gray-400 border-b border-gray-800">
+                <th class="px-4 py-3 font-medium">产品</th>
+                <th class="px-4 py-3 font-medium">版本号</th>
+                <th class="px-4 py-3 font-medium">更新说明</th>
+                <th class="px-4 py-3 font-medium">macOS (ARM)</th>
+                <th class="px-4 py-3 font-medium">macOS (Intel)</th>
+                <th class="px-4 py-3 font-medium">Windows</th>
+                <th class="px-4 py-3 font-medium">状态</th>
+                <th class="px-4 py-3 font-medium">发布时间</th>
+                <th class="px-4 py-3 font-medium text-right">操作</th>
+              </tr>
+            </thead>
+            <tbody id="versions-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 版本编辑弹窗 -->
+  <div id="version-modal" class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/60 backdrop-blur-sm">
+    <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 w-full max-w-lg shadow-2xl fade-in max-h-[90vh] overflow-y-auto">
+      <h3 id="version-modal-title" class="text-lg font-bold text-white mb-5">发布新版本</h3>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm text-gray-400 mb-1.5">所属产品 <span class="text-red-400">*</span></label>
+          <select id="ver-app-id"
+            class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition">
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm text-gray-400 mb-1.5">版本号 <span class="text-red-400">*</span></label>
+          <input id="ver-version" type="text" placeholder="如 2.8.0"
+            class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition" />
+        </div>
+        <div>
+          <label class="block text-sm text-gray-400 mb-1.5">更新说明</label>
+          <textarea id="ver-notes" rows="3" placeholder="本次更新内容..."
+            class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition resize-none"></textarea>
+        </div>
+        <div class="border-t border-gray-800 pt-4">
+          <p class="text-sm text-gray-400 mb-3">平台安装包（填写下载 URL 和签名文件内容）</p>
+          <div class="space-y-3">
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">macOS ARM (Apple Silicon) — .tar.gz URL</label>
+              <input id="ver-darwin-arm-url" type="text" placeholder="https://..."
+                class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-brand transition" />
+              <textarea id="ver-darwin-arm-sig" rows="2" placeholder="签名内容（.sig 文件内容）"
+                class="w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-brand transition resize-none font-mono"></textarea>
+            </div>
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">macOS Intel — .tar.gz URL</label>
+              <input id="ver-darwin-x64-url" type="text" placeholder="https://..."
+                class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-brand transition" />
+              <textarea id="ver-darwin-x64-sig" rows="2" placeholder="签名内容"
+                class="w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-brand transition resize-none font-mono"></textarea>
+            </div>
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">Windows x64 — .msi.zip URL</label>
+              <input id="ver-win-url" type="text" placeholder="https://..."
+                class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-brand transition" />
+              <textarea id="ver-win-sig" rows="2" placeholder="签名内容"
+                class="w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-brand transition resize-none font-mono"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="flex gap-3 mt-6">
+        <button onclick="closeVersionModal()"
+          class="flex-1 border border-gray-700 text-gray-300 hover:text-white hover:border-gray-500 py-2.5 rounded-lg transition">取消</button>
+        <button onclick="saveVersion()" id="ver-save-btn"
+          class="flex-1 bg-brand hover:bg-brand-dark text-white font-medium py-2.5 rounded-lg transition active:scale-[0.98]">发布</button>
+      </div>
+      <p id="ver-error" class="text-red-400 text-sm text-center mt-3 hidden"></p>
+    </div>
   </div>
 
   <!-- 发放订阅弹窗 -->
@@ -324,6 +417,14 @@
       <p id="grant-user-info" class="text-sm text-gray-400 mb-5"></p>
 
       <div class="space-y-4">
+        <!-- 产品选择 -->
+        <div>
+          <label class="block text-sm text-gray-400 mb-2">选择产品</label>
+          <select id="grant-app-id"
+            class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition">
+          </select>
+        </div>
+
         <!-- 套餐选择 -->
         <div>
           <label class="block text-sm text-gray-400 mb-2">选择套餐</label>
@@ -332,6 +433,11 @@
               class="plan-btn flex-1 border border-gray-700 rounded-lg px-4 py-3 text-center transition hover:border-brand">
               <div class="font-medium text-white">月卡</div>
               <div class="text-xs text-gray-400 mt-0.5">30 天</div>
+            </button>
+            <button onclick="selectPlan('quarterly')" id="plan-quarterly"
+              class="plan-btn flex-1 border border-gray-700 rounded-lg px-4 py-3 text-center transition hover:border-brand">
+              <div class="font-medium text-white">季卡</div>
+              <div class="text-xs text-gray-400 mt-0.5">90 天</div>
             </button>
             <button onclick="selectPlan('yearly')" id="plan-yearly"
               class="plan-btn flex-1 border border-gray-700 rounded-lg px-4 py-3 text-center transition hover:border-brand">
@@ -529,11 +635,13 @@ function switchTab(tab) {
   document.getElementById('panel-orders').classList.toggle('hidden', tab !== 'orders');
   document.getElementById('panel-config').classList.toggle('hidden', tab !== 'config');
   document.getElementById('panel-apps').classList.toggle('hidden', tab !== 'apps');
+  document.getElementById('panel-versions').classList.toggle('hidden', tab !== 'versions');
 
   if (tab === 'users') loadUsers();
   else if (tab === 'orders') loadOrders();
   else if (tab === 'config') loadConfig();
   else if (tab === 'apps') loadApps();
+  else if (tab === 'versions') loadVersions();
 }
 
 // ========== 用户列表 ==========
@@ -668,7 +776,7 @@ function goPage(type, page) {
 }
 
 // ========== 发放订阅弹窗 ==========
-function openGrantModal(userId, account, nickname) {
+async function openGrantModal(userId, account, nickname) {
   grantUserId = userId;
   grantSelectedPlan = '';
   document.getElementById('grant-user-info').textContent = `用户: ${nickname || account} (ID: ${userId})`;
@@ -680,6 +788,16 @@ function openGrantModal(userId, account, nickname) {
     btn.classList.remove('border-brand', 'bg-brand/10');
     btn.classList.add('border-gray-700');
   });
+  // 加载产品列表
+  const appSelect = document.getElementById('grant-app-id');
+  try {
+    const data = await apiFetch('/api/admin/apps');
+    if (data.code === 200 && data.data) {
+      appSelect.innerHTML = data.data.map(app =>
+        `<option value="${app.app_id}">${app.name} (${app.app_id})</option>`
+      ).join('');
+    }
+  } catch { appSelect.innerHTML = '<option value="jdyai">筋斗云AI (jdyai)</option>'; }
   // 显示弹窗
   const modal = document.getElementById('grant-modal');
   modal.classList.remove('hidden');
@@ -715,7 +833,8 @@ async function confirmGrant() {
   confirmBtn.textContent = '处理中...';
   errEl.classList.add('hidden');
 
-  const body = { plan: grantSelectedPlan };
+  const appId = document.getElementById('grant-app-id').value;
+  const body = { plan: grantSelectedPlan, app_id: appId };
   const customDays = parseInt(document.getElementById('grant-days').value);
   if (customDays > 0) body.days = customDays;
 
@@ -932,13 +1051,172 @@ document.getElementById('app-modal').addEventListener('click', e => {
   if (e.target === e.currentTarget) closeAppModal();
 });
 
+// 点击版本弹窗外部关闭
+document.getElementById('version-modal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeVersionModal();
+});
+
 // ESC 关闭弹窗
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     closeGrantModal();
     closeAppModal();
+    closeVersionModal();
   }
 });
+
+// ========== 版本管理 ==========
+let editingVersionId = null;
+
+async function loadVersions() {
+  const tbody = document.getElementById('versions-tbody');
+  tbody.innerHTML = '<tr><td colspan="9" class="px-4 py-8 text-center text-gray-500">加载中...</td></tr>';
+  try {
+    const data = await apiFetch('/api/admin/versions');
+    if (data.code !== 200 || !data.data || data.data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="9" class="px-4 py-8 text-center text-gray-500">暂无版本</td></tr>';
+      return;
+    }
+    tbody.innerHTML = data.data.map(v => {
+      const hasDarwinArm = v.darwin_aarch64_url ? '<span class="text-green-400">✓</span>' : '<span class="text-gray-600">-</span>';
+      const hasDarwinX64 = v.darwin_x86_64_url ? '<span class="text-green-400">✓</span>' : '<span class="text-gray-600">-</span>';
+      const hasWin = v.windows_x86_64_url ? '<span class="text-green-400">✓</span>' : '<span class="text-gray-600">-</span>';
+      const status = v.is_active
+        ? '<span class="text-green-400 bg-green-400/10 px-2 py-0.5 rounded text-xs">启用</span>'
+        : '<span class="text-gray-500 bg-gray-800 px-2 py-0.5 rounded text-xs">禁用</span>';
+      return `<tr class="border-b border-gray-800/50 hover:bg-gray-800/30">
+        <td class="px-4 py-3 text-gray-400">${escapeHtml(v.app_id)}</td>
+        <td class="px-4 py-3 font-medium text-brand">v${escapeHtml(v.version)}</td>
+        <td class="px-4 py-3 text-gray-300 max-w-[200px] truncate" title="${escapeHtml(v.notes || '')}">${escapeHtml(v.notes || '-')}</td>
+        <td class="px-4 py-3 text-center">${hasDarwinArm}</td>
+        <td class="px-4 py-3 text-center">${hasDarwinX64}</td>
+        <td class="px-4 py-3 text-center">${hasWin}</td>
+        <td class="px-4 py-3">${status}</td>
+        <td class="px-4 py-3 text-gray-400">${formatTime(v.pub_date || v.created_at)}</td>
+        <td class="px-4 py-3 text-right">
+          <button onclick='editVersion(${JSON.stringify(v)})' class="text-brand hover:text-brand-light text-sm font-medium mr-3">编辑</button>
+          <button onclick="toggleVersion(${v.id}, ${v.is_active})" class="text-gray-400 hover:text-yellow-400 text-sm mr-3">${v.is_active ? '禁用' : '启用'}</button>
+          <button onclick="deleteVersion(${v.id})" class="text-gray-400 hover:text-red-400 text-sm">删除</button>
+        </td>
+      </tr>`;
+    }).join('');
+  } catch (err) {
+    tbody.innerHTML = '<tr><td colspan="9" class="px-4 py-8 text-center text-red-400">加载失败</td></tr>';
+  }
+}
+
+async function loadVersionAppSelect(selectedAppId) {
+  const sel = document.getElementById('ver-app-id');
+  try {
+    const data = await apiFetch('/api/admin/apps');
+    if (data.code === 200 && data.data) {
+      sel.innerHTML = data.data.map(a =>
+        `<option value="${a.app_id}" ${a.app_id === selectedAppId ? 'selected' : ''}>${a.name} (${a.app_id})</option>`
+      ).join('');
+    }
+  } catch { sel.innerHTML = '<option value="jdyai">筋斗云AI (jdyai)</option>'; }
+}
+
+async function openVersionModal() {
+  editingVersionId = null;
+  document.getElementById('version-modal-title').textContent = '发布新版本';
+  document.getElementById('ver-version').value = '';
+  document.getElementById('ver-notes').value = '';
+  document.getElementById('ver-darwin-arm-url').value = '';
+  document.getElementById('ver-darwin-arm-sig').value = '';
+  document.getElementById('ver-darwin-x64-url').value = '';
+  document.getElementById('ver-darwin-x64-sig').value = '';
+  document.getElementById('ver-win-url').value = '';
+  document.getElementById('ver-win-sig').value = '';
+  document.getElementById('ver-error').classList.add('hidden');
+  document.getElementById('ver-save-btn').textContent = '发布';
+  await loadVersionAppSelect('jdyai');
+  const modal = document.getElementById('version-modal');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+
+async function editVersion(v) {
+  editingVersionId = v.id;
+  document.getElementById('version-modal-title').textContent = '编辑版本 v' + v.version;
+  document.getElementById('ver-version').value = v.version || '';
+  document.getElementById('ver-notes').value = v.notes || '';
+  await loadVersionAppSelect(v.app_id || 'jdyai');
+  document.getElementById('ver-darwin-arm-url').value = v.darwin_aarch64_url || '';
+  document.getElementById('ver-darwin-arm-sig').value = v.darwin_aarch64_sig || '';
+  document.getElementById('ver-darwin-x64-url').value = v.darwin_x86_64_url || '';
+  document.getElementById('ver-darwin-x64-sig').value = v.darwin_x86_64_sig || '';
+  document.getElementById('ver-win-url').value = v.windows_x86_64_url || '';
+  document.getElementById('ver-win-sig').value = v.windows_x86_64_sig || '';
+  document.getElementById('ver-error').classList.add('hidden');
+  document.getElementById('ver-save-btn').textContent = '保存';
+  const modal = document.getElementById('version-modal');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+
+function closeVersionModal() {
+  const modal = document.getElementById('version-modal');
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+  editingVersionId = null;
+}
+
+async function saveVersion() {
+  const version = document.getElementById('ver-version').value.trim();
+  if (!version) {
+    const err = document.getElementById('ver-error');
+    err.textContent = '版本号不能为空';
+    err.classList.remove('hidden');
+    return;
+  }
+
+  const body = {
+    app_id: document.getElementById('ver-app-id').value,
+    version,
+    notes: document.getElementById('ver-notes').value.trim(),
+    darwin_aarch64_url: document.getElementById('ver-darwin-arm-url').value.trim(),
+    darwin_aarch64_sig: document.getElementById('ver-darwin-arm-sig').value.trim(),
+    darwin_x86_64_url: document.getElementById('ver-darwin-x64-url').value.trim(),
+    darwin_x86_64_sig: document.getElementById('ver-darwin-x64-sig').value.trim(),
+    windows_x86_64_url: document.getElementById('ver-win-url').value.trim(),
+    windows_x86_64_sig: document.getElementById('ver-win-sig').value.trim(),
+  };
+
+  try {
+    const url = editingVersionId ? `/api/admin/versions/${editingVersionId}` : '/api/admin/versions';
+    const method = editingVersionId ? 'PUT' : 'POST';
+    const data = await apiFetch(url, { method, body: JSON.stringify(body) });
+    if (data.code === 200) {
+      closeVersionModal();
+      showToast(editingVersionId ? '版本已更新' : `版本 v${version} 已发布`);
+      loadVersions();
+    } else {
+      const err = document.getElementById('ver-error');
+      err.textContent = data.message || '操作失败';
+      err.classList.remove('hidden');
+    }
+  } catch (e) {
+    const err = document.getElementById('ver-error');
+    err.textContent = '请求失败';
+    err.classList.remove('hidden');
+  }
+}
+
+async function toggleVersion(id, currentActive) {
+  await apiFetch(`/api/admin/versions/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify({ is_active: !currentActive }),
+  });
+  loadVersions();
+}
+
+async function deleteVersion(id) {
+  if (!confirm('确定删除此版本？')) return;
+  await apiFetch(`/api/admin/versions/${id}`, { method: 'DELETE' });
+  showToast('版本已删除');
+  loadVersions();
+}
 
 // ========== 系统配置 ==========
 // 所有配置 key（与后端保持一致）

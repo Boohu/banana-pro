@@ -1,9 +1,10 @@
 import React, { useCallback, useRef, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Trash2, GripVertical, Move } from 'lucide-react';
+import { Trash2, GripVertical, Move, Download } from 'lucide-react';
 import { FlattenedImage } from './HistoryList';
 import { formatDateTime } from '../../utils/date';
 import { toast } from '../../store/toastStore';
+import { getImageDownloadUrl } from '../../services/api';
 import { useHistoryStore } from '../../store/historyStore';
 import { MoveImageDialog } from './MoveImageDialog';
 
@@ -183,12 +184,40 @@ export const ImageCard = React.memo(function ImageCard({ image, onClick }: Image
 
     // 拖拽结束处理 - 延迟清理缓存
     const handleDragEnd = useCallback(() => {
-        // 延迟清理缓存，给 drop 处理器足够的时间读取
         setTimeout(() => {
             const dragBlobSymbol = Symbol.for('__dragImageBlob');
             delete (window as any)[dragBlobSymbol];
         }, 100);
     }, []);
+
+    // 快速下载
+    const handleDownload = useCallback(async (e: React.MouseEvent) => {
+        e.stopPropagation();
+        const isTauri = Boolean((window as any).__TAURI_INTERNALS__);
+        if (isTauri) {
+            try {
+                const { invoke } = await import('@tauri-apps/api/core' as any);
+                const { save } = await import('@tauri-apps/plugin-dialog');
+                const fileName = `generated-${image.id.slice(0, 8)}.png`;
+                const lastDir = localStorage.getItem('banana-last-save-dir') || '';
+                const defaultPath = lastDir ? `${lastDir}/${fileName}` : fileName;
+                const destPath = await save({
+                    defaultPath,
+                    filters: [{ name: '图片', extensions: ['png', 'jpg', 'jpeg', 'webp'] }],
+                });
+                if (!destPath) return;
+                const dir = destPath.substring(0, destPath.lastIndexOf('/'));
+                if (dir) localStorage.setItem('banana-last-save-dir', dir);
+                await invoke('download_file_to_path', { url: getImageDownloadUrl(image.id), destPath });
+                toast.success('已保存到 ' + destPath.split('/').pop());
+            } catch (err) {
+                console.error('Download failed:', err);
+                toast.error('保存失败');
+            }
+        } else {
+            window.location.href = getImageDownloadUrl(image.id);
+        }
+    }, [image.id]);
 
     return (
         <div
@@ -200,12 +229,7 @@ export const ImageCard = React.memo(function ImageCard({ image, onClick }: Image
             onDragEnd={handleDragEnd}
             onContextMenu={handleContextMenu}
         >
-            {/* 拖拽指示器 - 左上角 */}
-            <div className="absolute top-2 left-12 z-10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                <div className="bg-black/20 backdrop-blur-sm rounded-lg p-1.5">
-                    <GripVertical className="w-3 h-3 sm:w-4 sm:h-4 text-fg-secondary" />
-                </div>
-            </div>
+            {/* 拖拽指示器已移除，减少视觉干扰 */}
 
             {/* 移动按钮 - 左上角 */}
             {!showConfirm && (
@@ -233,8 +257,28 @@ export const ImageCard = React.memo(function ImageCard({ image, onClick }: Image
                 </div>
             )}
 
-            {/* 删除按钮 - 纯 CSS hover，不依赖 JavaScript */}
-            {/* 正常状态：CSS 控制显隐 */}
+            {/* 下载按钮 - hover 时显示 */}
+            {!showConfirm && (
+                <div
+                    className={`
+                        absolute top-2 right-12 z-20
+                        transition-opacity duration-100 ease-out
+                        opacity-0
+                        group-hover:opacity-100
+                        pointer-events-none
+                    `}
+                >
+                    <button
+                        onClick={handleDownload}
+                        className="rounded-full flex items-center justify-center shadow-lg transition-all duration-200 bg-primary/90 hover:bg-primary text-white w-7 h-7 sm:w-8 sm:h-8 pointer-events-auto"
+                        title={t('history.actions.download', '下载')}
+                    >
+                        <Download className="w-3 h-3 sm:w-4 sm:h-4" />
+                    </button>
+                </div>
+            )}
+
+            {/* 删除按钮 */}
             {!showConfirm && (
                 <div
                     className={`

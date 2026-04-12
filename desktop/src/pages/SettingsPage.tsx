@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Key, Box, HardDrive, Globe, Info, Eye, EyeOff, Zap, Save, Loader2, X } from 'lucide-react';
 import logoImg from '@/assets/logo.png';
 import { useAuthStore } from '@/store/authStore';
@@ -374,12 +374,15 @@ function ModelManageSection() {
 function AboutSection() {
   const { t } = useTranslation();
   const { user, accessInfo, logout } = useAuthStore();
-  const [showPlans, setShowPlans] = useState(false);
-  const [orderLoading, setOrderLoading] = useState(false);
-  const [orderInfo, setOrderInfo] = useState<any>(null);
 
   const isTrial = accessInfo?.access_reason === 'trial';
   const isSubscribed = accessInfo?.access_reason === 'subscription';
+
+  const goToSubscription = () => {
+    import('@/store/navigationStore').then(({ useNavigationStore }) => {
+      useNavigationStore.getState().setPage('subscription');
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -416,25 +419,18 @@ function AboutSection() {
                   ? t('settingsPage.trialStatus', { days: accessInfo.days_left })
                   : isSubscribed
                     ? t('settingsPage.subscriptionStatus', {
-                        plan: accessInfo.subscription?.plan === 'yearly' ? t('settingsPage.yearlyPlan') : t('settingsPage.monthlyPlan'),
+                        plan: accessInfo.subscription?.plan === 'yearly' ? t('settingsPage.yearlyPlan') : accessInfo.subscription?.plan === 'quarterly' ? t('settingsPage.quarterlyPlan') : t('settingsPage.monthlyPlan'),
                         days: accessInfo.days_left,
                       })
                     : t('settingsPage.expired')}
               </span>
             </div>
           </div>
-          {/* 续费/订阅按钮 */}
-          {isTrial ? (
-            <button
-              onClick={() => setShowPlans(true)}
-              className="w-full mt-2 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors"
-            >
-              {t('settingsPage.subscribeNow')}
-            </button>
-          ) : isSubscribed ? (
+          {/* 续费/订阅按钮 → 跳转独立订阅页 */}
+          {isSubscribed ? (
             <div className="mt-2 space-y-1">
               <button
-                onClick={() => setShowPlans(true)}
+                onClick={goToSubscription}
                 className="w-full py-2 rounded-lg bg-primary/15 text-primary text-sm font-semibold hover:bg-primary/25 transition-colors"
               >
                 {t('settingsPage.renew')}
@@ -447,7 +443,7 @@ function AboutSection() {
             </div>
           ) : (
             <button
-              onClick={() => setShowPlans(true)}
+              onClick={goToSubscription}
               className="w-full mt-2 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors"
             >
               {t('settingsPage.subscribeNow')}
@@ -475,66 +471,6 @@ function AboutSection() {
           <p>{t('onboarding.appDesc')}</p>
         </div>
       </div>
-
-      {/* 内嵌订阅选项 */}
-      {showPlans && (
-        <div className="bg-surface-secondary border border-border rounded-2xl p-5 space-y-4">
-          <div className="flex items-center justify-between">
-            <h4 className="text-sm font-semibold text-fg-primary">选择套餐</h4>
-            <button onClick={() => { setShowPlans(false); setOrderInfo(null); }} className="text-xs text-fg-muted hover:text-fg-secondary">收起</button>
-          </div>
-          {!orderInfo ? (
-            <div className="space-y-3">
-              <div className="flex gap-3">
-                <button
-                  onClick={async () => {
-                    setOrderLoading(true);
-                    try {
-                      const { createOrder } = await import('@/services/authApi');
-                      const res = await createOrder('monthly', 'wechat');
-                      setOrderInfo(res.data);
-                    } catch (err: any) {
-                      alert(err?.response?.data?.message || '创建订单失败');
-                    } finally { setOrderLoading(false); }
-                  }}
-                  disabled={orderLoading}
-                  className="flex-1 p-4 rounded-xl border-2 border-primary bg-primary/5 text-center hover:bg-primary/10 transition-colors"
-                >
-                  <p className="text-lg font-bold text-fg-primary">¥29</p>
-                  <p className="text-xs text-fg-muted">月卡</p>
-                </button>
-                <button
-                  onClick={async () => {
-                    setOrderLoading(true);
-                    try {
-                      const { createOrder } = await import('@/services/authApi');
-                      const res = await createOrder('yearly', 'wechat');
-                      setOrderInfo(res.data);
-                    } catch (err: any) {
-                      alert(err?.response?.data?.message || '创建订单失败');
-                    } finally { setOrderLoading(false); }
-                  }}
-                  disabled={orderLoading}
-                  className="flex-1 p-4 rounded-xl border-2 border-border text-center hover:border-primary/50 transition-colors"
-                >
-                  <p className="text-lg font-bold text-fg-primary">¥199</p>
-                  <p className="text-xs text-fg-muted">年卡（省¥149）</p>
-                </button>
-              </div>
-              {orderLoading && <p className="text-xs text-fg-muted text-center">正在创建订单...</p>}
-            </div>
-          ) : (
-            <div className="text-center space-y-3">
-              <p className="text-sm text-fg-primary">微信扫码支付 <span className="font-bold text-primary">{orderInfo.amount_yuan}元</span></p>
-              <div className="w-48 h-48 mx-auto bg-white rounded-xl flex items-center justify-center">
-                <img src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(orderInfo.qr_code_url)}`} alt="支付二维码" className="w-44 h-44" />
-              </div>
-              <p className="text-xs text-fg-muted">支付完成后请刷新页面</p>
-              <button onClick={() => setOrderInfo(null)} className="text-xs text-primary hover:underline">选其他套餐</button>
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }

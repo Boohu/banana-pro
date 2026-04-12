@@ -409,23 +409,7 @@ func buildAccessInfo(user *model.User, appID string) *model.UserAccessInfo {
 
 	now := time.Now()
 
-	// 获取应用配置，读取试用天数
-	var app model.App
-	trialDays := 3 // 默认 3 天
-	if err := model.DB.Where("app_id = ?", appID).First(&app).Error; err == nil {
-		trialDays = app.TrialDays
-	}
-
-	// 检查该应用的试用期（通过 AppTrial 表）
-	trial := model.GetOrCreateTrial(user.ID, appID, trialDays)
-	if trial != nil && now.Before(trial.ExpiresAt) {
-		info.HasAccess = true
-		info.AccessReason = "trial"
-		info.DaysLeft = int(math.Ceil(trial.ExpiresAt.Sub(now).Hours() / 24))
-		return info
-	}
-
-	// 检查该应用的有效订阅
+	// 优先检查订阅（付费用户应该显示订阅状态，而不是试用）
 	var sub model.Subscription
 	if err := model.DB.Where("user_id = ? AND app_id = ? AND status = ? AND expires_at > ?", user.ID, appID, "active", now).
 		Order("expires_at DESC").First(&sub).Error; err == nil {
@@ -433,6 +417,21 @@ func buildAccessInfo(user *model.User, appID string) *model.UserAccessInfo {
 		info.AccessReason = "subscription"
 		info.Subscription = &sub
 		info.DaysLeft = int(math.Ceil(sub.ExpiresAt.Sub(now).Hours() / 24))
+		return info
+	}
+
+	// 没有有效订阅，检查试用期
+	var app model.App
+	trialDays := 3
+	if err := model.DB.Where("app_id = ?", appID).First(&app).Error; err == nil {
+		trialDays = app.TrialDays
+	}
+
+	trial := model.GetOrCreateTrial(user.ID, appID, trialDays)
+	if trial != nil && now.Before(trial.ExpiresAt) {
+		info.HasAccess = true
+		info.AccessReason = "trial"
+		info.DaysLeft = int(math.Ceil(trial.ExpiresAt.Sub(now).Hours() / 24))
 		return info
 	}
 

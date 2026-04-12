@@ -22,9 +22,13 @@ function App() {
     return !localStorage.getItem(ONBOARDING_KEY) && !apiKey;
   });
 
-  // 启动时检查登录状态
+  // 启动时检查登录状态 + 每小时定时重新校验（防止到期后继续使用）
   useEffect(() => {
     checkAuth();
+    const interval = setInterval(() => {
+      checkAuth(true);
+    }, 60 * 60 * 1000); // 每小时校验一次
+    return () => clearInterval(interval);
   }, [checkAuth]);
 
   useEffect(() => {

@@ -14,6 +14,7 @@ import (
 	"auth-server/internal/middleware"
 	"auth-server/internal/model"
 	"auth-server/internal/service"
+	"auth-server/internal/util"
 
 	"github.com/gin-gonic/gin"
 )
@@ -26,6 +27,9 @@ func main() {
 
 	// 启动时自动创建默认应用（如果不存在）
 	initDefaultApp()
+
+	// 从数据库加载 JWT 密钥（覆盖默认值）
+	util.InitSecretFromDB(model.GetConfig("jwt_secret"))
 
 	r := gin.Default()
 
@@ -63,13 +67,15 @@ func main() {
 			auth.POST("/send-code", handleSendCode)
 		}
 
-		// 支付回调（不需要 Token）
+		// 支付回调（不需要 Token，由支付平台服务器调用）
 		payment := api.Group("/payment")
 		{
 			payment.POST("/wechat/notify", handler.WechatNotify)
 			payment.POST("/alipay/notify", handler.AlipayNotify)
-			payment.POST("/mock", handler.MockPay) // 开发测试用
 		}
+
+		// 自动更新检查（不需要 Token，客户端启动时调用）
+		api.GET("/update/check", handler.CheckUpdate)
 
 		// 需要登录的接口
 		protected := api.Group("")
@@ -111,6 +117,15 @@ func main() {
 			admin.POST("/apps", handler.AdminCreateApp)
 			admin.PUT("/apps/:app_id", handler.AdminUpdateApp)
 			admin.DELETE("/apps/:app_id", handler.AdminDeleteApp)
+
+			// 版本管理（自动更新）
+			admin.GET("/versions", handler.AdminListVersions)
+			admin.POST("/versions", handler.AdminCreateVersion)
+			admin.PUT("/versions/:id", handler.AdminUpdateVersion)
+			admin.DELETE("/versions/:id", handler.AdminDeleteVersion)
+
+			// Mock 支付（仅管理员可用，用于测试）
+			admin.POST("/mock-pay", handler.MockPay)
 		}
 	}
 

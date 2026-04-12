@@ -171,6 +171,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     localStorage.removeItem(AUTH_CACHE_KEY);
     // 递增会话版本，使飞行中的 checkAuth 失效
     sessionVersion++;
-    set({ token: null, user: null, accessInfo: null, isAuthenticated: false, hasAccess: false });
+    set({ token: null, user: null, accessInfo: null, isAuthenticated: false, hasAccess: false, isLoading: false });
   },
 }));

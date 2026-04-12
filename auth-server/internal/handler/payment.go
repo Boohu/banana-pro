@@ -14,33 +14,21 @@ import (
 func WechatNotify(c *gin.Context) {
 	paySvc := service.GetPaymentService()
 
-	// 如果微信支付未配置，按旧逻辑走 mock 模式
 	if !paySvc.IsWechatConfigured() {
-		orderNo := c.Query("order_no")
-		if orderNo == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"code": "FAIL", "message": "missing order_no"})
-			return
-		}
-		if err := CompletePayment(orderNo); err != nil {
-			log.Printf("[Payment] 微信 mock 回调处理失败: %v\n", err)
-			c.JSON(http.StatusOK, gin.H{"code": "FAIL", "message": err.Error()})
-			return
-		}
-		log.Printf("[Payment] 微信 mock 支付成功: %s\n", orderNo)
-		c.JSON(http.StatusOK, gin.H{"code": "SUCCESS", "message": "OK"})
+		log.Println("[Payment] 微信支付未配置，拒绝回调请求")
+		c.JSON(http.StatusBadRequest, gin.H{"code": "FAIL", "message": "未配置"})
 		return
 	}
 
-	// 真实微信支付回调：SDK 验签 + 解密
-	orderNo, err := paySvc.ParseWechatNotify(c.Request)
+	// SDK 验签 + 解密
+	orderNo, paidAmount, err := paySvc.ParseWechatNotify(c.Request)
 	if err != nil {
 		log.Printf("[Payment] 微信回调验签/解析失败: %v\n", err)
-		// 微信 APIv3 回调失败需要返回 JSON 格式
-		c.JSON(http.StatusBadRequest, gin.H{"code": "FAIL", "message": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"code": "FAIL", "message": "验签失败"})
 		return
 	}
 
-	if err := CompletePayment(orderNo); err != nil {
+	if err := CompletePayment(orderNo, paidAmount); err != nil {
 		log.Printf("[Payment] 微信回调处理失败: orderNo=%s, err=%v\n", orderNo, err)
 		c.JSON(http.StatusOK, gin.H{"code": "FAIL", "message": err.Error()})
 		return
@@ -56,32 +44,21 @@ func WechatNotify(c *gin.Context) {
 func AlipayNotify(c *gin.Context) {
 	paySvc := service.GetPaymentService()
 
-	// 如果支付宝未配置，按旧逻辑走 mock 模式
 	if !paySvc.IsAlipayConfigured() {
-		orderNo := c.PostForm("out_trade_no")
-		if orderNo == "" {
-			c.String(http.StatusBadRequest, "fail")
-			return
-		}
-		if err := CompletePayment(orderNo); err != nil {
-			log.Printf("[Payment] 支付宝 mock 回调处理失败: %v\n", err)
-			c.String(http.StatusOK, "fail")
-			return
-		}
-		log.Printf("[Payment] 支付宝 mock 支付成功: %s\n", orderNo)
-		c.String(http.StatusOK, "success")
+		log.Println("[Payment] 支付宝未配置，拒绝回调请求")
+		c.String(http.StatusBadRequest, "fail")
 		return
 	}
 
-	// 真实支付宝回调：SDK 验签 + 解析
-	orderNo, err := paySvc.ParseAlipayNotify(c)
+	// SDK 验签 + 解析
+	orderNo, paidAmount, err := paySvc.ParseAlipayNotify(c)
 	if err != nil {
 		log.Printf("[Payment] 支付宝回调验签/解析失败: %v\n", err)
 		c.String(http.StatusBadRequest, "fail")
 		return
 	}
 
-	if err := CompletePayment(orderNo); err != nil {
+	if err := CompletePayment(orderNo, paidAmount); err != nil {
 		log.Printf("[Payment] 支付宝回调处理失败: orderNo=%s, err=%v\n", orderNo, err)
 		c.String(http.StatusOK, "fail")
 		return
@@ -101,7 +78,8 @@ func MockPay(c *gin.Context) {
 		return
 	}
 
-	if err := CompletePayment(orderNo); err != nil {
+	// mock 支付用 0 表示跳过金额校验
+	if err := CompletePayment(orderNo, 0); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": err.Error()})
 		return
 	}

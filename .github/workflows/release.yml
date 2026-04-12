@@ -214,9 +214,9 @@ jobs:
           projectPath: './desktop'
           args: ${{ matrix.tauriArgs }}
           tagName: ${{ github.ref_name }}
-          releaseName: '大香蕉 AI ${{ github.ref_name }}'
+          releaseName: '筋斗云AI ${{ github.ref_name }}'
           releaseBody: |
-            ## 🎨 大香蕉 AI - 创作从未如此简单
+            ## 🎨 筋斗云AI - 创作从未如此简单
 
             ### 🚀 本次更新
             ${{ steps.release_notes.outputs.body }}
@@ -241,9 +241,9 @@ jobs:
           projectPath: './desktop'
           args: ${{ matrix.tauriArgs }} --no-sign
           tagName: ${{ github.ref_name }}
-          releaseName: '大香蕉 AI ${{ github.ref_name }}'
+          releaseName: '筋斗云AI ${{ github.ref_name }}'
           releaseBody: |
-            ## 🎨 大香蕉 AI - 创作从未如此简单
+            ## 🎨 筋斗云AI - 创作从未如此简单
 
             ### 🚀 本次更新
             ${{ steps.release_notes.outputs.body }}
@@ -337,9 +337,9 @@ jobs:
           projectPath: './desktop'
           args: ${{ matrix.tauriArgs }}
           tagName: ${{ github.ref_name }}
-          releaseName: '大香蕉 AI ${{ github.ref_name }}'
+          releaseName: '筋斗云AI ${{ github.ref_name }}'
           releaseBody: |
-            ## 🎨 大香蕉 AI - 创作从未如此简单
+            ## 🎨 筋斗云AI - 创作从未如此简单
 
             ### 🚀 本次更新
             ${{ steps.release_notes.outputs.body }}

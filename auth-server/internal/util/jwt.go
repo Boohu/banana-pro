@@ -18,6 +18,16 @@ func init() {
 	jwtSecret = []byte(secret)
 }
 
+// InitSecretFromDB 从数据库加载 JWT 密钥（在 model.DB 初始化后调用）
+func InitSecretFromDB(dbSecret string) {
+	if dbSecret != "" {
+		jwtSecret = []byte(dbSecret)
+		fmt.Println("[JWT] 使用数据库配置的 JWT 密钥")
+	} else if os.Getenv("JWT_SECRET") == "" {
+		fmt.Println("[JWT] 警告: 使用默认 JWT 密钥，生产环境请配置 JWT_SECRET 环境变量或在管理后台设置 jwt_secret")
+	}
+}
+
 type Claims struct {
 	UserID       uint   `json:"user_id"`
 	Email        string `json:"email"`

@@ -145,6 +145,26 @@ type SystemConfig struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+// AppVersion 应用版本（自动更新用）
+type AppVersion struct {
+	ID        uint      `gorm:"primaryKey" json:"id"`
+	AppID     string    `gorm:"index;size:50;not null;default:'jdyai'" json:"app_id"`
+	Version   string    `gorm:"size:20;not null" json:"version"`           // 如 2.7.5
+	Notes     string    `gorm:"type:text" json:"notes"`                    // 更新说明
+	PubDate   time.Time `json:"pub_date"`                                  // 发布时间
+	// 各平台安装包 URL 和签名
+	DarwinAarch64URL  string `gorm:"size:500" json:"darwin_aarch64_url"`
+	DarwinAarch64Sig  string `gorm:"type:text" json:"darwin_aarch64_sig"`
+	DarwinX8664URL    string `gorm:"size:500" json:"darwin_x86_64_url"`
+	DarwinX8664Sig    string `gorm:"type:text" json:"darwin_x86_64_sig"`
+	WindowsX8664URL   string `gorm:"size:500" json:"windows_x86_64_url"`
+	WindowsX8664Sig   string `gorm:"type:text" json:"windows_x86_64_sig"`
+	LinuxX8664URL     string `gorm:"size:500" json:"linux_x86_64_url"`
+	LinuxX8664Sig     string `gorm:"type:text" json:"linux_x86_64_sig"`
+	IsActive  bool      `gorm:"default:true" json:"is_active"`             // 是否启用
+	CreatedAt time.Time `json:"created_at"`
+}
+
 // UserAccessInfo 用户访问信息（API 返回用）
 type UserAccessInfo struct {
 	User         *User         `json:"user"`

@@ -280,12 +280,12 @@ function BatchConfigPanel({ batch, onChange }: { batch: BatchJob; onChange: (upd
             if (val === '__local__') {
               // 桌面端：弹出文件夹选择
               try {
-                const mod = await (Function('return import("@tauri-apps/plugin-dialog")')() as Promise<any>);
-                const selected = await mod.open({ directory: true, multiple: false });
+                const { open } = await import('@tauri-apps/plugin-dialog');
+                const selected = await open({ directory: true, multiple: false });
                 if (selected && typeof selected === 'string') {
                   onChange({ outputFolderId: '__local__', outputDir: selected });
                 }
-              } catch {}
+              } catch (err) { console.error('[BatchPage] 选择文件夹失败:', err); }
             } else if (val === '') {
               onChange({ outputFolderId: '', outputDir: '' });
             } else {
@@ -309,10 +309,10 @@ function BatchConfigPanel({ batch, onChange }: { batch: BatchJob; onChange: (upd
           <button
             onClick={async () => {
               try {
-                const mod = await (Function('return import("@tauri-apps/plugin-dialog")')() as Promise<any>);
-                const selected = await mod.open({ directory: true, multiple: false });
+                const { open } = await import('@tauri-apps/plugin-dialog');
+                const selected = await open({ directory: true, multiple: false });
                 if (selected && typeof selected === 'string') onChange({ outputDir: selected });
-              } catch {}
+              } catch (err) { console.error('[BatchPage] 选择文件夹失败:', err); }
             }}
             className="p-1 rounded hover:bg-surface-secondary transition-colors shrink-0"
           >

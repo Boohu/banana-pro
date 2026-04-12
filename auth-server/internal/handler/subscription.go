@@ -12,6 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 // CreateOrderRequest 创建订单请求
@@ -36,12 +37,27 @@ func CreateOrder(c *gin.Context) {
 		appID = DefaultAppID
 	}
 
+	// 防重复提交：5 分钟内已有成功支付的订单，拒绝创建新订单
+	var recentPaid int64
+	model.DB.Model(&model.PaymentOrder{}).
+		Where("user_id = ? AND app_id = ? AND status = ? AND paid_at > ?", userID, appID, "paid", time.Now().Add(-5*time.Minute)).
+		Count(&recentPaid)
+	if recentPaid > 0 {
+		c.JSON(http.StatusTooManyRequests, gin.H{"code": 429, "message": "你刚刚已成功支付，请勿重复提交"})
+		return
+	}
+
 	// 从 App 表读取套餐配置
 	plan := model.GetAppPlanByID(appID, req.Plan)
 	if plan == nil {
 		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "无效的套餐"})
 		return
 	}
+
+	// 关闭该用户之前所有 pending 订单，防止旧订单被支付导致重复生效
+	model.DB.Model(&model.PaymentOrder{}).
+		Where("user_id = ? AND app_id = ? AND status = ?", userID, appID, "pending").
+		Update("status", "closed")
 
 	orderNo := fmt.Sprintf("JDY%s", uuid.New().String()[:12])
 
@@ -108,6 +124,7 @@ func CreateOrder(c *gin.Context) {
 }
 
 // GetOrderStatus 查询订单状态
+// 对 pending 状态的订单，主动向微信/支付宝查询实时状态
 func GetOrderStatus(c *gin.Context) {
 	orderID := c.Param("id")
 	userID := c.GetUint("user_id")
@@ -116,6 +133,44 @@ func GetOrderStatus(c *gin.Context) {
 	if err := model.DB.Where("id = ? AND user_id = ?", orderID, userID).First(&order).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "订单不存在"})
 		return
+	}
+
+	// 对 pending 订单处理
+	if order.Status == "pending" {
+		// 超过 30 分钟的订单自动过期（加 WHERE status=pending 防止覆盖已付款订单）
+		if time.Since(order.CreatedAt) > 30*time.Minute {
+			model.DB.Model(&model.PaymentOrder{}).Where("id = ? AND status = ?", order.ID, "pending").Update("status", "expired")
+			order.Status = "expired"
+		} else {
+			// 主动查询支付平台（限制频率：订单创建 10 秒后才开始查询，避免刚下单就频繁请求）
+			if time.Since(order.CreatedAt) > 10*time.Second {
+				paySvc := service.GetPaymentService()
+				var realStatus string
+
+				switch order.PayMethod {
+				case "wechat":
+					if paySvc.IsWechatConfigured() {
+						realStatus = paySvc.QueryWechatOrder(order.OrderNo)
+					}
+				case "alipay":
+					if paySvc.IsAlipayConfigured() {
+						realStatus = paySvc.QueryAlipayOrder(order.OrderNo)
+					}
+				}
+
+				// 根据查询结果更新订单
+				if realStatus == "paid" {
+					if err := CompletePayment(order.OrderNo, 0); err != nil {
+						log.Printf("[GetOrderStatus] 完成支付失败: %v\n", err)
+					} else {
+						order.Status = "paid"
+					}
+				} else if realStatus == "closed" {
+					model.DB.Model(&model.PaymentOrder{}).Where("id = ? AND status = ?", order.ID, "pending").Update("status", "closed")
+					order.Status = "closed"
+				}
+			}
+		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -149,11 +204,12 @@ func GetSubscriptionStatus(c *gin.Context) {
 }
 
 // CompletePayment 支付完成处理（支付回调后调用）
-// 使用数据库事务保证原子性，支持幂等（重复回调安全）
-func CompletePayment(orderNo string) error {
+// paidAmount: 实付金额（分），0 表示跳过金额校验（mock/轮询查询时）
+func CompletePayment(orderNo string, paidAmount int) error {
 	return model.DB.Transaction(func(tx *gorm.DB) error {
 		var order model.PaymentOrder
-		if err := tx.Where("order_no = ?", orderNo).First(&order).Error; err != nil {
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+			Where("order_no = ?", orderNo).First(&order).Error; err != nil {
 			return fmt.Errorf("订单不存在")
 		}
 
@@ -161,9 +217,15 @@ func CompletePayment(orderNo string) error {
 		if order.Status == "paid" {
 			return nil
 		}
-		// 只有 pending 状态的订单才能完成支付
-		if order.Status != "pending" {
+		// pending / closed / expired 都允许完成支付（用户真的付了钱就不能拒绝）
+		if order.Status != "pending" && order.Status != "closed" && order.Status != "expired" {
 			return fmt.Errorf("订单状态异常: %s", order.Status)
+		}
+
+		// 校验实付金额（paidAmount > 0 时校验，0 表示跳过）
+		if paidAmount > 0 && paidAmount != order.Amount {
+			log.Printf("[CompletePayment] 金额不匹配! orderNo=%s, 应付=%d, 实付=%d\n", orderNo, order.Amount, paidAmount)
+			return fmt.Errorf("支付金额不匹配: 应付 %d 分，实付 %d 分", order.Amount, paidAmount)
 		}
 
 		now := time.Now()

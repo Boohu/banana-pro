@@ -160,10 +160,10 @@ func AdminUploadCert(c *gin.Context) {
 		return
 	}
 
-	// 保存到 certs 目录
+	// 保存到 certs 目录（filepath.Base 防止路径穿越）
 	certDir := "./certs"
 	os.MkdirAll(certDir, 0755)
-	savePath := certDir + "/" + file.Filename
+	savePath := certDir + "/" + filepath.Base(file.Filename)
 
 	if err := c.SaveUploadedFile(file, savePath); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "保存文件失败"})

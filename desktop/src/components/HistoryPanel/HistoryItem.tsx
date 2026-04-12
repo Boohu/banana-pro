@@ -1,9 +1,10 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { HistoryItem as HistoryItemType } from '../../types';
-import { Trash2 } from 'lucide-react';
-import { getImageUrl } from '../../services/api';
+import { Trash2, Download } from 'lucide-react';
+import { getImageUrl, getImageDownloadUrl } from '../../services/api';
 import { formatDateTime } from '../../utils/date';
+import { toast } from '../../store/toastStore';
 
 interface HistoryItemProps {
   item: HistoryItemType;
@@ -16,6 +17,37 @@ export const HistoryItem = React.memo(function HistoryItem({ item, onDelete }: H
   // 获取第一张图片用于展示
   const firstImage = item.images && item.images.length > 0 ? item.images[0] : null;
   const imageUrl = firstImage ? getImageUrl(firstImage.id) : '';
+
+  // 下载第一张图片（桌面端用 Tauri 保存对话框，Web 端直接下载）
+  const handleDownload = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!firstImage) return;
+
+    const isTauri = Boolean((window as any).__TAURI_INTERNALS__);
+    if (isTauri) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core' as any);
+        const { save } = await import('@tauri-apps/plugin-dialog');
+        const fileName = `generated-${firstImage.id.slice(0, 8)}.png`;
+        const lastDir = localStorage.getItem('banana-last-save-dir') || '';
+        const defaultPath = lastDir ? `${lastDir}/${fileName}` : fileName;
+        const destPath = await save({
+          defaultPath,
+          filters: [{ name: '图片', extensions: ['png', 'jpg', 'jpeg', 'webp'] }],
+        });
+        if (!destPath) return;
+        const dir = destPath.substring(0, destPath.lastIndexOf('/'));
+        if (dir) localStorage.setItem('banana-last-save-dir', dir);
+        await invoke('download_file_to_path', { url: getImageDownloadUrl(firstImage.id), destPath });
+        toast.success(t('history.downloadSuccess', '已保存到 ') + destPath.split('/').pop());
+      } catch (err) {
+        console.error('Download failed:', err);
+        toast.error(t('history.downloadFailed', '保存失败'));
+      }
+    } else {
+      window.location.href = getImageDownloadUrl(firstImage.id);
+    }
+  };
 
   return (
     <div className="group flex gap-4 p-4 bg-surface-secondary rounded-lg border border-border hover:border-border hover:shadow-sm transition-all">
@@ -48,6 +80,15 @@ export const HistoryItem = React.memo(function HistoryItem({ item, onDelete }: H
         </div>
 
         <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity justify-end">
+            {firstImage && (
+              <button
+                  onClick={handleDownload}
+                  className="p-1.5 text-fg-muted hover:text-primary hover:bg-primary/10 rounded-md transition-colors"
+                  title={t('history.actions.download', '下载')}
+              >
+                  <Download className="w-4 h-4" />
+              </button>
+            )}
             <button
                 onClick={() => onDelete(item.id)}
                 className="p-1.5 text-fg-muted hover:text-error hover:bg-error/10 rounded-md transition-colors"
