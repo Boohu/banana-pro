@@ -1,6 +1,6 @@
 import React from 'react';
 import { Key, Image, Layers, ArrowRight } from 'lucide-react';
-import logoImg from '@/assets/logo.webp';
+import logoImg from '@/assets/logo.png';
 import { useNavigationStore } from '@/store/navigationStore';
 import { useTranslation } from 'react-i18next';
 

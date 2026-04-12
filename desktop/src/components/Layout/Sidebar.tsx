@@ -1,5 +1,5 @@
 import { Image, Layers, FolderOpen, LayoutTemplate, Settings } from 'lucide-react';
-import logoImg from '@/assets/logo.webp';
+import logoImg from '@/assets/logo.png';
 import { cn } from '@/lib/utils';
 import { useNavigationStore, type Page } from '@/store/navigationStore';
 import { useTranslation } from 'react-i18next';
