@@ -4,7 +4,7 @@ import axios from 'axios';
 export const APP_ID = 'jdyai';
 
 // 认证服务地址（独立于图片生成后端）
-export const AUTH_URL = import.meta.env.VITE_AUTH_URL || 'http://localhost:9090/api';
+export const AUTH_URL = import.meta.env.VITE_AUTH_URL || 'https://auth.3ux.cn/api';
 
 const authApi = axios.create({
   baseURL: AUTH_URL,
