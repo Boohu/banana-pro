@@ -132,6 +132,9 @@ func main() {
 	// 管理后台页面
 	r.StaticFile("/admin", "./admin/index.html")
 
+	// 更新包文件托管（CI 上传的安装包）
+	r.Static("/updates", "./updates")
+
 	// 健康检查
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{"status": "ok"})

@@ -53,7 +53,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDgwMzEzQjQ1RDJDOThGNkQKUldSdGo4blNSVHN4Z09KMEdneXFrRDEvc3F3WlVzaVIzVUpkbkVYcmhpREcxcTI5dUdBSTU4eXcK",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEJERjk1REJGQTRFQjYxOUMKUldTY1lldWt2MTM1dlJzYUY0b0ViM3NBUnNHQUlUbk05TWlDMnExMnJXUmdiejlwY0dMTi90RjEK",
       "endpoints": [
         "https://auth.3ux.cn/api/update/check?target={{target}}&arch={{arch}}&current_version={{current_version}}"
       ],
