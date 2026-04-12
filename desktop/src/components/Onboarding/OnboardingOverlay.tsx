@@ -1,5 +1,6 @@
 import React from 'react';
-import { Sparkles, Key, Image, Layers, ArrowRight } from 'lucide-react';
+import { Key, Image, Layers, ArrowRight } from 'lucide-react';
+import logoImg from '@/assets/logo.webp';
 import { useNavigationStore } from '@/store/navigationStore';
 import { useTranslation } from 'react-i18next';
 
@@ -23,9 +24,7 @@ export function OnboardingOverlay({ onDismiss }: OnboardingOverlayProps) {
       <div className="flex flex-col items-center gap-8 max-w-3xl px-8">
         {/* Logo */}
         <div className="flex items-center gap-3.5">
-          <div className="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center">
-            <Sparkles className="w-8 h-8 text-primary-foreground" />
-          </div>
+          <img src={logoImg} alt="logo" className="w-14 h-14 rounded-2xl" />
           <span className="text-4xl font-bold text-fg-primary">{t('onboarding.appName')}</span>
         </div>
 

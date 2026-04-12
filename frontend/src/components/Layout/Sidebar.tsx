@@ -1,4 +1,5 @@
-import { Image, Layers, FolderOpen, LayoutTemplate, Settings, Sparkles } from 'lucide-react';
+import { Image, Layers, FolderOpen, LayoutTemplate, Settings } from 'lucide-react';
+import logoImg from '@/assets/logo.webp';
 import { cn } from '@/lib/utils';
 import { useNavigationStore, type Page } from '@/store/navigationStore';
 import { useTranslation } from 'react-i18next';
@@ -24,9 +25,7 @@ export function Sidebar() {
     <aside className="flex flex-col w-60 h-full bg-surface-secondary px-4 py-5 gap-4 shrink-0">
       {/* Logo */}
       <div className="flex items-center gap-2.5 px-1">
-        <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-          <Sparkles className="w-5 h-5 text-primary-foreground" />
-        </div>
+        <img src={logoImg} alt="logo" className="w-8 h-8 rounded-lg" />
         <span className="text-lg font-bold text-fg-primary">{t('sidebar.appName')}</span>
       </div>
 
