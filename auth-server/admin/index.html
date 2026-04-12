@@ -78,6 +78,10 @@
           class="tab-btn px-4 py-2 rounded-md text-sm font-medium transition">
           订单管理
         </button>
+        <button id="tab-config" onclick="switchTab('config')"
+          class="tab-btn px-4 py-2 rounded-md text-sm font-medium transition">
+          系统配置
+        </button>
       </div>
     </div>
 
@@ -128,6 +132,140 @@
         </div>
         <!-- 分页 -->
         <div id="orders-pagination" class="flex items-center justify-between px-4 py-3 border-t border-gray-800">
+        </div>
+      </div>
+    </div>
+
+    <!-- 系统配置面板 -->
+    <div id="panel-config" class="max-w-7xl mx-auto px-4 sm:px-6 py-4 hidden">
+      <div class="space-y-6">
+
+        <!-- 微信支付 -->
+        <div class="bg-gray-900 border border-gray-800 rounded-xl p-6">
+          <h3 class="text-base font-bold text-white mb-4 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-green-400"></span>
+            微信支付
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm text-gray-400 mb-1.5">AppID</label>
+              <input id="cfg-wechat_app_id" type="text" placeholder="微信应用 AppID"
+                class="cfg-input w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition" />
+            </div>
+            <div>
+              <label class="block text-sm text-gray-400 mb-1.5">商户号 (MchID)</label>
+              <input id="cfg-wechat_mch_id" type="text" placeholder="微信商户号"
+                class="cfg-input w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition" />
+            </div>
+            <div>
+              <label class="block text-sm text-gray-400 mb-1.5">APIv3 密钥</label>
+              <input id="cfg-wechat_api_key" type="password" placeholder="APIv3 密钥"
+                class="cfg-input w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition" />
+            </div>
+            <div>
+              <label class="block text-sm text-gray-400 mb-1.5">商户私钥证书路径</label>
+              <input id="cfg-wechat_cert_path" type="text" placeholder="/path/to/apiclient_key.pem"
+                class="cfg-input w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition" />
+            </div>
+            <div>
+              <label class="block text-sm text-gray-400 mb-1.5">证书序列号</label>
+              <input id="cfg-wechat_serial_no" type="text" placeholder="商户证书序列号"
+                class="cfg-input w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition" />
+            </div>
+            <div>
+              <label class="block text-sm text-gray-400 mb-1.5">支付回调地址</label>
+              <input id="cfg-wechat_notify_url" type="text" placeholder="https://your-domain.com/api/payment/wechat/notify"
+                class="cfg-input w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition" />
+            </div>
+          </div>
+        </div>
+
+        <!-- 支付宝 -->
+        <div class="bg-gray-900 border border-gray-800 rounded-xl p-6">
+          <h3 class="text-base font-bold text-white mb-4 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-blue-400"></span>
+            支付宝
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm text-gray-400 mb-1.5">AppID</label>
+              <input id="cfg-alipay_app_id" type="text" placeholder="支付宝应用 AppID"
+                class="cfg-input w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition" />
+            </div>
+            <div>
+              <label class="block text-sm text-gray-400 mb-1.5">支付回调地址</label>
+              <input id="cfg-alipay_notify_url" type="text" placeholder="https://your-domain.com/api/payment/alipay/notify"
+                class="cfg-input w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition" />
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-sm text-gray-400 mb-1.5">应用私钥</label>
+              <input id="cfg-alipay_private_key" type="password" placeholder="应用私钥"
+                class="cfg-input w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition" />
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-sm text-gray-400 mb-1.5">支付宝公钥</label>
+              <input id="cfg-alipay_public_key" type="password" placeholder="支付宝公钥"
+                class="cfg-input w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition" />
+            </div>
+          </div>
+        </div>
+
+        <!-- 阿里云短信 -->
+        <div class="bg-gray-900 border border-gray-800 rounded-xl p-6">
+          <h3 class="text-base font-bold text-white mb-4 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-orange-400"></span>
+            阿里云短信
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm text-gray-400 mb-1.5">AccessKey ID</label>
+              <input id="cfg-aliyun_sms_access_key_id" type="password" placeholder="AccessKey ID"
+                class="cfg-input w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition" />
+            </div>
+            <div>
+              <label class="block text-sm text-gray-400 mb-1.5">AccessKey Secret</label>
+              <input id="cfg-aliyun_sms_access_key_secret" type="password" placeholder="AccessKey Secret"
+                class="cfg-input w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition" />
+            </div>
+            <div>
+              <label class="block text-sm text-gray-400 mb-1.5">短信签名</label>
+              <input id="cfg-aliyun_sms_sign_name" type="text" placeholder="短信签名名称"
+                class="cfg-input w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition" />
+            </div>
+            <div>
+              <label class="block text-sm text-gray-400 mb-1.5">短信模板 Code</label>
+              <input id="cfg-aliyun_sms_template_code" type="text" placeholder="SMS_xxxxxxx"
+                class="cfg-input w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition" />
+            </div>
+          </div>
+        </div>
+
+        <!-- 系统设置 -->
+        <div class="bg-gray-900 border border-gray-800 rounded-xl p-6">
+          <h3 class="text-base font-bold text-white mb-4 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-purple-400"></span>
+            系统设置
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm text-gray-400 mb-1.5">JWT Secret</label>
+              <input id="cfg-jwt_secret" type="password" placeholder="JWT 签名密钥"
+                class="cfg-input w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition" />
+            </div>
+            <div>
+              <label class="block text-sm text-gray-400 mb-1.5">Admin Key</label>
+              <input id="cfg-admin_key" type="password" placeholder="管理后台访问密钥"
+                class="cfg-input w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition" />
+            </div>
+          </div>
+        </div>
+
+        <!-- 保存按钮 -->
+        <div class="flex justify-end">
+          <button onclick="saveConfig()" id="save-config-btn"
+            class="bg-brand hover:bg-brand-dark text-white font-medium px-8 py-2.5 rounded-lg transition active:scale-[0.98]">
+            保存配置
+          </button>
         </div>
       </div>
     </div>
@@ -294,9 +432,11 @@ function switchTab(tab) {
   // 面板
   document.getElementById('panel-users').classList.toggle('hidden', tab !== 'users');
   document.getElementById('panel-orders').classList.toggle('hidden', tab !== 'orders');
+  document.getElementById('panel-config').classList.toggle('hidden', tab !== 'config');
 
   if (tab === 'users') loadUsers();
-  else loadOrders();
+  else if (tab === 'orders') loadOrders();
+  else if (tab === 'config') loadConfig();
 }
 
 // ========== 用户列表 ==========
@@ -513,6 +653,87 @@ document.getElementById('grant-modal').addEventListener('click', e => {
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') closeGrantModal();
 });
+
+// ========== 系统配置 ==========
+// 所有配置 key（与后端保持一致）
+const configKeys = [
+  'wechat_app_id', 'wechat_mch_id', 'wechat_api_key', 'wechat_cert_path', 'wechat_serial_no', 'wechat_notify_url',
+  'alipay_app_id', 'alipay_private_key', 'alipay_public_key', 'alipay_notify_url',
+  'aliyun_sms_access_key_id', 'aliyun_sms_access_key_secret', 'aliyun_sms_sign_name', 'aliyun_sms_template_code',
+  'jwt_secret', 'admin_key',
+];
+
+// 加载配置
+async function loadConfig() {
+  try {
+    const data = await apiFetch('/api/admin/config');
+    if (data.code !== 200) {
+      showToast(data.message || '加载配置失败', 'error');
+      return;
+    }
+
+    const configs = data.data || [];
+    configs.forEach(cfg => {
+      const input = document.getElementById('cfg-' + cfg.key);
+      if (input) {
+        // 如果有值，显示脱敏值作为 placeholder 并清空 value
+        // 让用户知道有配置但不能看到完整值
+        if (cfg.has_value && cfg.is_sensitive) {
+          input.value = '';
+          input.placeholder = cfg.value + '（已配置，留空则不修改）';
+        } else if (cfg.has_value) {
+          input.value = cfg.value;
+        } else {
+          input.value = '';
+        }
+      }
+    });
+  } catch (err) {
+    showToast('加载配置失败: ' + err.message, 'error');
+  }
+}
+
+// 保存配置
+async function saveConfig() {
+  const btn = document.getElementById('save-config-btn');
+  btn.disabled = true;
+  btn.textContent = '保存中...';
+
+  const payload = {};
+  configKeys.forEach(key => {
+    const input = document.getElementById('cfg-' + key);
+    if (input && input.value.trim() !== '') {
+      payload[key] = input.value.trim();
+    }
+  });
+
+  if (Object.keys(payload).length === 0) {
+    showToast('没有需要保存的配置', 'error');
+    btn.disabled = false;
+    btn.textContent = '保存配置';
+    return;
+  }
+
+  try {
+    const data = await apiFetch('/api/admin/config', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+
+    if (data.code === 200) {
+      showToast('配置已保存（' + data.data.saved + ' 项）');
+      // 重新加载，刷新脱敏显示
+      loadConfig();
+    } else {
+      showToast(data.message || '保存失败', 'error');
+    }
+  } catch (err) {
+    showToast('保存失败: ' + err.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '保存配置';
+  }
+}
 </script>
 </body>
 </html>

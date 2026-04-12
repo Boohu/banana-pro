@@ -58,6 +58,14 @@ type VerifyCode struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
+// SystemConfig 系统配置（管理后台可编辑）
+type SystemConfig struct {
+	ID        uint      `gorm:"primaryKey" json:"id"`
+	Key       string    `gorm:"uniqueIndex;size:100;not null" json:"key"`
+	Value     string    `gorm:"type:text" json:"value"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
 // UserAccessInfo 用户访问信息（API 返回用）
 type UserAccessInfo struct {
 	User         *User         `json:"user"`

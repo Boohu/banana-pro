@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"sync"
 	"time"
+
+	"auth-server/internal/model"
 
 	"github.com/gin-gonic/gin"
 	"github.com/smartwalle/alipay/v3"
@@ -63,25 +64,29 @@ var (
 )
 
 // GetPaymentService 获取支付服务单例
+// 注意：每次调用都重新从数据库/环境变量读取配置，确保管理后台修改后立即生效
 func GetPaymentService() *PaymentService {
-	paymentSvcOnce.Do(func() {
-		cfg := PaymentConfig{
-			WechatAppID:     os.Getenv("WECHAT_APP_ID"),
-			WechatMchID:     os.Getenv("WECHAT_MCH_ID"),
-			WechatAPIKey:    os.Getenv("WECHAT_API_KEY"),
-			WechatCertPath:  os.Getenv("WECHAT_CERT_PATH"),
-			WechatSerialNo:  os.Getenv("WECHAT_SERIAL_NO"),
-			WechatNotifyURL: os.Getenv("WECHAT_NOTIFY_URL"),
+	cfg := PaymentConfig{
+		WechatAppID:     model.GetConfig("wechat_app_id"),
+		WechatMchID:     model.GetConfig("wechat_mch_id"),
+		WechatAPIKey:    model.GetConfig("wechat_api_key"),
+		WechatCertPath:  model.GetConfig("wechat_cert_path"),
+		WechatSerialNo:  model.GetConfig("wechat_serial_no"),
+		WechatNotifyURL: model.GetConfig("wechat_notify_url"),
 
-			AlipayAppID:      os.Getenv("ALIPAY_APP_ID"),
-			AlipayPrivateKey: os.Getenv("ALIPAY_PRIVATE_KEY"),
-			AlipayPublicKey:  os.Getenv("ALIPAY_PUBLIC_KEY"),
-			AlipayNotifyURL:  os.Getenv("ALIPAY_NOTIFY_URL"),
-		}
-		paymentSvc = &PaymentService{config: cfg}
-		log.Printf("[Payment] 支付服务初始化完成，微信商户号=%s，支付宝AppID=%s\n",
-			cfg.WechatMchID, cfg.AlipayAppID)
+		AlipayAppID:      model.GetConfig("alipay_app_id"),
+		AlipayPrivateKey: model.GetConfig("alipay_private_key"),
+		AlipayPublicKey:  model.GetConfig("alipay_public_key"),
+		AlipayNotifyURL:  model.GetConfig("alipay_notify_url"),
+	}
+
+	paymentSvcOnce.Do(func() {
+		paymentSvc = &PaymentService{}
+		log.Println("[Payment] 支付服务初始化完成")
 	})
+
+	// 每次更新配置（如果管理后台改了配置，下次调用就能拿到新值）
+	paymentSvc.config = cfg
 	return paymentSvc
 }
 

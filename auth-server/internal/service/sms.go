@@ -3,28 +3,22 @@ package service
 import (
 	"fmt"
 	"log"
-	"os"
+
+	"auth-server/internal/model"
 
 	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
 	dysmsapi "github.com/alibabacloud-go/dysmsapi-20170525/v4/client"
 	"github.com/alibabacloud-go/tea/tea"
 )
 
-// smsClient 阿里云短信客户端（懒加载）
-var smsClient *dysmsapi.Client
-
-// smsEnabled 标记短信服务是否可用
-var smsEnabled bool
-
-// initSmsClient 初始化阿里云短信客户端
-func initSmsClient() {
-	accessKeyID := os.Getenv("ALIYUN_SMS_ACCESS_KEY_ID")
-	accessKeySecret := os.Getenv("ALIYUN_SMS_ACCESS_KEY_SECRET")
+// getSmsClient 每次调用都根据当前配置创建客户端
+// 优先从数据库读配置，fallback 到环境变量
+func getSmsClient() (*dysmsapi.Client, error) {
+	accessKeyID := model.GetConfig("aliyun_sms_access_key_id")
+	accessKeySecret := model.GetConfig("aliyun_sms_access_key_secret")
 
 	if accessKeyID == "" || accessKeySecret == "" {
-		log.Println("[SMS] 阿里云短信环境变量未配置，短信功能禁用（开发模式：验证码固定 123456）")
-		smsEnabled = false
-		return
+		return nil, nil // 未配置，返回 nil 表示禁用
 	}
 
 	config := &openapi.Config{
@@ -35,32 +29,28 @@ func initSmsClient() {
 
 	client, err := dysmsapi.NewClient(config)
 	if err != nil {
-		log.Printf("[SMS] 阿里云短信客户端初始化失败: %v", err)
-		smsEnabled = false
-		return
+		return nil, fmt.Errorf("阿里云短信客户端初始化失败: %w", err)
 	}
 
-	smsClient = client
-	smsEnabled = true
-	log.Println("[SMS] 阿里云短信服务初始化成功")
-}
-
-// init 包初始化时自动创建客户端
-func init() {
-	initSmsClient()
+	return client, nil
 }
 
 // SendSmsCode 发送短信验证码
 // phone: 手机号, code: 验证码
 // 如果短信服务未配置，打印日志但不报错
 func SendSmsCode(phone, code string) error {
-	if !smsEnabled {
-		log.Printf("[SMS] 开发模式，跳过发送短信到 %s，验证码: %s", phone, code)
+	client, err := getSmsClient()
+	if err != nil {
+		log.Printf("[SMS] 短信客户端初始化失败: %v", err)
+		return nil
+	}
+	if client == nil {
+		log.Printf("[SMS] 短信未配置，跳过发送到 %s，验证码: %s", phone, code)
 		return nil
 	}
 
-	signName := os.Getenv("ALIYUN_SMS_SIGN_NAME")
-	templateCode := os.Getenv("ALIYUN_SMS_TEMPLATE_CODE")
+	signName := model.GetConfig("aliyun_sms_sign_name")
+	templateCode := model.GetConfig("aliyun_sms_template_code")
 
 	if signName == "" || templateCode == "" {
 		log.Printf("[SMS] 签名或模板未配置，跳过发送短信到 %s，验证码: %s", phone, code)
@@ -74,7 +64,7 @@ func SendSmsCode(phone, code string) error {
 		TemplateParam: tea.String(fmt.Sprintf(`{"code":"%s"}`, code)),
 	}
 
-	resp, err := smsClient.SendSms(req)
+	resp, err := client.SendSms(req)
 	if err != nil {
 		return fmt.Errorf("发送短信失败: %w", err)
 	}

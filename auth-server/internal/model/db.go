@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/sqlite"
@@ -43,10 +44,20 @@ func InitDB() error {
 	}
 
 	// 自动迁移
-	if err := DB.AutoMigrate(&User{}, &Subscription{}, &PaymentOrder{}, &VerifyCode{}); err != nil {
+	if err := DB.AutoMigrate(&User{}, &Subscription{}, &PaymentOrder{}, &VerifyCode{}, &SystemConfig{}); err != nil {
 		return fmt.Errorf("数据库迁移失败: %w", err)
 	}
 
 	log.Println("[DB] 数据库初始化成功")
 	return nil
+}
+
+// GetConfig 获取系统配置，优先读数据库，fallback 到环境变量
+func GetConfig(key string) string {
+	var config SystemConfig
+	if err := DB.Where("`key` = ?", key).First(&config).Error; err == nil && config.Value != "" {
+		return config.Value
+	}
+	// fallback 到环境变量（key 转大写）
+	return os.Getenv(strings.ToUpper(key))
 }

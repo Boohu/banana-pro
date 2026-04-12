@@ -68,10 +68,10 @@ func main() {
 			protected.GET("/subscription/status", handler.GetSubscriptionStatus)
 		}
 
-		// 管理后台（简单的 admin key 鉴权）
+		// 管理后台（简单的 admin key 鉴权，优先从数据库读取）
 		admin := api.Group("/admin")
 		admin.Use(func(c *gin.Context) {
-			adminKey := os.Getenv("ADMIN_KEY")
+			adminKey := model.GetConfig("admin_key")
 			if adminKey == "" {
 				adminKey = "jdy-admin-2026" // 默认密钥，生产环境务必修改
 			}
@@ -86,6 +86,8 @@ func main() {
 			admin.GET("/users", handler.AdminListUsers)
 			admin.GET("/orders", handler.AdminListOrders)
 			admin.POST("/users/:id/grant", handler.AdminGrantSubscription)
+			admin.GET("/config", handler.AdminGetConfig)
+			admin.POST("/config", handler.AdminSaveConfig)
 		}
 	}
 
