@@ -9,8 +9,8 @@ import (
 // User 用户
 type User struct {
 	ID             uint           `gorm:"primaryKey" json:"id"`
-	Phone          string         `gorm:"uniqueIndex;size:20" json:"phone"`
-	Email          string         `gorm:"uniqueIndex;size:100" json:"email"`
+	Phone          *string        `gorm:"uniqueIndex;size:20" json:"phone"`
+	Email          *string        `gorm:"uniqueIndex;size:100" json:"email"`
 	PasswordHash   string         `gorm:"-" json:"-"`                         // 邮箱注册时的密码哈希
 	Password       string         `gorm:"column:password_hash" json:"-"`      // 数据库字段名
 	Nickname       string         `gorm:"size:50" json:"nickname"`

@@ -61,11 +61,12 @@ func Register(c *gin.Context) {
 			return
 		}
 
+		emailPtr := &req.Email
 		user := model.User{
-			Email:          req.Email,
+			Email:          emailPtr,
 			Password:       hash,
 			Nickname:       req.Nickname,
-			TrialExpiresAt: time.Now().AddDate(0, 0, 3), // 3 天试用
+			TrialExpiresAt: time.Now().AddDate(0, 0, 3),
 		}
 		if user.Nickname == "" {
 			user.Nickname = strings.Split(req.Email, "@")[0]
@@ -77,7 +78,7 @@ func Register(c *gin.Context) {
 		}
 
 		// 生成 Token
-		token, err := util.GenerateToken(user.ID, user.Email, user.Phone, user.TokenVersion)
+		token, err := util.GenerateToken(user.ID, ptrStr(user.Email), ptrStr(user.Phone), user.TokenVersion)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "生成 Token 失败"})
 			return
@@ -115,8 +116,9 @@ func Register(c *gin.Context) {
 			return
 		}
 
+		phonePtr := &req.Phone
 		user := model.User{
-			Phone:          req.Phone,
+			Phone:          phonePtr,
 			Nickname:       req.Nickname,
 			TrialExpiresAt: time.Now().AddDate(0, 0, 3),
 		}
@@ -129,7 +131,7 @@ func Register(c *gin.Context) {
 			return
 		}
 
-		token, _ := util.GenerateToken(user.ID, user.Email, user.Phone, user.TokenVersion)
+		token, _ := util.GenerateToken(user.ID, ptrStr(user.Email), ptrStr(user.Phone), user.TokenVersion)
 		c.JSON(http.StatusOK, gin.H{
 			"code":    200,
 			"message": "注册成功",
@@ -166,16 +168,15 @@ func Login(c *gin.Context) {
 			return
 		}
 	} else if req.Phone != "" {
-		// 手机号+验证码登录
 		req.Phone = strings.TrimSpace(req.Phone)
 		if !verifyCode(req.Phone, req.Code, "login") {
 			c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "验证码错误或已过期"})
 			return
 		}
 		if err := model.DB.Where("phone = ?", req.Phone).First(&user).Error; err != nil {
-			// 手机号未注册，自动注册
+			phonePtr := &req.Phone
 			user = model.User{
-				Phone:          req.Phone,
+				Phone:          phonePtr,
 				Nickname:       "用户" + req.Phone[len(req.Phone)-4:],
 				TrialExpiresAt: time.Now().AddDate(0, 0, 3),
 			}
@@ -190,7 +191,7 @@ func Login(c *gin.Context) {
 	model.DB.Model(&user).Update("token_version", user.TokenVersion+1)
 	user.TokenVersion++
 
-	token, err := util.GenerateToken(user.ID, user.Email, user.Phone, user.TokenVersion)
+	token, err := util.GenerateToken(user.ID, ptrStr(user.Email), ptrStr(user.Phone), user.TokenVersion)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "生成 Token 失败"})
 		return
@@ -230,7 +231,7 @@ func RefreshToken(c *gin.Context) {
 	var user model.User
 	model.DB.First(&user, userID)
 
-	token, err := util.GenerateToken(user.ID, user.Email, user.Phone, user.TokenVersion)
+	token, err := util.GenerateToken(user.ID, ptrStr(user.Email), ptrStr(user.Phone), user.TokenVersion)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "刷新失败"})
 		return
@@ -244,11 +245,19 @@ func RefreshToken(c *gin.Context) {
 
 // --- 辅助函数 ---
 
+// ptrStr 安全解引用字符串指针
+func ptrStr(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
+}
+
 func buildUserInfo(user *model.User) gin.H {
 	return gin.H{
 		"id":               user.ID,
-		"email":            user.Email,
-		"phone":            user.Phone,
+		"email":            ptrStr(user.Email),
+		"phone":            ptrStr(user.Phone),
 		"nickname":         user.Nickname,
 		"trial_expires_at": user.TrialExpiresAt,
 		"created_at":       user.CreatedAt,
