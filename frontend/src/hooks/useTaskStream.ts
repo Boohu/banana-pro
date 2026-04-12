@@ -2,6 +2,7 @@ import { useEffect, useRef, useCallback } from 'react';
 import { useGenerateStore } from '../store/generateStore';
 import { setUpdateSource, getUpdateSource } from '../store/updateSourceStore';
 import { mapBackendTaskToFrontend } from '../utils/mapping';
+import { getTaskStatus } from '../services/generateApi';
 
 // SSE 重连配置
 const SSE_RECONNECT_DELAY = 2000; // 重连延迟（毫秒）
@@ -84,6 +85,25 @@ export function useTaskStream(taskId: string | null) {
         storeRef.current.setConnectionMode('websocket');
         storeRef.current.updateLastMessageTime();
         console.log('[SSE] Connection established');
+
+        // 防止任务瞬间失败但 SSE 来不及接收：连接后主动查一次任务状态
+        getTaskStatus(taskId!).then((task) => {
+          if (!isMountedRef.current) return;
+          if (task.status === 'failed') {
+            console.log('[SSE] Task already failed, closing stream');
+            setUpdateSource(null);
+            storeRef.current.failTask(task.errorMessage || 'Unknown error');
+            closeStream();
+          } else if (task.status === 'completed') {
+            console.log('[SSE] Task already completed, closing stream');
+            if (task.images && task.images.length > 0) {
+              storeRef.current.updateProgressBatch(task.completedCount, task.images);
+            }
+            setUpdateSource(null);
+            storeRef.current.completeTask();
+            closeStream();
+          }
+        }).catch(() => {});
       }
     };
 

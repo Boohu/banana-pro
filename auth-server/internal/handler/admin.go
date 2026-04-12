@@ -11,10 +11,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// AdminListUsers 用户列表
+// AdminListUsers 用户列表（可选 app_id 过滤）
 func AdminListUsers(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
+	appID := c.DefaultQuery("app_id", DefaultAppID)
 	if page < 1 {
 		page = 1
 	}
@@ -25,7 +26,7 @@ func AdminListUsers(c *gin.Context) {
 	var users []model.User
 	model.DB.Order("created_at DESC").Offset((page - 1) * pageSize).Limit(pageSize).Find(&users)
 
-	// 附加订阅状态
+	// 附加订阅状态（按 app_id）
 	type UserItem struct {
 		model.User
 		HasAccess    bool   `json:"has_access"`
@@ -34,7 +35,7 @@ func AdminListUsers(c *gin.Context) {
 	}
 	items := make([]UserItem, len(users))
 	for i, u := range users {
-		info := buildAccessInfo(&u)
+		info := buildAccessInfo(&u, appID)
 		items[i] = UserItem{
 			User:         u,
 			HasAccess:    info.HasAccess,
@@ -77,8 +78,9 @@ func AdminListOrders(c *gin.Context) {
 
 // GrantRequest 手动发放订阅
 type GrantRequest struct {
-	Plan string `json:"plan" binding:"required"` // monthly / yearly
-	Days int    `json:"days"`                    // 自定义天数（可选）
+	Plan  string `json:"plan" binding:"required"` // monthly / yearly
+	Days  int    `json:"days"`                    // 自定义天数（可选）
+	AppID string `json:"app_id"`                  // 可选，默认 jdyai
 }
 
 // AdminGrantSubscription 手动发放/延期订阅
@@ -92,8 +94,14 @@ func AdminGrantSubscription(c *gin.Context) {
 		return
 	}
 
-	plan, ok := plans[req.Plan]
-	if !ok {
+	appID := req.AppID
+	if appID == "" {
+		appID = DefaultAppID
+	}
+
+	// 从 App 表读取套餐配置
+	plan := model.GetAppPlanByID(appID, req.Plan)
+	if plan == nil {
 		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "无效的套餐"})
 		return
 	}
@@ -108,13 +116,14 @@ func AdminGrantSubscription(c *gin.Context) {
 
 	// 查找现有未过期订阅，续期
 	var latestSub model.Subscription
-	if err := model.DB.Where("user_id = ? AND status = ? AND expires_at > ?", uint(userID), "active", now).
+	if err := model.DB.Where("user_id = ? AND app_id = ? AND status = ? AND expires_at > ?", uint(userID), appID, "active", now).
 		Order("expires_at DESC").First(&latestSub).Error; err == nil {
 		startsAt = latestSub.ExpiresAt
 	}
 
 	sub := model.Subscription{
 		UserID:    uint(userID),
+		AppID:     appID,
 		Plan:      req.Plan,
 		Amount:    0, // 手动发放不扣费
 		StartsAt:  startsAt,
@@ -130,6 +139,145 @@ func AdminGrantSubscription(c *gin.Context) {
 			"expires_at": sub.ExpiresAt,
 			"days":       days,
 		},
+	})
+}
+
+// ========== 应用管理 ==========
+
+// AdminListApps 应用列表
+func AdminListApps(c *gin.Context) {
+	var apps []model.App
+	model.DB.Order("created_at ASC").Find(&apps)
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": 200,
+		"data": apps,
+	})
+}
+
+// AdminCreateAppRequest 创建应用请求
+type AdminCreateAppRequest struct {
+	AppID       string `json:"app_id" binding:"required"`
+	Name        string `json:"name" binding:"required"`
+	Description string `json:"description"`
+	TrialDays   int    `json:"trial_days"`
+	PlansJSON   string `json:"plans_json"`
+}
+
+// AdminCreateApp 创建应用
+func AdminCreateApp(c *gin.Context) {
+	var req AdminCreateAppRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "参数错误"})
+		return
+	}
+
+	// 检查 app_id 是否已存在
+	var existing model.App
+	if err := model.DB.Where("app_id = ?", req.AppID).First(&existing).Error; err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "该应用ID已存在"})
+		return
+	}
+
+	if req.TrialDays <= 0 {
+		req.TrialDays = 3
+	}
+	if req.PlansJSON == "" {
+		req.PlansJSON = `[{"id":"monthly","name":"月卡","amount":2900,"days":30},{"id":"yearly","name":"年卡","amount":19900,"days":365}]`
+	}
+
+	app := model.App{
+		AppID:       req.AppID,
+		Name:        req.Name,
+		Description: req.Description,
+		TrialDays:   req.TrialDays,
+		PlansJSON:   req.PlansJSON,
+		IsActive:    true,
+	}
+
+	if err := model.DB.Create(&app).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "创建应用失败"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    200,
+		"message": "应用已创建",
+		"data":    app,
+	})
+}
+
+// AdminUpdateAppRequest 更新应用请求
+type AdminUpdateAppRequest struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	TrialDays   *int   `json:"trial_days"` // 用指针区分 0 和未传
+	PlansJSON   string `json:"plans_json"`
+	IsActive    *bool  `json:"is_active"`
+}
+
+// AdminUpdateApp 更新应用
+func AdminUpdateApp(c *gin.Context) {
+	appIDParam := c.Param("app_id")
+
+	var app model.App
+	if err := model.DB.Where("app_id = ?", appIDParam).First(&app).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "应用不存在"})
+		return
+	}
+
+	var req AdminUpdateAppRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "参数错误"})
+		return
+	}
+
+	updates := map[string]interface{}{}
+	if req.Name != "" {
+		updates["name"] = req.Name
+	}
+	if req.Description != "" {
+		updates["description"] = req.Description
+	}
+	if req.TrialDays != nil {
+		updates["trial_days"] = *req.TrialDays
+	}
+	if req.PlansJSON != "" {
+		updates["plans_json"] = req.PlansJSON
+	}
+	if req.IsActive != nil {
+		updates["is_active"] = *req.IsActive
+	}
+
+	if len(updates) > 0 {
+		model.DB.Model(&app).Updates(updates)
+	}
+
+	// 重新查询返回最新数据
+	model.DB.Where("app_id = ?", appIDParam).First(&app)
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    200,
+		"message": "应用已更新",
+		"data":    app,
+	})
+}
+
+// AdminDeleteApp 删除应用
+func AdminDeleteApp(c *gin.Context) {
+	appIDParam := c.Param("app_id")
+
+	var app model.App
+	if err := model.DB.Where("app_id = ?", appIDParam).First(&app).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "应用不存在"})
+		return
+	}
+
+	model.DB.Delete(&app)
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    200,
+		"message": "应用已删除",
 	})
 }
 

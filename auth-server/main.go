@@ -24,6 +24,9 @@ func main() {
 		log.Fatalf("数据库初始化失败: %v", err)
 	}
 
+	// 启动时自动创建默认应用（如果不存在）
+	initDefaultApp()
+
 	r := gin.Default()
 
 	// CORS —— 从配置读取允许的源，默认仅允许本地开发地址
@@ -100,6 +103,12 @@ func main() {
 			admin.POST("/users/:id/grant", handler.AdminGrantSubscription)
 			admin.GET("/config", handler.AdminGetConfig)
 			admin.POST("/config", handler.AdminSaveConfig)
+
+			// 应用管理
+			admin.GET("/apps", handler.AdminListApps)
+			admin.POST("/apps", handler.AdminCreateApp)
+			admin.PUT("/apps/:app_id", handler.AdminUpdateApp)
+			admin.DELETE("/apps/:app_id", handler.AdminDeleteApp)
 		}
 	}
 
@@ -132,6 +141,23 @@ func main() {
 	log.Printf("认证服务启动，端口: %s\n", port)
 	if err := r.Run(":" + port); err != nil {
 		log.Fatalf("启动失败: %v", err)
+	}
+}
+
+// initDefaultApp 初始化默认应用（筋斗云AI）
+func initDefaultApp() {
+	var app model.App
+	result := model.DB.Where("app_id = ?", "jdyai").First(&app)
+	if result.RowsAffected == 0 {
+		app = model.App{
+			AppID:     "jdyai",
+			Name:      "筋斗云AI",
+			TrialDays: 3,
+			PlansJSON: `[{"id":"monthly","name":"月卡","amount":2900,"days":30},{"id":"yearly","name":"年卡","amount":19900,"days":365}]`,
+			IsActive:  true,
+		}
+		model.DB.Create(&app)
+		log.Println("[Init] 已创建默认应用: 筋斗云AI (jdyai)")
 	}
 }
 

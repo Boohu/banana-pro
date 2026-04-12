@@ -4,7 +4,7 @@ import type { PersistedRefImage } from '../types';
 
 // Model constants to avoid magic strings
 export const IMAGE_MODELS = {
-  FLASH: { value: 'gemini-3-flash-image-preview', label: 'Flash' },
+  FLASH: { value: 'gemini-3.1-flash-image-preview', label: 'Flash 3.1' },
   PRO: { value: 'gemini-3-pro-image-preview', label: 'Pro' },
 } as const;
 
@@ -213,7 +213,7 @@ export const useConfigStore = create<ConfigState>()(
     {
       name: 'app-config-storage',
       storage: createJSONStorage(() => localStorage),
-      version: 11,
+      version: 12,
       // 关键：不要将 File 对象序列化到 localStorage（File 对象无法序列化）
       partialize: (state) => {
           const { refFiles, ...rest } = state;
@@ -285,6 +285,12 @@ export const useConfigStore = create<ConfigState>()(
         }
         if (version < 11) {
           next = { ...next, draftBatchId: next.draftBatchId ?? null };
+        }
+        if (version < 12) {
+          // 旧模型自动迁移到 3.1 版本
+          if (next.imageModel === 'gemini-3-flash-image-preview') {
+            next = { ...next, imageModel: 'gemini-3.1-flash-image-preview' };
+          }
         }
 
         return next;

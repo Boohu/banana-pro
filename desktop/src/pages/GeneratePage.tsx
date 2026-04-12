@@ -256,6 +256,7 @@ function LeftConfigPanel() {
           >
             <option value="1K">1K (1024 × 1024)</option>
             <option value="2K">2K (2048 × 2048)</option>
+            <option value="4K">4K (4096 × 4096)</option>
           </select>
         </div>
 

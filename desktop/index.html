@@ -2,7 +2,7 @@
 <html lang="zh-CN" class="dark">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="icon" type="image/png" href="/src/assets/logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>筋斗云AI</title>
     <!-- 首屏兜底：避免 WebView 初始化时白屏闪烁 -->
@@ -53,7 +53,7 @@
   <body>
     <div id="boot" data-tauri-drag-region>
       <div class="boot-wrap">
-        <div class="boot-logo">☁️</div>
+        <img class="boot-logo" src="/src/assets/logo.png" alt="logo" style="object-fit:cover;" />
         <div class="boot-row">
           <span class="boot-spinner"></span>
           <span>正在启动…</span>

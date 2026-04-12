@@ -12,6 +12,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// 默认应用 ID
+const DefaultAppID = "jdyai"
+
 // ========== 登录暴力破解防护 ==========
 
 // attemptInfo 记录某账号的登录失败次数和锁定时间
@@ -58,6 +61,15 @@ func clearLoginAttempts(identity string) {
 	loginAttempts.Delete(identity)
 }
 
+// getAppID 从请求中提取 app_id，优先 JSON body，其次 query param，默认 jdyai
+func getAppIDFromQuery(c *gin.Context) string {
+	appID := c.Query("app_id")
+	if appID == "" {
+		appID = DefaultAppID
+	}
+	return appID
+}
+
 // RegisterRequest 注册请求
 type RegisterRequest struct {
 	Email    string `json:"email"`
@@ -65,6 +77,7 @@ type RegisterRequest struct {
 	Password string `json:"password"` // 邮箱注册时必填
 	Code     string `json:"code"`     // 手机号注册时必填（验证码）
 	Nickname string `json:"nickname"`
+	AppID    string `json:"app_id"`   // 可选，默认 jdyai
 }
 
 // LoginRequest 登录请求
@@ -73,6 +86,7 @@ type LoginRequest struct {
 	Phone    string `json:"phone"`
 	Password string `json:"password"` // 邮箱登录
 	Code     string `json:"code"`     // 手机验证码登录
+	AppID    string `json:"app_id"`   // 可选，默认 jdyai
 }
 
 // Register 注册
@@ -81,6 +95,11 @@ func Register(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "参数错误"})
 		return
+	}
+
+	appID := req.AppID
+	if appID == "" {
+		appID = DefaultAppID
 	}
 
 	// 邮箱注册
@@ -113,7 +132,7 @@ func Register(c *gin.Context) {
 			Email:          emailPtr,
 			Password:       hash,
 			Nickname:       req.Nickname,
-			TrialExpiresAt: time.Now().AddDate(0, 0, 3),
+			TrialExpiresAt: time.Now().AddDate(0, 0, 3), // 保留旧字段兼容
 		}
 		if user.Nickname == "" {
 			user.Nickname = strings.Split(req.Email, "@")[0]
@@ -137,7 +156,7 @@ func Register(c *gin.Context) {
 			"data": gin.H{
 				"token":  token,
 				"user":   buildUserInfo(&user),
-				"access": buildAccessInfo(&user),
+				"access": buildAccessInfo(&user, appID),
 			},
 		})
 		return
@@ -168,7 +187,7 @@ func Register(c *gin.Context) {
 		user := model.User{
 			Phone:          phonePtr,
 			Nickname:       req.Nickname,
-			TrialExpiresAt: time.Now().AddDate(0, 0, 3),
+			TrialExpiresAt: time.Now().AddDate(0, 0, 3), // 保留旧字段兼容
 		}
 		if user.Nickname == "" {
 			user.Nickname = "用户" + req.Phone[len(req.Phone)-4:]
@@ -186,7 +205,7 @@ func Register(c *gin.Context) {
 			"data": gin.H{
 				"token":  token,
 				"user":   buildUserInfo(&user),
-				"access": buildAccessInfo(&user),
+				"access": buildAccessInfo(&user, appID),
 			},
 		})
 		return
@@ -201,6 +220,11 @@ func Login(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "参数错误"})
 		return
+	}
+
+	appID := req.AppID
+	if appID == "" {
+		appID = DefaultAppID
 	}
 
 	// 确定登录标识（用于暴力破解防护）
@@ -264,7 +288,7 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	accessInfo := buildAccessInfo(&user)
+	accessInfo := buildAccessInfo(&user, appID)
 	c.JSON(http.StatusOK, gin.H{
 		"code":    200,
 		"message": "登录成功",
@@ -279,6 +303,7 @@ func Login(c *gin.Context) {
 // GetMe 获取当前用户信息 + 订阅状态
 func GetMe(c *gin.Context) {
 	userID := c.GetUint("user_id")
+	appID := getAppIDFromQuery(c)
 
 	var user model.User
 	if err := model.DB.First(&user, userID).Error; err != nil {
@@ -286,7 +311,7 @@ func GetMe(c *gin.Context) {
 		return
 	}
 
-	info := buildAccessInfo(&user)
+	info := buildAccessInfo(&user, appID)
 	c.JSON(http.StatusOK, gin.H{
 		"code": 200,
 		"data": info,
@@ -333,24 +358,33 @@ func buildUserInfo(user *model.User) gin.H {
 	}
 }
 
-func buildAccessInfo(user *model.User) *model.UserAccessInfo {
+func buildAccessInfo(user *model.User, appID string) *model.UserAccessInfo {
 	info := &model.UserAccessInfo{
-		User: user,
+		User:  user,
+		AppID: appID,
 	}
 
 	now := time.Now()
 
-	// 检查试用期
-	if now.Before(user.TrialExpiresAt) {
+	// 获取应用配置，读取试用天数
+	var app model.App
+	trialDays := 3 // 默认 3 天
+	if err := model.DB.Where("app_id = ?", appID).First(&app).Error; err == nil {
+		trialDays = app.TrialDays
+	}
+
+	// 检查该应用的试用期（通过 AppTrial 表）
+	trial := model.GetOrCreateTrial(user.ID, appID, trialDays)
+	if trial != nil && now.Before(trial.ExpiresAt) {
 		info.HasAccess = true
 		info.AccessReason = "trial"
-		info.DaysLeft = int(user.TrialExpiresAt.Sub(now).Hours()/24) + 1
+		info.DaysLeft = int(trial.ExpiresAt.Sub(now).Hours()/24) + 1
 		return info
 	}
 
-	// 检查有效订阅
+	// 检查该应用的有效订阅
 	var sub model.Subscription
-	if err := model.DB.Where("user_id = ? AND status = ? AND expires_at > ?", user.ID, "active", now).
+	if err := model.DB.Where("user_id = ? AND app_id = ? AND status = ? AND expires_at > ?", user.ID, appID, "active", now).
 		Order("expires_at DESC").First(&sub).Error; err == nil {
 		info.HasAccess = true
 		info.AccessReason = "subscription"

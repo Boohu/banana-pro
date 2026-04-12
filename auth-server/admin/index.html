@@ -82,6 +82,10 @@
           class="tab-btn px-4 py-2 rounded-md text-sm font-medium transition">
           系统配置
         </button>
+        <button id="tab-apps" onclick="switchTab('apps')"
+          class="tab-btn px-4 py-2 rounded-md text-sm font-medium transition">
+          应用管理
+        </button>
       </div>
     </div>
 
@@ -120,6 +124,7 @@
                 <th class="px-4 py-3 font-medium">ID</th>
                 <th class="px-4 py-3 font-medium">订单号</th>
                 <th class="px-4 py-3 font-medium">用户ID</th>
+                <th class="px-4 py-3 font-medium">应用</th>
                 <th class="px-4 py-3 font-medium">套餐</th>
                 <th class="px-4 py-3 font-medium">金额</th>
                 <th class="px-4 py-3 font-medium">支付方式</th>
@@ -269,6 +274,35 @@
         </div>
       </div>
     </div>
+
+    <!-- 应用管理面板 -->
+    <div id="panel-apps" class="max-w-7xl mx-auto px-4 sm:px-6 py-4 hidden">
+      <div class="mb-4 flex justify-between items-center">
+        <p class="text-sm text-gray-400">管理多应用授权配置，每个应用有独立的试用期和套餐</p>
+        <button onclick="openAppModal()"
+          class="bg-brand hover:bg-brand-dark text-white font-medium px-4 py-2 rounded-lg text-sm transition active:scale-[0.98]">
+          创建应用
+        </button>
+      </div>
+      <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-left text-gray-400 border-b border-gray-800">
+                <th class="px-4 py-3 font-medium">AppID</th>
+                <th class="px-4 py-3 font-medium">名称</th>
+                <th class="px-4 py-3 font-medium">描述</th>
+                <th class="px-4 py-3 font-medium">试用天数</th>
+                <th class="px-4 py-3 font-medium">套餐</th>
+                <th class="px-4 py-3 font-medium">状态</th>
+                <th class="px-4 py-3 font-medium text-right">操作</th>
+              </tr>
+            </thead>
+            <tbody id="apps-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- 发放订阅弹窗 -->
@@ -318,6 +352,54 @@
     </div>
   </div>
 
+  <!-- 应用编辑弹窗 -->
+  <div id="app-modal" class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/60 backdrop-blur-sm">
+    <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 w-full max-w-lg shadow-2xl fade-in">
+      <h3 id="app-modal-title" class="text-lg font-bold text-white mb-5">创建应用</h3>
+
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm text-gray-400 mb-1.5">应用 ID <span class="text-gray-500">（唯一标识，创建后不可修改）</span></label>
+          <input id="app-field-app_id" type="text" placeholder="如 jdyai, product_a"
+            class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition" />
+        </div>
+        <div>
+          <label class="block text-sm text-gray-400 mb-1.5">应用名称</label>
+          <input id="app-field-name" type="text" placeholder="显示名称"
+            class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition" />
+        </div>
+        <div>
+          <label class="block text-sm text-gray-400 mb-1.5">描述</label>
+          <input id="app-field-description" type="text" placeholder="应用描述（可选）"
+            class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition" />
+        </div>
+        <div>
+          <label class="block text-sm text-gray-400 mb-1.5">试用天数</label>
+          <input id="app-field-trial_days" type="number" min="0" max="365" placeholder="3"
+            class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition" />
+        </div>
+        <div>
+          <label class="block text-sm text-gray-400 mb-1.5">套餐配置 <span class="text-gray-500">（JSON 数组）</span></label>
+          <textarea id="app-field-plans_json" rows="4" placeholder='[{"id":"monthly","name":"月卡","amount":2900,"days":30}]'
+            class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition font-mono text-xs"></textarea>
+        </div>
+      </div>
+
+      <!-- 按钮 -->
+      <div class="flex gap-3 mt-6">
+        <button onclick="closeAppModal()"
+          class="flex-1 border border-gray-700 text-gray-300 hover:text-white hover:border-gray-500 py-2.5 rounded-lg transition">
+          取消
+        </button>
+        <button onclick="confirmAppSave()" id="app-confirm-btn"
+          class="flex-1 bg-brand hover:bg-brand-dark text-white font-medium py-2.5 rounded-lg transition active:scale-[0.98]">
+          保存
+        </button>
+      </div>
+      <p id="app-error" class="text-red-400 text-sm text-center mt-3 hidden"></p>
+    </div>
+  </div>
+
   <!-- Toast 提示 -->
   <div id="toast" class="fixed top-4 right-4 z-[200] hidden">
     <div class="bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 shadow-xl flex items-center gap-2">
@@ -335,6 +417,7 @@ let ordersPage = 1;
 const PAGE_SIZE = 15;
 let grantUserId = null;
 let grantSelectedPlan = '';
+let editingAppID = null; // null 表示创建，有值表示编辑
 
 // ========== 工具函数 ==========
 function apiBase() {
@@ -433,10 +516,12 @@ function switchTab(tab) {
   document.getElementById('panel-users').classList.toggle('hidden', tab !== 'users');
   document.getElementById('panel-orders').classList.toggle('hidden', tab !== 'orders');
   document.getElementById('panel-config').classList.toggle('hidden', tab !== 'config');
+  document.getElementById('panel-apps').classList.toggle('hidden', tab !== 'apps');
 
   if (tab === 'users') loadUsers();
   else if (tab === 'orders') loadOrders();
   else if (tab === 'config') loadConfig();
+  else if (tab === 'apps') loadApps();
 }
 
 // ========== 用户列表 ==========
@@ -495,11 +580,11 @@ function getAccessBadge(hasAccess, reason) {
 // ========== 订单列表 ==========
 async function loadOrders() {
   const tbody = document.getElementById('orders-tbody');
-  tbody.innerHTML = '<tr><td colspan="8" class="px-4 py-8 text-center text-gray-500">加载中...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="9" class="px-4 py-8 text-center text-gray-500">加载中...</td></tr>';
 
   const data = await apiFetch(`/api/admin/orders?page=${ordersPage}&page_size=${PAGE_SIZE}`);
   if (data.code !== 200) {
-    tbody.innerHTML = `<tr><td colspan="8" class="px-4 py-8 text-center text-red-400">${escapeHtml(data.message)}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9" class="px-4 py-8 text-center text-red-400">${escapeHtml(data.message)}</td></tr>`;
     return;
   }
 
@@ -507,7 +592,7 @@ async function loadOrders() {
   const total = data.data.total || 0;
 
   if (list.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="8" class="px-4 py-8 text-center text-gray-500">暂无订单</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" class="px-4 py-8 text-center text-gray-500">暂无订单</td></tr>';
     renderPagination('orders', total);
     return;
   }
@@ -521,6 +606,7 @@ async function loadOrders() {
       <td class="px-4 py-3 text-gray-400 font-mono text-xs">${o.id}</td>
       <td class="px-4 py-3 font-mono text-xs">${escapeHtml(o.order_no)}</td>
       <td class="px-4 py-3 text-gray-400">${o.user_id}</td>
+      <td class="px-4 py-3 text-gray-400">${escapeHtml(o.app_id) || '-'}</td>
       <td class="px-4 py-3">${planLabel}</td>
       <td class="px-4 py-3">\u00A5${amount}</td>
       <td class="px-4 py-3 text-gray-400">${payMethod}</td>
@@ -649,9 +735,197 @@ document.getElementById('grant-modal').addEventListener('click', e => {
   if (e.target === e.currentTarget) closeGrantModal();
 });
 
+// ========== 应用管理 ==========
+async function loadApps() {
+  const tbody = document.getElementById('apps-tbody');
+  tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-8 text-center text-gray-500">加载中...</td></tr>';
+
+  try {
+    const data = await apiFetch('/api/admin/apps');
+    if (data.code !== 200) {
+      tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-8 text-center text-red-400">${escapeHtml(data.message)}</td></tr>`;
+      return;
+    }
+
+    const list = data.data || [];
+    if (list.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-8 text-center text-gray-500">暂无应用</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = list.map(app => {
+      let plansLabel = '-';
+      try {
+        const plans = JSON.parse(app.plans_json || '[]');
+        plansLabel = plans.map(p => `${p.name}(\u00A5${(p.amount/100).toFixed(0)}/${p.days}天)`).join(', ');
+      } catch(e) {}
+
+      const statusBadge = app.is_active
+        ? '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-500/10 text-green-400">启用</span>'
+        : '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-500/10 text-gray-400">禁用</span>';
+
+      return `<tr class="border-b border-gray-800/50 hover:bg-gray-800/30 transition">
+        <td class="px-4 py-3 font-mono text-xs text-brand">${escapeHtml(app.app_id)}</td>
+        <td class="px-4 py-3 font-medium">${escapeHtml(app.name)}</td>
+        <td class="px-4 py-3 text-gray-400 text-xs">${escapeHtml(app.description) || '-'}</td>
+        <td class="px-4 py-3">${app.trial_days} 天</td>
+        <td class="px-4 py-3 text-xs text-gray-300">${plansLabel}</td>
+        <td class="px-4 py-3">${statusBadge}</td>
+        <td class="px-4 py-3 text-right space-x-3">
+          <button onclick='openAppModal(${JSON.stringify(JSON.stringify(app))})'
+            class="text-brand hover:text-brand-light text-sm font-medium transition">编辑</button>
+          <button onclick="deleteApp('${escapeHtml(app.app_id)}', '${escapeHtml(app.name)}')"
+            class="text-red-400 hover:text-red-300 text-sm font-medium transition">删除</button>
+        </td>
+      </tr>`;
+    }).join('');
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-8 text-center text-red-400">加载失败: ${escapeHtml(err.message)}</td></tr>`;
+  }
+}
+
+function openAppModal(appJsonStr) {
+  const errEl = document.getElementById('app-error');
+  errEl.classList.add('hidden');
+
+  if (appJsonStr) {
+    // 编辑模式
+    const app = JSON.parse(appJsonStr);
+    editingAppID = app.app_id;
+    document.getElementById('app-modal-title').textContent = '编辑应用';
+    document.getElementById('app-field-app_id').value = app.app_id;
+    document.getElementById('app-field-app_id').disabled = true;
+    document.getElementById('app-field-app_id').classList.add('opacity-50');
+    document.getElementById('app-field-name').value = app.name || '';
+    document.getElementById('app-field-description').value = app.description || '';
+    document.getElementById('app-field-trial_days').value = app.trial_days || 3;
+    // 美化 JSON 显示
+    try {
+      const plans = JSON.parse(app.plans_json || '[]');
+      document.getElementById('app-field-plans_json').value = JSON.stringify(plans, null, 2);
+    } catch(e) {
+      document.getElementById('app-field-plans_json').value = app.plans_json || '';
+    }
+  } else {
+    // 创建模式
+    editingAppID = null;
+    document.getElementById('app-modal-title').textContent = '创建应用';
+    document.getElementById('app-field-app_id').value = '';
+    document.getElementById('app-field-app_id').disabled = false;
+    document.getElementById('app-field-app_id').classList.remove('opacity-50');
+    document.getElementById('app-field-name').value = '';
+    document.getElementById('app-field-description').value = '';
+    document.getElementById('app-field-trial_days').value = '3';
+    document.getElementById('app-field-plans_json').value = JSON.stringify([
+      {"id":"monthly","name":"月卡","amount":2900,"days":30},
+      {"id":"yearly","name":"年卡","amount":19900,"days":365}
+    ], null, 2);
+  }
+
+  const modal = document.getElementById('app-modal');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+
+function closeAppModal() {
+  const modal = document.getElementById('app-modal');
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+  editingAppID = null;
+}
+
+async function confirmAppSave() {
+  const errEl = document.getElementById('app-error');
+  const btn = document.getElementById('app-confirm-btn');
+  errEl.classList.add('hidden');
+  btn.disabled = true;
+  btn.textContent = '保存中...';
+
+  const appID = document.getElementById('app-field-app_id').value.trim();
+  const name = document.getElementById('app-field-name').value.trim();
+  const description = document.getElementById('app-field-description').value.trim();
+  const trialDays = parseInt(document.getElementById('app-field-trial_days').value) || 3;
+  const plansJSON = document.getElementById('app-field-plans_json').value.trim();
+
+  if (!appID || !name) {
+    errEl.textContent = '应用 ID 和名称为必填项';
+    errEl.classList.remove('hidden');
+    btn.disabled = false;
+    btn.textContent = '保存';
+    return;
+  }
+
+  // 验证 JSON 格式
+  try {
+    JSON.parse(plansJSON);
+  } catch(e) {
+    errEl.textContent = '套餐配置 JSON 格式错误';
+    errEl.classList.remove('hidden');
+    btn.disabled = false;
+    btn.textContent = '保存';
+    return;
+  }
+
+  try {
+    let data;
+    if (editingAppID) {
+      // 编辑
+      data = await apiFetch(`/api/admin/apps/${editingAppID}`, {
+        method: 'PUT',
+        body: JSON.stringify({ name, description, trial_days: trialDays, plans_json: plansJSON }),
+      });
+    } else {
+      // 创建
+      data = await apiFetch('/api/admin/apps', {
+        method: 'POST',
+        body: JSON.stringify({ app_id: appID, name, description, trial_days: trialDays, plans_json: plansJSON }),
+      });
+    }
+
+    if (data.code === 200) {
+      closeAppModal();
+      showToast(editingAppID ? '应用已更新' : '应用已创建');
+      loadApps();
+    } else {
+      errEl.textContent = data.message || '操作失败';
+      errEl.classList.remove('hidden');
+    }
+  } catch (err) {
+    errEl.textContent = '网络错误: ' + err.message;
+    errEl.classList.remove('hidden');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '保存';
+  }
+}
+
+async function deleteApp(appID, appName) {
+  if (!confirm(`确认删除应用「${appName}」(${appID})？\n\n注意：删除后该应用的订阅和试用数据仍然保留，但不再可用。`)) return;
+
+  try {
+    const data = await apiFetch(`/api/admin/apps/${appID}`, { method: 'DELETE' });
+    if (data.code === 200) {
+      showToast('应用已删除');
+      loadApps();
+    } else {
+      showToast(data.message || '删除失败', 'error');
+    }
+  } catch (err) {
+    showToast('删除失败: ' + err.message, 'error');
+  }
+}
+
+// 点击弹窗外部关闭
+document.getElementById('app-modal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeAppModal();
+});
+
 // ESC 关闭弹窗
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') closeGrantModal();
+  if (e.key === 'Escape') {
+    closeGrantModal();
+    closeAppModal();
+  }
 });
 
 // ========== 系统配置 ==========

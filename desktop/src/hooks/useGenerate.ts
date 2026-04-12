@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { AxiosError } from 'axios';
 import { useConfigStore } from '../store/configStore';
 import { useGenerateStore } from '../store/generateStore';
-import { generateBatch, generateBatchWithImages, getTaskStatus } from '../services/generateApi';
+import { generateBatch, generateBatchWithImages, getTaskStatus, createDraftBatch, submitBatch } from '../services/generateApi';
 import { useTaskStream } from './useTaskStream';
 import { setUpdateSource, getUpdateSource, clearUpdateSource } from '../store/updateSourceStore';
 import { toast } from '../store/toastStore';
@@ -33,7 +33,7 @@ const sleep = (ms: number) => new Promise<void>((resolve) => {
 
 export function useGenerate() {
   const config = useConfigStore();
-  const { startTask, status, taskId, failTask, updateProgress, updateProgressBatch, completeTask, setConnectionMode, connectionMode, setSubmitting, isSubmitting: isStoreSubmitting } = useGenerateStore();
+  const { startTask, status, taskId, taskType, failTask, updateProgress, updateProgressBatch, completeTask, setConnectionMode, connectionMode, setSubmitting, isSubmitting: isStoreSubmitting, setTaskType } = useGenerateStore();
   const resetPromptHistory = usePromptHistoryStore((s) => s.reset);
   const [isInternalSubmitting, setIsInternalSubmitting] = useState(false);
 
@@ -551,19 +551,36 @@ export function useGenerate() {
 
       // 保留参考图，让用户手动清空
 
+      // 快速失败检测：2秒后主动查一次任务状态，防止瞬间失败 SSE 来不及接收
+      setTimeout(async () => {
+        const currentState = useGenerateStore.getState();
+        if (currentState.status !== 'processing' || currentState.taskId !== newTaskId) return;
+        try {
+          const task = await getTaskStatus(newTaskId);
+          if (task.status === 'failed') {
+            console.log('[useGenerate] 快速失败检测：任务已失败');
+            storeRef.current.failTask(task.errorMessage || 'Unknown error');
+          } else if (task.status === 'completed') {
+            console.log('[useGenerate] 快速完成检测：任务已完成');
+            if (task.images && task.images.length > 0) {
+              storeRef.current.updateProgressBatch(task.completedCount, task.images);
+            }
+            storeRef.current.completeTask();
+          }
+        } catch {}
+      }, 2000);
+
       // 启动流式连接超时检测（若未建立连接，切换到轮询）
       timeoutTimerRef.current = setTimeout(() => {
-        // 检查最新状态和任务ID是否匹配（防止闭包陷阱）
         const currentState = useGenerateStore.getState();
         if (
           currentState.status === 'processing' &&
           currentState.connectionMode === 'websocket' &&
-          currentState.taskId === expectedTaskIdRef.current && // 验证任务ID
-          getUpdateSource() !== 'websocket' // 仍未建立流式连接
+          currentState.taskId === expectedTaskIdRef.current &&
+          getUpdateSource() !== 'websocket'
         ) {
           console.log('Stream open timeout, switching to polling mode');
           setConnectionMode('polling');
-          // 不需要手动调用 startPolling，useEffect 会自动检测并启动
         }
       }, STREAM_OPEN_TIMEOUT);
 

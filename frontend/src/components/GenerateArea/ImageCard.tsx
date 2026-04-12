@@ -18,8 +18,9 @@ export const ImageCard = React.memo(function ImageCard({
   onClick
 }: ImageCardProps) {
   const { t } = useTranslation();
-  const isPending = image.status === 'pending' || !image.url;
-  const isSuccess = !isPending && image.status !== 'failed';
+  const isFailed = image.status === 'failed';
+  const isPending = !isFailed && (image.status === 'pending' || !image.url);
+  const isSuccess = !isPending && !isFailed;
   const imgRef = useRef<HTMLImageElement>(null);
   const [elapsed, setElapsed] = useState('0.0');
   const rafRef = useRef<number | null>(null);

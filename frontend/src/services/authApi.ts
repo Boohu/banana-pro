@@ -1,5 +1,8 @@
 import axios from 'axios';
 
+// 当前应用 ID（多应用授权）
+export const APP_ID = 'jdyai';
+
 // 认证服务地址（独立于图片生成后端）
 export const AUTH_URL = import.meta.env.VITE_AUTH_URL || 'http://localhost:9090/api';
 
@@ -54,6 +57,7 @@ export interface UserInfo {
 
 export interface AccessInfo {
   user: UserInfo;
+  app_id: string;
   has_access: boolean;
   access_reason: 'trial' | 'subscription' | 'expired';
   subscription?: {
@@ -82,7 +86,7 @@ export const register = async (params: {
   code?: string;
   nickname?: string;
 }): Promise<AuthResponse> => {
-  return authApi.post('/auth/register', params) as any;
+  return authApi.post('/auth/register', { ...params, app_id: APP_ID }) as any;
 };
 
 // 登录
@@ -92,12 +96,12 @@ export const login = async (params: {
   password?: string;
   code?: string;
 }): Promise<AuthResponse> => {
-  return authApi.post('/auth/login', params) as any;
+  return authApi.post('/auth/login', { ...params, app_id: APP_ID }) as any;
 };
 
 // 获取当前用户 + 订阅状态
 export const getMe = async (): Promise<{ code: number; data: AccessInfo }> => {
-  return authApi.get('/auth/me') as any;
+  return authApi.get(`/auth/me?app_id=${APP_ID}`) as any;
 };
 
 // 刷新 Token
@@ -107,7 +111,7 @@ export const refreshToken = async (): Promise<{ code: number; data: { token: str
 
 // 创建支付订单
 export const createOrder = async (plan: string, payMethod: string): Promise<{ code: number; data: OrderInfo }> => {
-  return authApi.post('/subscription/create-order', { plan, pay_method: payMethod }) as any;
+  return authApi.post('/subscription/create-order', { plan, pay_method: payMethod, app_id: APP_ID }) as any;
 };
 
 // 查询订单状态
@@ -117,5 +121,5 @@ export const getOrderStatus = async (orderId: number): Promise<{ code: number; d
 
 // 查询订阅状态
 export const getSubscriptionStatus = async (): Promise<{ code: number; data: AccessInfo }> => {
-  return authApi.get('/subscription/status') as any;
+  return authApi.get(`/subscription/status?app_id=${APP_ID}`) as any;
 };

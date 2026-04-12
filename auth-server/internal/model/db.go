@@ -44,7 +44,7 @@ func InitDB() error {
 	}
 
 	// 自动迁移
-	if err := DB.AutoMigrate(&User{}, &Subscription{}, &PaymentOrder{}, &VerifyCode{}, &SystemConfig{}); err != nil {
+	if err := DB.AutoMigrate(&User{}, &Subscription{}, &PaymentOrder{}, &VerifyCode{}, &SystemConfig{}, &App{}, &AppTrial{}); err != nil {
 		return fmt.Errorf("数据库迁移失败: %w", err)
 	}
 

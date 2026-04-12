@@ -14,20 +14,11 @@ import (
 	"gorm.io/gorm"
 )
 
-// 套餐配置
-var plans = map[string]struct {
-	Name   string
-	Amount int // 分
-	Days   int
-}{
-	"monthly": {Name: "月卡", Amount: 2900, Days: 30},
-	"yearly":  {Name: "年卡", Amount: 19900, Days: 365},
-}
-
 // CreateOrderRequest 创建订单请求
 type CreateOrderRequest struct {
 	Plan      string `json:"plan" binding:"required"`       // monthly / yearly
 	PayMethod string `json:"pay_method" binding:"required"` // wechat / alipay
+	AppID     string `json:"app_id"`                        // 可选，默认 jdyai
 }
 
 // CreateOrder 创建支付订单
@@ -40,8 +31,14 @@ func CreateOrder(c *gin.Context) {
 		return
 	}
 
-	plan, ok := plans[req.Plan]
-	if !ok {
+	appID := req.AppID
+	if appID == "" {
+		appID = DefaultAppID
+	}
+
+	// 从 App 表读取套餐配置
+	plan := model.GetAppPlanByID(appID, req.Plan)
+	if plan == nil {
 		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "无效的套餐"})
 		return
 	}
@@ -50,6 +47,7 @@ func CreateOrder(c *gin.Context) {
 
 	order := model.PaymentOrder{
 		UserID:    userID,
+		AppID:     appID,
 		OrderNo:   orderNo,
 		Plan:      req.Plan,
 		Amount:    plan.Amount,
@@ -135,6 +133,7 @@ func GetOrderStatus(c *gin.Context) {
 // GetSubscriptionStatus 查询订阅状态
 func GetSubscriptionStatus(c *gin.Context) {
 	userID := c.GetUint("user_id")
+	appID := getAppIDFromQuery(c)
 
 	var user model.User
 	if err := model.DB.First(&user, userID).Error; err != nil {
@@ -142,7 +141,7 @@ func GetSubscriptionStatus(c *gin.Context) {
 		return
 	}
 
-	info := buildAccessInfo(&user)
+	info := buildAccessInfo(&user, appID)
 	c.JSON(http.StatusOK, gin.H{
 		"code": 200,
 		"data": info,
@@ -168,7 +167,12 @@ func CompletePayment(orderNo string) error {
 		}
 
 		now := time.Now()
-		plan := plans[order.Plan]
+
+		// 从 App 表读取套餐天数
+		plan := model.GetAppPlanByID(order.AppID, order.Plan)
+		if plan == nil {
+			return fmt.Errorf("套餐配置不存在: app=%s, plan=%s", order.AppID, order.Plan)
+		}
 
 		// 更新订单状态
 		if err := tx.Model(&order).Updates(map[string]interface{}{
@@ -181,7 +185,7 @@ func CompletePayment(orderNo string) error {
 		// 查找用户当前最晚到期的订阅，续期
 		var latestSub model.Subscription
 		startsAt := now
-		if err := tx.Where("user_id = ? AND status = ? AND expires_at > ?", order.UserID, "active", now).
+		if err := tx.Where("user_id = ? AND app_id = ? AND status = ? AND expires_at > ?", order.UserID, order.AppID, "active", now).
 			Order("expires_at DESC").First(&latestSub).Error; err == nil {
 			// 有未过期的订阅，从其到期时间续期
 			startsAt = latestSub.ExpiresAt
@@ -191,6 +195,7 @@ func CompletePayment(orderNo string) error {
 
 		sub := model.Subscription{
 			UserID:    order.UserID,
+			AppID:     order.AppID,
 			Plan:      order.Plan,
 			Amount:    order.Amount,
 			StartsAt:  startsAt,
