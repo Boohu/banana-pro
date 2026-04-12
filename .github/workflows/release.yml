@@ -449,3 +449,99 @@ jobs:
           PY
 
           gh release upload "$TAG" latest.json --clobber --repo "$REPO"
+
+  # 自动发布到自有更新服务器
+  deploy-to-server:
+    name: 发布到更新服务器
+    needs: [build-and-release, publish-updater-json]
+    if: always() && needs.build-and-release.result == 'success'
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+    steps:
+      - name: 下载 Release 资产并上传到服务器
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          ADMIN_KEY: ${{ secrets.ADMIN_KEY }}
+        run: |
+          set -euo pipefail
+
+          TAG="${{ github.ref_name }}"
+          REPO="${{ github.repository }}"
+          VERSION="${TAG#v}"
+          SERVER="auth.3ux.cn"
+          UPDATE_DIR="/www/wwwroot/auth.3ux.cn/updates/${VERSION}"
+          BASE_URL="https://${SERVER}/updates/${VERSION}"
+
+          # 配置 SSH
+          mkdir -p ~/.ssh
+          echo "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "$SERVER" >> ~/.ssh/known_hosts 2>/dev/null
+          SSH_OPTS="-i ~/.ssh/deploy_key -o StrictHostKeyChecking=no"
+
+          # 在服务器创建版本目录
+          ssh $SSH_OPTS root@$SERVER "mkdir -p $UPDATE_DIR"
+
+          # 下载所有 Release 资产
+          mkdir -p artifacts
+          gh release download "$TAG" --repo "$REPO" --dir artifacts --pattern "*.tar.gz" --pattern "*.sig" --pattern "*.exe" --pattern "*.dmg" --pattern "*.json" || true
+          ls -la artifacts/
+
+          # 上传到服务器
+          scp $SSH_OPTS artifacts/* root@$SERVER:$UPDATE_DIR/ 2>/dev/null || true
+
+          # 构建版本信息
+          DARWIN_ARM_URL="" DARWIN_ARM_SIG=""
+          DARWIN_X64_URL="" DARWIN_X64_SIG=""
+          WIN_URL="" WIN_SIG=""
+
+          for f in artifacts/*aarch64*.app.tar.gz; do
+            [ -f "$f" ] && DARWIN_ARM_URL="$BASE_URL/$(basename $f)" && break
+          done
+          for f in artifacts/*aarch64*.app.tar.gz.sig; do
+            [ -f "$f" ] && DARWIN_ARM_SIG="$(cat $f)" && break
+          done
+          for f in artifacts/*universal*.app.tar.gz; do
+            [ -f "$f" ] && DARWIN_X64_URL="$BASE_URL/$(basename $f)" && break
+          done
+          for f in artifacts/*universal*.app.tar.gz.sig; do
+            [ -f "$f" ] && DARWIN_X64_SIG="$(cat $f)" && break
+          done
+          # Intel 回退到 universal
+          [ -z "$DARWIN_X64_URL" ] && DARWIN_X64_URL="$DARWIN_ARM_URL" && DARWIN_X64_SIG="$DARWIN_ARM_SIG"
+          for f in artifacts/*x64-setup*.exe; do
+            [ -f "$f" ] && WIN_URL="$BASE_URL/$(basename $f)" && break
+          done
+          for f in artifacts/*x64-setup*.exe.sig; do
+            [ -f "$f" ] && WIN_SIG="$(cat $f)" && break
+          done
+
+          # 获取 Release notes
+          NOTES=$(gh release view "$TAG" --repo "$REPO" --json body --jq '.body' | head -50)
+
+          # 调用管理 API 注册版本
+          if [ -n "$ADMIN_KEY" ]; then
+            curl -s -X POST "https://${SERVER}/api/admin/versions" \
+              -H "Content-Type: application/json" \
+              -H "X-Admin-Key: ${ADMIN_KEY}" \
+              -d "$(python3 -c "
+          import json, sys
+          data = {
+              'app_id': 'jdyai',
+              'version': '$VERSION',
+              'notes': $(python3 -c "import json; print(json.dumps('''$NOTES'''))"),
+              'darwin_aarch64_url': '$DARWIN_ARM_URL',
+              'darwin_aarch64_sig': '''$DARWIN_ARM_SIG''',
+              'darwin_x86_64_url': '$DARWIN_X64_URL',
+              'darwin_x86_64_sig': '''$DARWIN_X64_SIG''',
+              'windows_x86_64_url': '$WIN_URL',
+              'windows_x86_64_sig': '''$WIN_SIG''',
+          }
+          print(json.dumps(data))
+          ")" && echo "Version $VERSION registered on update server"
+          else
+            echo "ADMIN_KEY not set, skipping version registration"
+          fi
