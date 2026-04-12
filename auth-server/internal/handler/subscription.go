@@ -11,6 +11,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 // 套餐配置
@@ -149,41 +150,57 @@ func GetSubscriptionStatus(c *gin.Context) {
 }
 
 // CompletePayment 支付完成处理（支付回调后调用）
+// 使用数据库事务保证原子性，支持幂等（重复回调安全）
 func CompletePayment(orderNo string) error {
-	var order model.PaymentOrder
-	if err := model.DB.Where("order_no = ? AND status = ?", orderNo, "pending").First(&order).Error; err != nil {
-		return fmt.Errorf("订单不存在或已处理")
-	}
+	return model.DB.Transaction(func(tx *gorm.DB) error {
+		var order model.PaymentOrder
+		if err := tx.Where("order_no = ?", orderNo).First(&order).Error; err != nil {
+			return fmt.Errorf("订单不存在")
+		}
 
-	now := time.Now()
-	plan := plans[order.Plan]
+		// 幂等：已支付的订单直接返回成功
+		if order.Status == "paid" {
+			return nil
+		}
+		// 只有 pending 状态的订单才能完成支付
+		if order.Status != "pending" {
+			return fmt.Errorf("订单状态异常: %s", order.Status)
+		}
 
-	// 更新订单状态
-	model.DB.Model(&order).Updates(map[string]interface{}{
-		"status":  "paid",
-		"paid_at": &now,
+		now := time.Now()
+		plan := plans[order.Plan]
+
+		// 更新订单状态
+		if err := tx.Model(&order).Updates(map[string]interface{}{
+			"status":  "paid",
+			"paid_at": &now,
+		}).Error; err != nil {
+			return fmt.Errorf("更新订单状态失败: %w", err)
+		}
+
+		// 查找用户当前最晚到期的订阅，续期
+		var latestSub model.Subscription
+		startsAt := now
+		if err := tx.Where("user_id = ? AND status = ? AND expires_at > ?", order.UserID, "active", now).
+			Order("expires_at DESC").First(&latestSub).Error; err == nil {
+			// 有未过期的订阅，从其到期时间续期
+			startsAt = latestSub.ExpiresAt
+		}
+
+		expiresAt := startsAt.AddDate(0, 0, plan.Days)
+
+		sub := model.Subscription{
+			UserID:    order.UserID,
+			Plan:      order.Plan,
+			Amount:    order.Amount,
+			StartsAt:  startsAt,
+			ExpiresAt: expiresAt,
+			Status:    "active",
+		}
+		if err := tx.Create(&sub).Error; err != nil {
+			return fmt.Errorf("创建订阅失败: %w", err)
+		}
+
+		return nil
 	})
-
-	// 查找用户当前最晚到期的订阅，续期
-	var latestSub model.Subscription
-	startsAt := now
-	if err := model.DB.Where("user_id = ? AND status = ? AND expires_at > ?", order.UserID, "active", now).
-		Order("expires_at DESC").First(&latestSub).Error; err == nil {
-		// 有未过期的订阅，从其到期时间续期
-		startsAt = latestSub.ExpiresAt
-	}
-
-	expiresAt := startsAt.AddDate(0, 0, plan.Days)
-
-	sub := model.Subscription{
-		UserID:    order.UserID,
-		Plan:      order.Plan,
-		Amount:    order.Amount,
-		StartsAt:  startsAt,
-		ExpiresAt: expiresAt,
-		Status:    "active",
-	}
-	model.DB.Create(&sub)
-
-	return nil
 }

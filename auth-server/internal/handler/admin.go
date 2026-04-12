@@ -141,6 +141,7 @@ var configKeys = []string{
 	"alipay_app_id", "alipay_private_key", "alipay_public_key", "alipay_notify_url",
 	"aliyun_sms_access_key_id", "aliyun_sms_access_key_secret", "aliyun_sms_sign_name", "aliyun_sms_template_code",
 	"jwt_secret", "admin_key",
+	"cors_allowed_origins",
 }
 
 // 敏感字段集合，GET 时脱敏

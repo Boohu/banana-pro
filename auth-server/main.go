@@ -26,9 +26,21 @@ func main() {
 
 	r := gin.Default()
 
-	// CORS
+	// CORS —— 从配置读取允许的源，默认仅允许本地开发地址
+	allowedOrigins := model.GetConfig("cors_allowed_origins")
+	if allowedOrigins == "" {
+		allowedOrigins = "http://localhost:1420,http://localhost:5174,http://localhost:8090,tauri://localhost"
+	}
+	originsSet := make(map[string]bool)
+	for _, o := range strings.Split(allowedOrigins, ",") {
+		originsSet[strings.TrimSpace(o)] = true
+	}
 	r.Use(func(c *gin.Context) {
-		c.Header("Access-Control-Allow-Origin", "*")
+		origin := c.GetHeader("Origin")
+		if originsSet[origin] {
+			c.Header("Access-Control-Allow-Origin", origin)
+			c.Header("Vary", "Origin")
+		}
 		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		c.Header("Access-Control-Allow-Headers", "Origin, Content-Type, Authorization")
 		if c.Request.Method == "OPTIONS" {
@@ -98,6 +110,19 @@ func main() {
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{"status": "ok"})
 	})
+
+	// 启动后台 goroutine：每小时清理超过 30 分钟未支付的订单
+	go func() {
+		for {
+			time.Sleep(1 * time.Hour)
+			result := model.DB.Model(&model.PaymentOrder{}).
+				Where("status = ? AND created_at < ?", "pending", time.Now().Add(-30*time.Minute)).
+				Update("status", "expired")
+			if result.RowsAffected > 0 {
+				log.Printf("[OrderCleanup] 已将 %d 个超时未支付订单标记为 expired\n", result.RowsAffected)
+			}
+		}
+	}()
 
 	port := os.Getenv("PORT")
 	if port == "" {

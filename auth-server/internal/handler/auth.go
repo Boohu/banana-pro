@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"auth-server/internal/model"
@@ -10,6 +11,52 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
+
+// ========== 登录暴力破解防护 ==========
+
+// attemptInfo 记录某账号的登录失败次数和锁定时间
+type attemptInfo struct {
+	count    int
+	lockedAt time.Time
+}
+
+var loginAttempts sync.Map // key: email/phone, value: *attemptInfo
+
+const maxLoginAttempts = 5                    // 最大失败次数
+const loginLockDuration = 15 * time.Minute    // 锁定时长
+
+// checkLoginLocked 检查账号是否因失败次数过多被锁定，返回 true 表示已锁定
+func checkLoginLocked(identity string) bool {
+	val, ok := loginAttempts.Load(identity)
+	if !ok {
+		return false
+	}
+	info := val.(*attemptInfo)
+	if info.count >= maxLoginAttempts {
+		// 检查锁定是否过期
+		if time.Since(info.lockedAt) < loginLockDuration {
+			return true
+		}
+		// 锁定已过期，清除记录
+		loginAttempts.Delete(identity)
+	}
+	return false
+}
+
+// recordLoginFailure 记录一次登录失败
+func recordLoginFailure(identity string) {
+	val, loaded := loginAttempts.LoadOrStore(identity, &attemptInfo{count: 1, lockedAt: time.Now()})
+	if loaded {
+		info := val.(*attemptInfo)
+		info.count++
+		info.lockedAt = time.Now()
+	}
+}
+
+// clearLoginAttempts 登录成功后清除失败记录
+func clearLoginAttempts(identity string) {
+	loginAttempts.Delete(identity)
+}
 
 // RegisterRequest 注册请求
 type RegisterRequest struct {
@@ -156,22 +203,37 @@ func Login(c *gin.Context) {
 		return
 	}
 
+	// 确定登录标识（用于暴力破解防护）
+	identity := strings.TrimSpace(strings.ToLower(req.Email))
+	if identity == "" {
+		identity = strings.TrimSpace(req.Phone)
+	}
+
+	// 检查是否被锁定
+	if identity != "" && checkLoginLocked(identity) {
+		c.JSON(http.StatusTooManyRequests, gin.H{"code": 429, "message": "登录失败次数过多，请 15 分钟后重试"})
+		return
+	}
+
 	var user model.User
 
 	// 邮箱+密码登录
 	if req.Email != "" {
 		req.Email = strings.TrimSpace(strings.ToLower(req.Email))
 		if err := model.DB.Where("email = ?", req.Email).First(&user).Error; err != nil {
+			recordLoginFailure(identity)
 			c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "邮箱未注册"})
 			return
 		}
 		if !util.CheckPassword(req.Password, user.Password) {
+			recordLoginFailure(identity)
 			c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "密码错误"})
 			return
 		}
 	} else if req.Phone != "" {
 		req.Phone = strings.TrimSpace(req.Phone)
 		if !verifyCode(req.Phone, req.Code, "login") {
+			recordLoginFailure(identity)
 			c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "验证码错误或已过期"})
 			return
 		}
@@ -188,6 +250,9 @@ func Login(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "请提供邮箱或手机号"})
 		return
 	}
+
+	// 登录成功，清除失败记录
+	clearLoginAttempts(identity)
 
 	// 递增 token 版本号，踢掉旧设备
 	model.DB.Model(&user).Update("token_version", user.TokenVersion+1)
