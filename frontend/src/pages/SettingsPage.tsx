@@ -375,6 +375,14 @@ function AboutSection() {
   const { t } = useTranslation();
   const { user, accessInfo, logout } = useAuthStore();
 
+  // 跳转到订阅页：设置 hasAccess 为 false 触发 App.tsx 显示 SubscriptionPage
+  const goToSubscription = () => {
+    useAuthStore.setState({ hasAccess: false });
+  };
+
+  const isTrial = accessInfo?.access_reason === 'trial';
+  const isSubscribed = accessInfo?.access_reason === 'subscription';
+
   return (
     <div className="space-y-6">
       <div>
@@ -385,38 +393,73 @@ function AboutSection() {
       {/* 账号信息 */}
       {user && (
         <div className="bg-surface-secondary border border-border rounded-2xl p-5 space-y-3">
-          <h4 className="text-sm font-semibold text-fg-primary">账号信息</h4>
+          <h4 className="text-sm font-semibold text-fg-primary">{t('settingsPage.accountInfo')}</h4>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-fg-muted">昵称</span>
+              <span className="text-fg-muted">{t('settingsPage.nickname')}</span>
               <span className="text-fg-primary">{user.nickname}</span>
             </div>
             {user.email && (
               <div className="flex justify-between">
-                <span className="text-fg-muted">邮箱</span>
+                <span className="text-fg-muted">{t('settingsPage.email')}</span>
                 <span className="text-fg-primary">{user.email}</span>
               </div>
             )}
             {user.phone && (
               <div className="flex justify-between">
-                <span className="text-fg-muted">手机</span>
+                <span className="text-fg-muted">{t('settingsPage.phone')}</span>
                 <span className="text-fg-primary">{user.phone}</span>
               </div>
             )}
             <div className="flex justify-between">
-              <span className="text-fg-muted">状态</span>
+              <span className="text-fg-muted">{t('settingsPage.status')}</span>
               <span className={accessInfo?.has_access ? 'text-success' : 'text-error'}>
-                {accessInfo?.access_reason === 'trial' ? `试用中（剩余 ${accessInfo.days_left} 天）` :
-                 accessInfo?.access_reason === 'subscription' ? `${accessInfo.subscription?.plan === 'yearly' ? '年卡' : '月卡'}会员（剩余 ${accessInfo.days_left} 天）` :
-                 '已过期'}
+                {isTrial
+                  ? t('settingsPage.trialStatus', { days: accessInfo.days_left })
+                  : isSubscribed
+                    ? t('settingsPage.subscriptionStatus', {
+                        plan: accessInfo.subscription?.plan === 'yearly' ? t('settingsPage.yearlyPlan') : t('settingsPage.monthlyPlan'),
+                        days: accessInfo.days_left,
+                      })
+                    : t('settingsPage.expired')}
               </span>
             </div>
           </div>
+          {/* 续费/订阅按钮 */}
+          {isTrial ? (
+            <button
+              onClick={goToSubscription}
+              className="w-full mt-2 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors"
+            >
+              {t('settingsPage.subscribeNow')}
+            </button>
+          ) : isSubscribed ? (
+            <div className="mt-2 space-y-1">
+              <button
+                onClick={goToSubscription}
+                className="w-full py-2 rounded-lg bg-primary/15 text-primary text-sm font-semibold hover:bg-primary/25 transition-colors"
+              >
+                {t('settingsPage.renew')}
+              </button>
+              {accessInfo.subscription?.expires_at && (
+                <p className="text-xs text-fg-muted text-center">
+                  {t('settingsPage.expiresAt', { date: new Date(accessInfo.subscription.expires_at).toLocaleDateString() })}
+                </p>
+              )}
+            </div>
+          ) : (
+            <button
+              onClick={goToSubscription}
+              className="w-full mt-2 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors"
+            >
+              {t('settingsPage.subscribeNow')}
+            </button>
+          )}
           <button
             onClick={logout}
             className="w-full mt-2 py-2 rounded-lg bg-error/10 text-error text-sm font-medium hover:bg-error/20 transition-colors"
           >
-            退出登录
+            {t('settingsPage.logout')}
           </button>
         </div>
       )}

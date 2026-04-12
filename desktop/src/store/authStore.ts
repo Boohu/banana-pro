@@ -16,7 +16,7 @@ interface AuthState {
   logout: () => void;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   token: localStorage.getItem('auth_token'),
   user: null,
   accessInfo: null,
@@ -26,31 +26,40 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   login: async (params) => {
     const res = await apiLogin(params);
-    const { token, user } = res.data;
+    console.log('[AuthStore] login response:', JSON.stringify(res));
+    const { token, user, access } = res.data;
+    console.log('[AuthStore] access:', JSON.stringify(access), 'has_access:', access?.has_access);
     localStorage.setItem('auth_token', token);
-    set({ token, user, isAuthenticated: true });
-    // 获取订阅状态
-    try {
-      const meRes = await getMe();
-      set({
-        accessInfo: meRes.data,
-        hasAccess: meRes.data.has_access,
-      });
-    } catch {}
+    set({
+      token,
+      user,
+      accessInfo: access,
+      isAuthenticated: true,
+      hasAccess: access?.has_access ?? true,
+      isLoading: false,
+    });
   },
 
   register: async (params) => {
     const res = await apiRegister(params);
-    const { token, user } = res.data;
+    const { token, user, access } = res.data;
     localStorage.setItem('auth_token', token);
-    set({ token, user, isAuthenticated: true, hasAccess: true }); // 注册后自动有试用期
-    try {
-      const meRes = await getMe();
-      set({ accessInfo: meRes.data, hasAccess: meRes.data.has_access });
-    } catch {}
+    set({
+      token,
+      user,
+      accessInfo: access,
+      isAuthenticated: true,
+      hasAccess: access?.has_access ?? true,
+      isLoading: false,
+    });
   },
 
   checkAuth: async () => {
+    // 如果已经通过 login() 认证过了，不重复检查
+    if (get().isAuthenticated) {
+      set({ isLoading: false });
+      return;
+    }
     const token = localStorage.getItem('auth_token');
     if (!token) {
       set({ isAuthenticated: false, hasAccess: false, isLoading: false });

@@ -41,7 +41,7 @@ export function LoginPage() {
         }
       }
     } catch (err: any) {
-      const msg = err?.response?.data?.message || err?.message || '操作失败';
+      const msg = err?.response?.data?.message || err?.message || t('login.error');
       setError(msg);
     } finally {
       setLoading(false);
@@ -67,7 +67,7 @@ export function LoginPage() {
             }`}
           >
             <Mail className="w-4 h-4" />
-            邮箱
+            {t('login.email')}
           </button>
           <button
             onClick={() => setMode('phone')}
@@ -76,7 +76,7 @@ export function LoginPage() {
             }`}
           >
             <Phone className="w-4 h-4" />
-            手机号
+            {t('login.phone')}
           </button>
         </div>
 
@@ -88,7 +88,7 @@ export function LoginPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="输入邮箱"
+                placeholder={t('login.emailPlaceholder')}
                 required
                 className="w-full bg-surface-secondary border border-border rounded-xl px-4 py-3 text-sm text-fg-primary placeholder:text-fg-muted outline-none focus:border-primary transition-colors"
               />
@@ -97,7 +97,7 @@ export function LoginPage() {
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="输入密码"
+                  placeholder={t('login.passwordPlaceholder')}
                   required
                   minLength={6}
                   className="w-full bg-surface-secondary border border-border rounded-xl px-4 py-3 pr-11 text-sm text-fg-primary placeholder:text-fg-muted outline-none focus:border-primary transition-colors"
@@ -117,7 +117,7 @@ export function LoginPage() {
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder="输入手机号"
+                placeholder={t('login.phonePlaceholder')}
                 required
                 className="w-full bg-surface-secondary border border-border rounded-xl px-4 py-3 text-sm text-fg-primary placeholder:text-fg-muted outline-none focus:border-primary transition-colors"
               />
@@ -126,7 +126,7 @@ export function LoginPage() {
                   type="text"
                   value={code}
                   onChange={(e) => setCode(e.target.value)}
-                  placeholder="验证码"
+                  placeholder={t('login.codePlaceholder')}
                   required
                   maxLength={6}
                   className="flex-1 bg-surface-secondary border border-border rounded-xl px-4 py-3 text-sm text-fg-primary placeholder:text-fg-muted outline-none focus:border-primary transition-colors"
@@ -135,7 +135,7 @@ export function LoginPage() {
                   type="button"
                   className="px-4 py-3 rounded-xl bg-primary/15 text-primary text-sm font-medium hover:bg-primary/25 transition-colors shrink-0"
                 >
-                  获取验证码
+                  {t('login.getCode')}
                 </button>
               </div>
             </>
@@ -147,7 +147,7 @@ export function LoginPage() {
               type="text"
               value={nickname}
               onChange={(e) => setNickname(e.target.value)}
-              placeholder="昵称（可选）"
+              placeholder={t('login.nicknamePlaceholder')}
               className="w-full bg-surface-secondary border border-border rounded-xl px-4 py-3 text-sm text-fg-primary placeholder:text-fg-muted outline-none focus:border-primary transition-colors"
             />
           )}
@@ -166,27 +166,27 @@ export function LoginPage() {
             className="w-full py-3 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
           >
             {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-            {formMode === 'login' ? '登录' : '注册'}
+            {formMode === 'login' ? t('login.loginBtn') : t('login.registerBtn')}
           </button>
         </form>
 
         {/* 切换登录/注册 */}
         <div className="mt-6 text-center">
           <span className="text-sm text-fg-muted">
-            {formMode === 'login' ? '没有账号？' : '已有账号？'}
+            {formMode === 'login' ? t('login.noAccount') : t('login.hasAccount')}
           </span>
           <button
             onClick={() => { setFormMode(formMode === 'login' ? 'register' : 'login'); setError(''); }}
             className="text-sm text-primary font-medium ml-1 hover:underline"
           >
-            {formMode === 'login' ? '立即注册' : '去登录'}
+            {formMode === 'login' ? t('login.goRegister') : t('login.goLogin')}
           </button>
         </div>
 
         {/* 试用提示 */}
         {formMode === 'register' && (
           <p className="text-center text-xs text-fg-muted mt-4">
-            注册即享 3 天免费试用，全功能体验
+            {t('login.trialHint')}
           </p>
         )}
       </div>

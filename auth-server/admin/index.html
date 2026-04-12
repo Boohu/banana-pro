@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>筋斗云AI 管理后台</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: { DEFAULT: '#6366f1', light: '#818cf8', dark: '#4f46e5' },
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    .fade-in { animation: fadeIn 0.2s ease-in; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+    /* 自定义滚动条 */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #374151; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #4b5563; }
+  </style>
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen">
+
+  <!-- 登录界面 -->
+  <div id="login-screen" class="min-h-screen flex items-center justify-center">
+    <div class="bg-gray-900 border border-gray-800 rounded-2xl p-8 w-full max-w-sm shadow-2xl">
+      <div class="text-center mb-6">
+        <h1 class="text-2xl font-bold text-white">筋斗云AI</h1>
+        <p class="text-gray-400 mt-1 text-sm">管理后台</p>
+      </div>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm text-gray-400 mb-1.5">Admin Key</label>
+          <input id="admin-key-input" type="password" placeholder="输入管理密钥"
+            class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition" />
+        </div>
+        <button onclick="doLogin()"
+          class="w-full bg-brand hover:bg-brand-dark text-white font-medium py-2.5 rounded-lg transition active:scale-[0.98]">
+          登录
+        </button>
+        <p id="login-error" class="text-red-400 text-sm text-center hidden"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 管理后台主界面 -->
+  <div id="admin-screen" class="hidden">
+    <!-- 顶栏 -->
+    <header class="sticky top-0 z-50 bg-gray-950/80 backdrop-blur-xl border-b border-gray-800">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <h1 class="text-lg font-bold text-white">筋斗云AI <span class="text-brand font-normal text-sm">管理后台</span></h1>
+        </div>
+        <button onclick="doLogout()"
+          class="text-sm text-gray-400 hover:text-white border border-gray-700 hover:border-gray-500 px-3 py-1.5 rounded-lg transition">
+          退出
+        </button>
+      </div>
+    </header>
+
+    <!-- Tab 切换 -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 pt-4">
+      <div class="flex gap-1 bg-gray-900 rounded-lg p-1 w-fit">
+        <button id="tab-users" onclick="switchTab('users')"
+          class="tab-btn px-4 py-2 rounded-md text-sm font-medium transition">
+          用户管理
+        </button>
+        <button id="tab-orders" onclick="switchTab('orders')"
+          class="tab-btn px-4 py-2 rounded-md text-sm font-medium transition">
+          订单管理
+        </button>
+      </div>
+    </div>
+
+    <!-- 用户管理面板 -->
+    <div id="panel-users" class="max-w-7xl mx-auto px-4 sm:px-6 py-4">
+      <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-left text-gray-400 border-b border-gray-800">
+                <th class="px-4 py-3 font-medium">ID</th>
+                <th class="px-4 py-3 font-medium">账号</th>
+                <th class="px-4 py-3 font-medium">昵称</th>
+                <th class="px-4 py-3 font-medium">注册时间</th>
+                <th class="px-4 py-3 font-medium">访问状态</th>
+                <th class="px-4 py-3 font-medium">剩余天数</th>
+                <th class="px-4 py-3 font-medium text-right">操作</th>
+              </tr>
+            </thead>
+            <tbody id="users-tbody"></tbody>
+          </table>
+        </div>
+        <!-- 分页 -->
+        <div id="users-pagination" class="flex items-center justify-between px-4 py-3 border-t border-gray-800">
+        </div>
+      </div>
+    </div>
+
+    <!-- 订单管理面板 -->
+    <div id="panel-orders" class="max-w-7xl mx-auto px-4 sm:px-6 py-4 hidden">
+      <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-left text-gray-400 border-b border-gray-800">
+                <th class="px-4 py-3 font-medium">ID</th>
+                <th class="px-4 py-3 font-medium">订单号</th>
+                <th class="px-4 py-3 font-medium">用户ID</th>
+                <th class="px-4 py-3 font-medium">套餐</th>
+                <th class="px-4 py-3 font-medium">金额</th>
+                <th class="px-4 py-3 font-medium">支付方式</th>
+                <th class="px-4 py-3 font-medium">状态</th>
+                <th class="px-4 py-3 font-medium">创建时间</th>
+              </tr>
+            </thead>
+            <tbody id="orders-tbody"></tbody>
+          </table>
+        </div>
+        <!-- 分页 -->
+        <div id="orders-pagination" class="flex items-center justify-between px-4 py-3 border-t border-gray-800">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 发放订阅弹窗 -->
+  <div id="grant-modal" class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/60 backdrop-blur-sm">
+    <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 w-full max-w-md shadow-2xl fade-in">
+      <h3 class="text-lg font-bold text-white mb-1">发放订阅</h3>
+      <p id="grant-user-info" class="text-sm text-gray-400 mb-5"></p>
+
+      <div class="space-y-4">
+        <!-- 套餐选择 -->
+        <div>
+          <label class="block text-sm text-gray-400 mb-2">选择套餐</label>
+          <div class="flex gap-2">
+            <button onclick="selectPlan('monthly')" id="plan-monthly"
+              class="plan-btn flex-1 border border-gray-700 rounded-lg px-4 py-3 text-center transition hover:border-brand">
+              <div class="font-medium text-white">月卡</div>
+              <div class="text-xs text-gray-400 mt-0.5">30 天</div>
+            </button>
+            <button onclick="selectPlan('yearly')" id="plan-yearly"
+              class="plan-btn flex-1 border border-gray-700 rounded-lg px-4 py-3 text-center transition hover:border-brand">
+              <div class="font-medium text-white">年卡</div>
+              <div class="text-xs text-gray-400 mt-0.5">365 天</div>
+            </button>
+          </div>
+        </div>
+
+        <!-- 自定义天数 -->
+        <div>
+          <label class="block text-sm text-gray-400 mb-1.5">自定义天数 <span class="text-gray-500">（可选，覆盖套餐默认值）</span></label>
+          <input id="grant-days" type="number" min="1" max="9999" placeholder="留空则使用套餐默认天数"
+            class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition" />
+        </div>
+      </div>
+
+      <!-- 按钮 -->
+      <div class="flex gap-3 mt-6">
+        <button onclick="closeGrantModal()"
+          class="flex-1 border border-gray-700 text-gray-300 hover:text-white hover:border-gray-500 py-2.5 rounded-lg transition">
+          取消
+        </button>
+        <button onclick="confirmGrant()" id="grant-confirm-btn"
+          class="flex-1 bg-brand hover:bg-brand-dark text-white font-medium py-2.5 rounded-lg transition active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+          确认发放
+        </button>
+      </div>
+      <p id="grant-error" class="text-red-400 text-sm text-center mt-3 hidden"></p>
+    </div>
+  </div>
+
+  <!-- Toast 提示 -->
+  <div id="toast" class="fixed top-4 right-4 z-[200] hidden">
+    <div class="bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 shadow-xl flex items-center gap-2">
+      <span id="toast-icon"></span>
+      <span id="toast-msg" class="text-sm"></span>
+    </div>
+  </div>
+
+<script>
+// ========== 状态 ==========
+let adminKey = '';
+let currentTab = 'users';
+let usersPage = 1;
+let ordersPage = 1;
+const PAGE_SIZE = 15;
+let grantUserId = null;
+let grantSelectedPlan = '';
+
+// ========== 工具函数 ==========
+function apiBase() {
+  return window.location.origin;
+}
+
+async function apiFetch(path, options = {}) {
+  const res = await fetch(apiBase() + path, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Admin-Key': adminKey,
+      ...(options.headers || {}),
+    },
+  });
+  return res.json();
+}
+
+function formatTime(t) {
+  if (!t) return '-';
+  const d = new Date(t);
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function showToast(msg, type = 'success') {
+  const toast = document.getElementById('toast');
+  const icon = document.getElementById('toast-icon');
+  const msgEl = document.getElementById('toast-msg');
+  icon.textContent = type === 'success' ? '\u2705' : '\u274C';
+  msgEl.textContent = msg;
+  toast.classList.remove('hidden');
+  setTimeout(() => toast.classList.add('hidden'), 3000);
+}
+
+// ========== 登录 ==========
+function doLogin() {
+  const input = document.getElementById('admin-key-input');
+  const errEl = document.getElementById('login-error');
+  adminKey = input.value.trim();
+  if (!adminKey) {
+    errEl.textContent = '请输入 Admin Key';
+    errEl.classList.remove('hidden');
+    return;
+  }
+  errEl.classList.add('hidden');
+
+  // 用获取用户列表来验证 key 是否有效
+  apiFetch('/api/admin/users?page=1&page_size=1').then(data => {
+    if (data.code === 200) {
+      document.getElementById('login-screen').classList.add('hidden');
+      document.getElementById('admin-screen').classList.remove('hidden');
+      switchTab('users');
+    } else {
+      errEl.textContent = data.message || '密钥错误';
+      errEl.classList.remove('hidden');
+      adminKey = '';
+    }
+  }).catch(err => {
+    errEl.textContent = '网络错误: ' + err.message;
+    errEl.classList.remove('hidden');
+    adminKey = '';
+  });
+}
+
+function doLogout() {
+  adminKey = '';
+  document.getElementById('admin-screen').classList.add('hidden');
+  document.getElementById('login-screen').classList.remove('hidden');
+  document.getElementById('admin-key-input').value = '';
+}
+
+// 回车登录
+document.getElementById('admin-key-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
+
+// ========== Tab 切换 ==========
+function switchTab(tab) {
+  currentTab = tab;
+  // 样式
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.classList.remove('bg-gray-800', 'text-white', 'shadow');
+    btn.classList.add('text-gray-400', 'hover:text-gray-200');
+  });
+  const activeBtn = document.getElementById('tab-' + tab);
+  activeBtn.classList.add('bg-gray-800', 'text-white', 'shadow');
+  activeBtn.classList.remove('text-gray-400', 'hover:text-gray-200');
+
+  // 面板
+  document.getElementById('panel-users').classList.toggle('hidden', tab !== 'users');
+  document.getElementById('panel-orders').classList.toggle('hidden', tab !== 'orders');
+
+  if (tab === 'users') loadUsers();
+  else loadOrders();
+}
+
+// ========== 用户列表 ==========
+async function loadUsers() {
+  const tbody = document.getElementById('users-tbody');
+  tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-8 text-center text-gray-500">加载中...</td></tr>';
+
+  const data = await apiFetch(`/api/admin/users?page=${usersPage}&page_size=${PAGE_SIZE}`);
+  if (data.code !== 200) {
+    tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-8 text-center text-red-400">${escapeHtml(data.message)}</td></tr>`;
+    return;
+  }
+
+  const list = data.data.list || [];
+  const total = data.data.total || 0;
+
+  if (list.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-8 text-center text-gray-500">暂无用户</td></tr>';
+    renderPagination('users', total);
+    return;
+  }
+
+  tbody.innerHTML = list.map(u => {
+    const account = u.email || u.phone || '-';
+    const statusBadge = getAccessBadge(u.has_access, u.access_reason);
+    const daysLeft = u.has_access ? `${u.days_left} 天` : '-';
+    return `<tr class="border-b border-gray-800/50 hover:bg-gray-800/30 transition">
+      <td class="px-4 py-3 text-gray-400 font-mono text-xs">${u.id}</td>
+      <td class="px-4 py-3">${escapeHtml(account)}</td>
+      <td class="px-4 py-3">${escapeHtml(u.nickname) || '<span class="text-gray-500">-</span>'}</td>
+      <td class="px-4 py-3 text-gray-400">${formatTime(u.created_at)}</td>
+      <td class="px-4 py-3">${statusBadge}</td>
+      <td class="px-4 py-3 ${u.has_access ? 'text-green-400' : 'text-gray-500'}">${daysLeft}</td>
+      <td class="px-4 py-3 text-right">
+        <button onclick="openGrantModal(${u.id}, '${escapeHtml(account)}', '${escapeHtml(u.nickname)}')"
+          class="text-brand hover:text-brand-light text-sm font-medium transition">发放订阅</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  renderPagination('users', total);
+}
+
+function getAccessBadge(hasAccess, reason) {
+  if (!hasAccess) {
+    return '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-800 text-gray-400">已过期</span>';
+  }
+  const map = {
+    trial: { bg: 'bg-blue-500/10', text: 'text-blue-400', label: '试用中' },
+    subscription: { bg: 'bg-green-500/10', text: 'text-green-400', label: '订阅中' },
+  };
+  const s = map[reason] || { bg: 'bg-yellow-500/10', text: 'text-yellow-400', label: reason };
+  return `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${s.bg} ${s.text}">${s.label}</span>`;
+}
+
+// ========== 订单列表 ==========
+async function loadOrders() {
+  const tbody = document.getElementById('orders-tbody');
+  tbody.innerHTML = '<tr><td colspan="8" class="px-4 py-8 text-center text-gray-500">加载中...</td></tr>';
+
+  const data = await apiFetch(`/api/admin/orders?page=${ordersPage}&page_size=${PAGE_SIZE}`);
+  if (data.code !== 200) {
+    tbody.innerHTML = `<tr><td colspan="8" class="px-4 py-8 text-center text-red-400">${escapeHtml(data.message)}</td></tr>`;
+    return;
+  }
+
+  const list = data.data.list || [];
+  const total = data.data.total || 0;
+
+  if (list.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" class="px-4 py-8 text-center text-gray-500">暂无订单</td></tr>';
+    renderPagination('orders', total);
+    return;
+  }
+
+  tbody.innerHTML = list.map(o => {
+    const planLabel = o.plan === 'monthly' ? '月卡' : o.plan === 'yearly' ? '年卡' : o.plan;
+    const amount = (o.amount / 100).toFixed(2);
+    const payMethod = { wechat: '微信', alipay: '支付宝' }[o.pay_method] || o.pay_method || '-';
+    const statusBadge = getOrderStatusBadge(o.status);
+    return `<tr class="border-b border-gray-800/50 hover:bg-gray-800/30 transition">
+      <td class="px-4 py-3 text-gray-400 font-mono text-xs">${o.id}</td>
+      <td class="px-4 py-3 font-mono text-xs">${escapeHtml(o.order_no)}</td>
+      <td class="px-4 py-3 text-gray-400">${o.user_id}</td>
+      <td class="px-4 py-3">${planLabel}</td>
+      <td class="px-4 py-3">\u00A5${amount}</td>
+      <td class="px-4 py-3 text-gray-400">${payMethod}</td>
+      <td class="px-4 py-3">${statusBadge}</td>
+      <td class="px-4 py-3 text-gray-400">${formatTime(o.created_at)}</td>
+    </tr>`;
+  }).join('');
+
+  renderPagination('orders', total);
+}
+
+function getOrderStatusBadge(status) {
+  const map = {
+    pending: { bg: 'bg-yellow-500/10', text: 'text-yellow-400', label: '待支付' },
+    paid:    { bg: 'bg-green-500/10',  text: 'text-green-400',  label: '已支付' },
+    failed:  { bg: 'bg-red-500/10',    text: 'text-red-400',    label: '失败' },
+    expired: { bg: 'bg-gray-500/10',   text: 'text-gray-400',   label: '已过期' },
+  };
+  const s = map[status] || { bg: 'bg-gray-500/10', text: 'text-gray-400', label: status };
+  return `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${s.bg} ${s.text}">${s.label}</span>`;
+}
+
+// ========== 分页 ==========
+function renderPagination(type, total) {
+  const container = document.getElementById(type + '-pagination');
+  const currentPage = type === 'users' ? usersPage : ordersPage;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  container.innerHTML = `
+    <span class="text-sm text-gray-500">共 ${total} 条，第 ${currentPage}/${totalPages} 页</span>
+    <div class="flex gap-2">
+      <button onclick="goPage('${type}', ${currentPage - 1})" ${currentPage <= 1 ? 'disabled' : ''}
+        class="px-3 py-1.5 text-sm rounded-lg border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500 transition disabled:opacity-30 disabled:cursor-not-allowed">
+        上一页
+      </button>
+      <button onclick="goPage('${type}', ${currentPage + 1})" ${currentPage >= totalPages ? 'disabled' : ''}
+        class="px-3 py-1.5 text-sm rounded-lg border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500 transition disabled:opacity-30 disabled:cursor-not-allowed">
+        下一页
+      </button>
+    </div>`;
+}
+
+function goPage(type, page) {
+  if (page < 1) return;
+  if (type === 'users') { usersPage = page; loadUsers(); }
+  else { ordersPage = page; loadOrders(); }
+}
+
+// ========== 发放订阅弹窗 ==========
+function openGrantModal(userId, account, nickname) {
+  grantUserId = userId;
+  grantSelectedPlan = '';
+  document.getElementById('grant-user-info').textContent = `用户: ${nickname || account} (ID: ${userId})`;
+  document.getElementById('grant-days').value = '';
+  document.getElementById('grant-error').classList.add('hidden');
+  document.getElementById('grant-confirm-btn').disabled = true;
+  // 重置套餐选中状态
+  document.querySelectorAll('.plan-btn').forEach(btn => {
+    btn.classList.remove('border-brand', 'bg-brand/10');
+    btn.classList.add('border-gray-700');
+  });
+  // 显示弹窗
+  const modal = document.getElementById('grant-modal');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+
+function closeGrantModal() {
+  const modal = document.getElementById('grant-modal');
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+  grantUserId = null;
+  grantSelectedPlan = '';
+}
+
+function selectPlan(plan) {
+  grantSelectedPlan = plan;
+  document.querySelectorAll('.plan-btn').forEach(btn => {
+    btn.classList.remove('border-brand', 'bg-brand/10');
+    btn.classList.add('border-gray-700');
+  });
+  const btn = document.getElementById('plan-' + plan);
+  btn.classList.add('border-brand', 'bg-brand/10');
+  btn.classList.remove('border-gray-700');
+  document.getElementById('grant-confirm-btn').disabled = false;
+}
+
+async function confirmGrant() {
+  if (!grantUserId || !grantSelectedPlan) return;
+
+  const confirmBtn = document.getElementById('grant-confirm-btn');
+  const errEl = document.getElementById('grant-error');
+  confirmBtn.disabled = true;
+  confirmBtn.textContent = '处理中...';
+  errEl.classList.add('hidden');
+
+  const body = { plan: grantSelectedPlan };
+  const customDays = parseInt(document.getElementById('grant-days').value);
+  if (customDays > 0) body.days = customDays;
+
+  try {
+    const data = await apiFetch(`/api/admin/users/${grantUserId}/grant`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+
+    if (data.code === 200) {
+      closeGrantModal();
+      showToast(`订阅已发放，到期时间: ${formatTime(data.data.expires_at)}`);
+      loadUsers();
+    } else {
+      errEl.textContent = data.message || '操作失败';
+      errEl.classList.remove('hidden');
+    }
+  } catch (err) {
+    errEl.textContent = '网络错误: ' + err.message;
+    errEl.classList.remove('hidden');
+  } finally {
+    confirmBtn.disabled = false;
+    confirmBtn.textContent = '确认发放';
+  }
+}
+
+// 点击弹窗外部关闭
+document.getElementById('grant-modal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeGrantModal();
+});
+
+// ESC 关闭弹窗
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeGrantModal();
+});
+</script>
+</body>
+</html>

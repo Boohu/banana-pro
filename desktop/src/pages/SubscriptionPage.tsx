@@ -2,28 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Crown, Check, Loader2, QrCode } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { createOrder, getOrderStatus } from '@/services/authApi';
+import { useTranslation } from 'react-i18next';
 import logoImg from '@/assets/logo.png';
 
-const plans = [
-  {
-    id: 'monthly',
-    name: '月卡',
-    price: '¥29',
-    period: '/月',
-    features: ['无限量生图', '2K 分辨率', '批量处理', '灵感广场'],
-  },
-  {
-    id: 'yearly',
-    name: '年卡',
-    price: '¥199',
-    period: '/年',
-    badge: '推荐',
-    save: '省 ¥149',
-    features: ['包含月卡全部功能', '优先体验新功能', '全年无忧'],
-  },
-];
-
 export function SubscriptionPage() {
+  const { t } = useTranslation();
   const { user, accessInfo, logout, checkAuth } = useAuthStore();
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [payMethod, setPayMethod] = useState<'wechat' | 'alipay'>('wechat');
@@ -31,6 +14,34 @@ export function SubscriptionPage() {
   const [loading, setLoading] = useState(false);
   const [paying, setPaying] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const plans = [
+    {
+      id: 'monthly',
+      name: t('subscription.monthly'),
+      price: t('subscription.monthlyPrice'),
+      period: t('subscription.monthlyPeriod'),
+      features: [
+        t('subscription.featureUnlimited'),
+        t('subscription.feature2K'),
+        t('subscription.featureBatch'),
+        t('subscription.featureInspiration'),
+      ],
+    },
+    {
+      id: 'yearly',
+      name: t('subscription.yearly'),
+      price: t('subscription.yearlyPrice'),
+      period: t('subscription.yearlyPeriod'),
+      badge: t('subscription.recommend'),
+      save: t('subscription.save'),
+      features: [
+        t('subscription.featureAllMonthly'),
+        t('subscription.featurePriority'),
+        t('subscription.featureYearRound'),
+      ],
+    },
+  ];
 
   // 清理轮询
   useEffect(() => {
@@ -62,7 +73,7 @@ export function SubscriptionPage() {
         } catch {}
       }, 3000);
     } catch (err: any) {
-      alert(err?.response?.data?.message || '创建订单失败');
+      alert(err?.response?.data?.message || t('subscription.createOrderFailed'));
     } finally {
       setLoading(false);
     }
@@ -73,11 +84,11 @@ export function SubscriptionPage() {
       {/* Header */}
       <div className="flex flex-col items-center mb-8">
         <img src={logoImg} alt="logo" className="w-12 h-12 rounded-xl mb-3" />
-        <h1 className="text-xl font-bold text-fg-primary">选择你的套餐</h1>
+        <h1 className="text-xl font-bold text-fg-primary">{t('subscription.choosePlan')}</h1>
         <p className="text-sm text-fg-muted mt-1">
           {accessInfo?.access_reason === 'expired'
-            ? '试用已到期，订阅后继续使用全部功能'
-            : `你好，${user?.nickname || user?.email}`
+            ? t('subscription.expiredHint')
+            : t('subscription.hello', { name: user?.nickname || user?.email })
           }
         </p>
       </div>
@@ -130,7 +141,7 @@ export function SubscriptionPage() {
                 payMethod === 'wechat' ? 'bg-[#07c160] text-white' : 'bg-surface-secondary text-fg-secondary'
               }`}
             >
-              微信支付
+              {t('subscription.wechatPay')}
             </button>
             <button
               onClick={() => setPayMethod('alipay')}
@@ -138,7 +149,7 @@ export function SubscriptionPage() {
                 payMethod === 'alipay' ? 'bg-[#1677ff] text-white' : 'bg-surface-secondary text-fg-secondary'
               }`}
             >
-              支付宝
+              {t('subscription.alipay')}
             </button>
           </div>
 
@@ -148,7 +159,7 @@ export function SubscriptionPage() {
             className="px-8 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 transition-colors flex items-center gap-2"
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Crown className="w-4 h-4" />}
-            立即订阅
+            {t('subscription.subscribe')}
           </button>
         </div>
       )}
@@ -157,25 +168,25 @@ export function SubscriptionPage() {
       {paying && orderInfo && (
         <div className="flex flex-col items-center gap-4 p-6 bg-surface-secondary rounded-2xl border border-border">
           <p className="text-sm font-medium text-fg-primary">
-            {payMethod === 'wechat' ? '微信' : '支付宝'}扫码支付
+            {t('subscription.scanToPay', { method: payMethod === 'wechat' ? t('subscription.wechat') : t('subscription.alipayName') })}
           </p>
           <div className="w-48 h-48 bg-white rounded-xl flex items-center justify-center">
             {orderInfo.qr_code_url ? (
-              <img src={orderInfo.qr_code_url} alt="支付二维码" className="w-full h-full rounded-xl" />
+              <img src={orderInfo.qr_code_url} alt={t('subscription.payQrCode')} className="w-full h-full rounded-xl" />
             ) : (
               <div className="flex flex-col items-center gap-2 text-fg-muted">
                 <QrCode className="w-12 h-12" />
-                <span className="text-xs">二维码生成中...</span>
+                <span className="text-xs">{t('subscription.qrLoading')}</span>
               </div>
             )}
           </div>
-          <p className="text-2xl font-black text-fg-primary">{orderInfo.amount_yuan} 元</p>
-          <p className="text-xs text-fg-muted">支付完成后自动跳转</p>
+          <p className="text-2xl font-black text-fg-primary">{t('subscription.amountYuan', { amount: orderInfo.amount_yuan })}</p>
+          <p className="text-xs text-fg-muted">{t('subscription.autoRedirect')}</p>
           <button
             onClick={() => { setPaying(false); setOrderInfo(null); if (pollRef.current) clearInterval(pollRef.current); }}
             className="text-xs text-fg-muted hover:text-fg-secondary"
           >
-            取消支付
+            {t('subscription.cancelPay')}
           </button>
         </div>
       )}
@@ -183,7 +194,7 @@ export function SubscriptionPage() {
       {/* 底部 */}
       <div className="mt-8">
         <button onClick={logout} className="text-xs text-fg-muted hover:text-fg-secondary">
-          退出登录
+          {t('subscription.logout')}
         </button>
       </div>
     </div>

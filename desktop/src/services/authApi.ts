@@ -22,10 +22,10 @@ authApi.interceptors.response.use(
   (response) => response.data,
   (error) => {
     const data = error.response?.data;
-    // 被踢下线
-    if (data?.code === 401 && data?.message?.includes('其他设备')) {
+    // 被踢下线或 token 失效：清除本地 token，由 authStore 处理状态
+    if (error.response?.status === 401) {
       localStorage.removeItem('auth_token');
-      window.location.reload();
+      // 不 reload，让 authStore 的 checkAuth 处理
     }
     return Promise.reject(error);
   }
@@ -39,6 +39,7 @@ export interface AuthResponse {
   data: {
     token: string;
     user: UserInfo;
+    access: AccessInfo;
   };
 }
 

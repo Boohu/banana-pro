@@ -88,8 +88,9 @@ func Register(c *gin.Context) {
 			"code":    200,
 			"message": "注册成功",
 			"data": gin.H{
-				"token": token,
-				"user":  buildUserInfo(&user),
+				"token":  token,
+				"user":   buildUserInfo(&user),
+				"access": buildAccessInfo(&user),
 			},
 		})
 		return
@@ -136,8 +137,9 @@ func Register(c *gin.Context) {
 			"code":    200,
 			"message": "注册成功",
 			"data": gin.H{
-				"token": token,
-				"user":  buildUserInfo(&user),
+				"token":  token,
+				"user":   buildUserInfo(&user),
+				"access": buildAccessInfo(&user),
 			},
 		})
 		return
@@ -197,12 +199,14 @@ func Login(c *gin.Context) {
 		return
 	}
 
+	accessInfo := buildAccessInfo(&user)
 	c.JSON(http.StatusOK, gin.H{
 		"code":    200,
 		"message": "登录成功",
 		"data": gin.H{
-			"token": token,
-			"user":  buildUserInfo(&user),
+			"token":  token,
+			"user":   buildUserInfo(&user),
+			"access": accessInfo,
 		},
 	})
 }

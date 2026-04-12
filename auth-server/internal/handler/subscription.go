@@ -2,10 +2,12 @@ package handler
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
 	"auth-server/internal/model"
+	"auth-server/internal/service"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -54,9 +56,37 @@ func CreateOrder(c *gin.Context) {
 		Status:    "pending",
 	}
 
-	// TODO: 调用微信/支付宝 API 生成二维码
-	// 暂时返回模拟数据，支付接入后替换
-	order.QrCodeURL = fmt.Sprintf("https://api.yourapp.com/pay/qr/%s", orderNo)
+	// 调用支付 SDK 生成二维码
+	paySvc := service.GetPaymentService()
+	var qrCodeURL string
+	var payErr error
+
+	switch req.PayMethod {
+	case "wechat":
+		if paySvc.IsWechatConfigured() {
+			qrCodeURL, payErr = paySvc.CreateWechatOrder(orderNo, plan.Amount, "筋斗云AI-"+plan.Name)
+		}
+	case "alipay":
+		if paySvc.IsAlipayConfigured() {
+			qrCodeURL, payErr = paySvc.CreateAlipayOrder(orderNo, plan.Amount, "筋斗云AI-"+plan.Name)
+		}
+	default:
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "无效的支付方式"})
+		return
+	}
+
+	if payErr != nil {
+		log.Printf("[CreateOrder] 支付下单失败: %v\n", payErr)
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "支付下单失败，请稍后重试"})
+		return
+	}
+
+	// 未配置支付 SDK 时回退到 mock 二维码（开发测试用）
+	if qrCodeURL == "" {
+		qrCodeURL = fmt.Sprintf("https://api.yourapp.com/pay/mock?order_no=%s", orderNo)
+		log.Printf("[CreateOrder] 支付未配置，使用 mock 二维码: %s\n", qrCodeURL)
+	}
+	order.QrCodeURL = qrCodeURL
 
 	if err := model.DB.Create(&order).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "创建订单失败"})

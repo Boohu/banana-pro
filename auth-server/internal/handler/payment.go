@@ -4,57 +4,91 @@ import (
 	"log"
 	"net/http"
 
+	"auth-server/internal/service"
+
 	"github.com/gin-gonic/gin"
 )
 
 // WechatNotify 微信支付回调
 // POST /api/payment/wechat/notify
 func WechatNotify(c *gin.Context) {
-	// TODO: 接入微信支付 SDK 后实现
-	// 1. 验证签名
-	// 2. 解析订单号
-	// 3. 调用 CompletePayment(orderNo)
-	// 4. 返回成功响应给微信
+	paySvc := service.GetPaymentService()
 
-	// 临时：手动模拟支付完成
-	orderNo := c.Query("order_no")
-	if orderNo == "" {
-		c.XML(http.StatusBadRequest, gin.H{"return_code": "FAIL", "return_msg": "missing order_no"})
+	// 如果微信支付未配置，按旧逻辑走 mock 模式
+	if !paySvc.IsWechatConfigured() {
+		orderNo := c.Query("order_no")
+		if orderNo == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"code": "FAIL", "message": "missing order_no"})
+			return
+		}
+		if err := CompletePayment(orderNo); err != nil {
+			log.Printf("[Payment] 微信 mock 回调处理失败: %v\n", err)
+			c.JSON(http.StatusOK, gin.H{"code": "FAIL", "message": err.Error()})
+			return
+		}
+		log.Printf("[Payment] 微信 mock 支付成功: %s\n", orderNo)
+		c.JSON(http.StatusOK, gin.H{"code": "SUCCESS", "message": "OK"})
+		return
+	}
+
+	// 真实微信支付回调：SDK 验签 + 解密
+	orderNo, err := paySvc.ParseWechatNotify(c.Request)
+	if err != nil {
+		log.Printf("[Payment] 微信回调验签/解析失败: %v\n", err)
+		// 微信 APIv3 回调失败需要返回 JSON 格式
+		c.JSON(http.StatusBadRequest, gin.H{"code": "FAIL", "message": err.Error()})
 		return
 	}
 
 	if err := CompletePayment(orderNo); err != nil {
-		log.Printf("[Payment] 微信回调处理失败: %v\n", err)
-		c.XML(http.StatusOK, gin.H{"return_code": "FAIL", "return_msg": err.Error()})
+		log.Printf("[Payment] 微信回调处理失败: orderNo=%s, err=%v\n", orderNo, err)
+		c.JSON(http.StatusOK, gin.H{"code": "FAIL", "message": err.Error()})
 		return
 	}
 
 	log.Printf("[Payment] 微信支付成功: %s\n", orderNo)
-	c.XML(http.StatusOK, gin.H{"return_code": "SUCCESS", "return_msg": "OK"})
+	// 微信 APIv3 回调成功需要返回 200 + JSON
+	c.JSON(http.StatusOK, gin.H{"code": "SUCCESS", "message": "OK"})
 }
 
 // AlipayNotify 支付宝回调
 // POST /api/payment/alipay/notify
 func AlipayNotify(c *gin.Context) {
-	// TODO: 接入支付宝 SDK 后实现
-	// 1. 验证签名
-	// 2. 解析订单号
-	// 3. 调用 CompletePayment(orderNo)
-	// 4. 返回 "success"
+	paySvc := service.GetPaymentService()
 
-	orderNo := c.PostForm("out_trade_no")
-	if orderNo == "" {
+	// 如果支付宝未配置，按旧逻辑走 mock 模式
+	if !paySvc.IsAlipayConfigured() {
+		orderNo := c.PostForm("out_trade_no")
+		if orderNo == "" {
+			c.String(http.StatusBadRequest, "fail")
+			return
+		}
+		if err := CompletePayment(orderNo); err != nil {
+			log.Printf("[Payment] 支付宝 mock 回调处理失败: %v\n", err)
+			c.String(http.StatusOK, "fail")
+			return
+		}
+		log.Printf("[Payment] 支付宝 mock 支付成功: %s\n", orderNo)
+		c.String(http.StatusOK, "success")
+		return
+	}
+
+	// 真实支付宝回调：SDK 验签 + 解析
+	orderNo, err := paySvc.ParseAlipayNotify(c)
+	if err != nil {
+		log.Printf("[Payment] 支付宝回调验签/解析失败: %v\n", err)
 		c.String(http.StatusBadRequest, "fail")
 		return
 	}
 
 	if err := CompletePayment(orderNo); err != nil {
-		log.Printf("[Payment] 支付宝回调处理失败: %v\n", err)
+		log.Printf("[Payment] 支付宝回调处理失败: orderNo=%s, err=%v\n", orderNo, err)
 		c.String(http.StatusOK, "fail")
 		return
 	}
 
 	log.Printf("[Payment] 支付宝支付成功: %s\n", orderNo)
+	// 支付宝异步通知成功需要返回纯文本 "success"
 	c.String(http.StatusOK, "success")
 }
 
