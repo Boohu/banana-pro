@@ -388,7 +388,6 @@ function AboutSection() {
         </div>
         <div className="space-y-2 text-sm text-fg-secondary">
           <p>{t('onboarding.appDesc')}</p>
-          <p className="text-xs text-fg-muted">{t('settingsPage.appBasedOn')}</p>
         </div>
       </div>
     </div>
