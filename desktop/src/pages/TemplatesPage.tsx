@@ -5,7 +5,7 @@ import { getTemplates } from '@/services/templateApi';
 import { useConfigStore } from '@/store/configStore';
 import { useNavigationStore } from '@/store/navigationStore';
 import { useTranslation } from 'react-i18next';
-import { communityTemplates, communityTemplateChannels } from '@/data/communityTemplates';
+import { AUTH_URL } from '@/services/authApi';
 import type { TemplateItem, TemplateListResponse } from '@/types';
 
 function TemplateCard({ item, onClick }: { item: TemplateItem; onClick: () => void }) {
@@ -120,23 +120,33 @@ function TemplateDetailModal({ item, onClose }: { item: TemplateItem; onClose: (
 
 export function TemplatesPage() {
   const { t } = useTranslation();
-  const [data, setData] = useState<TemplateListResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('全部');
   const [selectedItem, setSelectedItem] = useState<TemplateItem | null>(null);
+  const [categories, setCategories] = useState<string[]>(['全部']);
+  const [allItems, setAllItems] = useState<TemplateItem[]>([]);
 
   useEffect(() => {
-    // 直接使用社区模板，不加载旧 API 模板
-    setData({
-      meta: { channels: communityTemplateChannels, materials: [], industries: [], ratios: [] },
-      items: communityTemplates as any[]
-    } as any);
-    setLoading(false);
+    // 从服务器加载模板
+    const TEMPLATES_URL = AUTH_URL.replace(/\/api$/, '') + '/static/templates.json';
+    fetch(TEMPLATES_URL)
+      .then(res => res.json())
+      .then(data => {
+        setCategories(data.channels || ['全部']);
+        setAllItems(data.templates || []);
+      })
+      .catch(err => {
+        console.error('[Templates] 加载远程模板失败:', err);
+        // 远程失败时尝试加载本地备份
+        import('@/data/communityTemplates').then(mod => {
+          setCategories(mod.communityTemplateChannels);
+          setAllItems(mod.communityTemplates as any);
+        }).catch(() => {});
+      })
+      .finally(() => setLoading(false));
   }, []);
 
-  const categories = communityTemplateChannels;
-  const allItems = communityTemplates as any as TemplateItem[];
   const filteredItems = useMemo(() => {
     return allItems.filter((item) => {
       const channels = item.channels || [];
