@@ -20,7 +20,7 @@ export function PromptInput() {
   const { history, index, record, undo, redo, reset } = usePromptHistoryStore();
   const status = useGenerateStore((s) => s.status);
   const isSubmitting = useGenerateStore((s) => s.isSubmitting);
-  const isGenerating = status === 'processing' || isSubmitting;
+  const isGenerating = isSubmitting; // 只在提交请求时禁用，生成中允许提交新任务
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [optimizingMode, setOptimizingMode] = useState<'normal' | 'json' | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);

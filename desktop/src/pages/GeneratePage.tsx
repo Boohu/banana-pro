@@ -48,7 +48,7 @@ function LeftConfigPanel() {
   const { generate } = useGenerate();
   const isSubmitting = useGenerateStore((s) => s.isSubmitting);
   const status = useGenerateStore((s) => s.status);
-  const isGenerating = status === 'processing' || isSubmitting;
+  const isGenerating = isSubmitting; // 只在提交请求时禁用，生成中允许提交新任务
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [optimizingMode, setOptimizingMode] = useState<'normal' | 'json' | null>(null);
   const customModels: string[] = (() => { try { return JSON.parse(localStorage.getItem('banana-custom-models') || '[]'); } catch { return []; } })();

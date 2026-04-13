@@ -280,12 +280,12 @@ function BatchConfigPanel({ batch, onChange }: { batch: BatchJob; onChange: (upd
             if (val === '__local__') {
               // 桌面端：弹出文件夹选择
               try {
-                const { open } = await import('@tauri-apps/plugin-dialog');
-                const selected = await open({ directory: true, multiple: false });
+                const mod = await (Function('return import("@tauri-apps/plugin-dialog")')() as Promise<any>);
+                const selected = await mod.open({ directory: true, multiple: false });
                 if (selected && typeof selected === 'string') {
                   onChange({ outputFolderId: '__local__', outputDir: selected });
                 }
-              } catch (err) { console.error('[BatchPage] 选择文件夹失败:', err); }
+              } catch {}
             } else if (val === '') {
               onChange({ outputFolderId: '', outputDir: '' });
             } else {
@@ -309,10 +309,10 @@ function BatchConfigPanel({ batch, onChange }: { batch: BatchJob; onChange: (upd
           <button
             onClick={async () => {
               try {
-                const { open } = await import('@tauri-apps/plugin-dialog');
-                const selected = await open({ directory: true, multiple: false });
+                const mod = await (Function('return import("@tauri-apps/plugin-dialog")')() as Promise<any>);
+                const selected = await mod.open({ directory: true, multiple: false });
                 if (selected && typeof selected === 'string') onChange({ outputDir: selected });
-              } catch (err) { console.error('[BatchPage] 选择文件夹失败:', err); }
+              } catch {}
             }}
             className="p-1 rounded hover:bg-surface-secondary transition-colors shrink-0"
           >
@@ -471,7 +471,7 @@ export function BatchPage() {
   const completedFiles = selectedBatch.files.filter((f) => f.status === 'completed' && f.resultUrl);
   const previewFile = previewIndex !== null ? completedFiles[previewIndex] : null;
 
-  // 重试失败的文件
+  // 重试失败的文件（创建新批次但结果合并回原批次）
   const handleRetryFile = useCallback(async (fileIndex: number) => {
     if (!selectedBatch) return;
     const file = selectedBatch.files[fileIndex];
@@ -488,6 +488,8 @@ export function BatchPage() {
     formData.append('outputFormat', selectedBatch.outputFormat);
     formData.append('quality', String(selectedBatch.quality));
     formData.append('concurrency', '1');
+    formData.append('namingRule', selectedBatch.namingRule);
+    formData.append('keepOriginalSize', String(selectedBatch.keepOriginalSize));
 
     // 标记为处理中
     const updatedFiles = [...selectedBatch.files];
@@ -500,8 +502,40 @@ export function BatchPage() {
       if (task) {
         updatedFiles[fileIndex] = { ...updatedFiles[fileIndex], taskId: task.task_id };
         updateBatch(selectedBatch.id, { files: [...updatedFiles] });
-        // 连接 SSE 监听这个新批次
-        connectSSE(selectedBatch.id, res.batch_id);
+
+        // 监听新批次的 SSE，但结果更新到原批次的对应文件
+        const retryES = new EventSource(`${BASE_URL}/batches/${res.batch_id}/stream`);
+        retryES.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            const tasks: any[] = data.tasks || [];
+            const matched = tasks.find((t: any) => t.task_id === task.task_id);
+            if (!matched) return;
+
+            const resultUrl = matched.image_url || (matched.local_path ? getImageUrl(matched.local_path) : undefined);
+            const newStatus = matched.status === 'completed' ? 'completed' as const
+              : matched.status === 'failed' ? 'failed' as const
+              : 'processing' as const;
+
+            setBatches((prev) => prev.map((b) => {
+              if (b.id !== selectedBatch.id) return b;
+              const files = [...b.files];
+              files[fileIndex] = {
+                ...files[fileIndex],
+                status: newStatus,
+                progress: matched.progress || 0,
+                resultUrl: resultUrl || files[fileIndex].resultUrl,
+                errorMessage: matched.error || undefined,
+              };
+              return { ...b, files };
+            }));
+
+            if (newStatus === 'completed' || newStatus === 'failed') {
+              retryES.close();
+            }
+          } catch {}
+        };
+        retryES.onerror = () => { retryES.close(); };
       }
     } catch (err: any) {
       updatedFiles[fileIndex] = { ...file, status: 'failed', errorMessage: err?.message || '重试失败' };
@@ -655,6 +689,18 @@ export function BatchPage() {
   const completedCount = selectedBatch.files.filter((f) => f.status === 'completed').length;
   const processingCount = selectedBatch.files.filter((f) => f.status === 'processing').length;
   const pendingCount = selectedBatch.files.filter((f) => f.status === 'pending').length;
+  const failedCount = selectedBatch.files.filter((f) => f.status === 'failed').length;
+
+  // 重试所有失败的文件
+  const handleRetryAllFailed = useCallback(async () => {
+    if (!selectedBatch) return;
+    const failedIndexes = selectedBatch.files
+      .map((f, i) => f.status === 'failed' ? i : -1)
+      .filter(i => i >= 0);
+    for (const idx of failedIndexes) {
+      await handleRetryFile(idx);
+    }
+  }, [selectedBatch, handleRetryFile]);
 
   return (
     <div className="flex flex-1 overflow-hidden">
@@ -684,6 +730,7 @@ export function BatchPage() {
               {completedCount > 0 && <span className="text-success">✓ {completedCount}</span>}
               {processingCount > 0 && <span className="text-primary">⟳ {processingCount}</span>}
               {pendingCount > 0 && <span className="text-fg-muted">○ {pendingCount}</span>}
+              {failedCount > 0 && <span className="text-error">✗ {failedCount}</span>}
             </div>
           )}
         </div>
@@ -836,6 +883,15 @@ export function BatchPage() {
               >
                 <Pause className="w-3.5 h-3.5" />
                 {t('batch.pause')}
+              </button>
+            )}
+            {failedCount > 0 && selectedBatch.status !== 'processing' && (
+              <button
+                onClick={handleRetryAllFailed}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-error/15 text-error text-xs font-semibold hover:bg-error/25 transition-colors"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                重试失败 ({failedCount})
               </button>
             )}
             {selectedBatch.status === 'pending' && selectedBatch.backendBatchId && (
