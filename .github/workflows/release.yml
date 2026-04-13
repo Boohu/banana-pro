@@ -224,9 +224,6 @@ jobs:
             ### 📦 包含组件
             - 桌面客户端 (Tauri)
             - 本地推理引擎 (Go Sidecar)
-
-            ---
-            *由 GitHub Actions 自动构建发布 - ${{ env.BUILD_TIME }}*
           releaseDraft: false
           prerelease: false
           includeUpdaterJson: true
@@ -251,9 +248,6 @@ jobs:
             ### 📦 包含组件
             - 桌面客户端 (Tauri)
             - 本地推理引擎 (Go Sidecar)
-
-            ---
-            *由 GitHub Actions 自动构建发布 - ${{ env.BUILD_TIME }}*
           releaseDraft: false
           prerelease: false
           includeUpdaterJson: true
@@ -347,9 +341,6 @@ jobs:
             ### 📦 包含组件
             - 桌面客户端 (Tauri)
             - 本地推理引擎 (Go Sidecar)
-
-            ---
-            *由 GitHub Actions 自动构建发布 - ${{ env.BUILD_TIME }}*
           releaseDraft: false
           prerelease: false
           includeUpdaterJson: true

@@ -6,7 +6,7 @@ import { getTaskStatus } from '../services/generateApi';
 
 // SSE 重连配置
 const SSE_RECONNECT_DELAY = 2000; // 重连延迟（毫秒）
-const MAX_SSE_RECONNECT_ATTEMPTS = 2; // 最大重连次数
+const MAX_SSE_RECONNECT_ATTEMPTS = 5; // 最大重连次数
 
 export function useTaskStream(taskId: string | null) {
   const connectionMode = useGenerateStore((s) => s.connectionMode);

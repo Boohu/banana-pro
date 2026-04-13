@@ -14,13 +14,13 @@ import i18n from '../i18n';
 const STREAM_OPEN_TIMEOUT = 5000;
 // 轮询间隔（毫秒）
 const POLL_INTERVAL = 3000;
-// 最大轮询重试次数（降低到 6 次，避免用户等待过久）
-const MAX_POLL_RETRIES = 6;
-// 最大退避间隔（毫秒）（降低到 15 秒）
-const MAX_BACKOFF_INTERVAL = 15000;
+// 最大轮询连续失败次数（网络错误时才计数，正常 processing 不计）
+const MAX_POLL_RETRIES = 30;
+// 最大退避间隔（毫秒）
+const MAX_BACKOFF_INTERVAL = 10000;
 const BATCH_TASK_PREFIX = 'batch-';
 // 主动同步间隔（毫秒）- 作为 SSE/轮询的兜底机制，定期检查后端状态
-const ACTIVE_SYNC_INTERVAL = 8000;
+const ACTIVE_SYNC_INTERVAL = 5000;
 
 const isBatchTaskId = (value: string | null | undefined) => {
   if (!value) return false;
