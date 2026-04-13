@@ -374,9 +374,39 @@ function ModelManageSection() {
 function AboutSection() {
   const { t } = useTranslation();
   const { user, accessInfo, logout } = useAuthStore();
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const [updateStatus, setUpdateStatus] = useState('');
 
   const isTrial = accessInfo?.access_reason === 'trial';
   const isSubscribed = accessInfo?.access_reason === 'subscription';
+
+  const handleCheckUpdate = async () => {
+    const isTauri = Boolean((window as any).__TAURI_INTERNALS__);
+    if (!isTauri) return;
+    setCheckingUpdate(true);
+    setUpdateStatus('');
+    try {
+      const { check } = await import('@tauri-apps/plugin-updater');
+      const update = await check();
+      if (update) {
+        setUpdateStatus(`发现新版本 v${update.version}`);
+        const yes = confirm(`发现新版本 v${update.version}\n\n${update.body || ''}\n\n是否立即更新？`);
+        if (yes) {
+          setUpdateStatus('下载中...');
+          await update.downloadAndInstall();
+          const { relaunch } = await import('@tauri-apps/plugin-process');
+          await relaunch();
+        }
+      } else {
+        setUpdateStatus('已是最新版本');
+      }
+    } catch (err) {
+      console.error('[Update]', err);
+      setUpdateStatus('检查失败');
+    } finally {
+      setCheckingUpdate(false);
+    }
+  };
 
   const goToSubscription = () => {
     import('@/store/navigationStore').then(({ useNavigationStore }) => {
@@ -464,12 +494,24 @@ function AboutSection() {
           <img src={logoImg} alt="logo" className="w-12 h-12 rounded-xl" />
           <div>
             <h4 className="text-base font-semibold text-fg-primary">{t('sidebar.appName')}</h4>
-            <p className="text-xs text-fg-muted">v2.7.4</p>
+            <p className="text-xs text-fg-muted">v{__APP_VERSION__}</p>
           </div>
         </div>
         <div className="space-y-2 text-sm text-fg-secondary">
           <p>{t('onboarding.appDesc')}</p>
         </div>
+        {Boolean((window as any).__TAURI_INTERNALS__) && (
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleCheckUpdate}
+              disabled={checkingUpdate}
+              className="px-4 py-2 rounded-lg bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 disabled:opacity-50 transition-colors"
+            >
+              {checkingUpdate ? '检查中...' : '检查更新'}
+            </button>
+            {updateStatus && <span className="text-xs text-fg-muted">{updateStatus}</span>}
+          </div>
+        )}
       </div>
     </div>
   );
