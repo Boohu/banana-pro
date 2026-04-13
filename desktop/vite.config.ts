@@ -1,10 +1,10 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
+import { readFileSync } from 'fs'
 
-// https://vitejs.dev/config/
 // 读取 tauri.conf.json 的版本号
-const tauriConf = JSON.parse(require('fs').readFileSync(path.resolve(__dirname, 'src-tauri/tauri.conf.json'), 'utf-8'));
+const tauriConf = JSON.parse(readFileSync(path.resolve(__dirname, 'src-tauri/tauri.conf.json'), 'utf-8'));
 
 export default defineConfig({
   plugins: [react()],
