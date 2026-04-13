@@ -36,7 +36,7 @@ func main() {
 	// CORS —— 从配置读取允许的源，默认仅允许本地开发地址
 	allowedOrigins := model.GetConfig("cors_allowed_origins")
 	if allowedOrigins == "" {
-		allowedOrigins = "http://localhost:1420,http://localhost:5174,http://localhost:8090,tauri://localhost"
+		allowedOrigins = "http://localhost:1420,http://localhost:5174,http://localhost:8090,tauri://localhost,https://tauri.localhost"
 	}
 	originsSet := make(map[string]bool)
 	for _, o := range strings.Split(allowedOrigins, ",") {
