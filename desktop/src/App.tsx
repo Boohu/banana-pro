@@ -53,12 +53,12 @@ function App() {
   const [updateInfo, setUpdateInfo] = useState<{ version: string; notes: string; doUpdate: () => Promise<void> } | null>(null);
   const [updating, setUpdating] = useState(false);
 
-  // 启动时检查登录状态 + 每小时定时重新校验
+  // 启动时检查登录状态 + 定时重新校验（5分钟，保证单设备登录及时踢掉旧设备）
   useEffect(() => {
     checkAuth();
     const interval = setInterval(() => {
       checkAuth(true);
-    }, 60 * 60 * 1000);
+    }, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, [checkAuth]);
 

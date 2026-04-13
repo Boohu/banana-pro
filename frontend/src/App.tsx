@@ -22,12 +22,12 @@ function App() {
     return !localStorage.getItem(ONBOARDING_KEY) && !apiKey;
   });
 
-  // 启动时检查登录状态 + 每小时定时重新校验（防止到期后继续使用）
+  // 启动时检查登录状态 + 定时校验（5分钟，单设备登录踢掉旧设备 + 到期检测）
   useEffect(() => {
     checkAuth();
     const interval = setInterval(() => {
       checkAuth(true);
-    }, 60 * 60 * 1000); // 每小时校验一次
+    }, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, [checkAuth]);
 
