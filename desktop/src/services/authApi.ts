@@ -115,6 +115,16 @@ export const getOrderStatus = async (orderId: number): Promise<{ code: number; d
   return authApi.get(`/subscription/order/${orderId}`) as any;
 };
 
+// 重置密码
+export const resetPassword = async (params: {
+  phone?: string;
+  email?: string;
+  code: string;
+  new_password: string;
+}): Promise<{ code: number; message: string }> => {
+  return authApi.post('/auth/reset-password', params) as any;
+};
+
 // 查询订阅状态
 export const getSubscriptionStatus = async (): Promise<{ code: number; data: AccessInfo }> => {
   return authApi.get(`/subscription/status?app_id=${APP_ID}`) as any;

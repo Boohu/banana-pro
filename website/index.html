@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>筋斗云AI - 用 AI 释放你的创造力</title>
+  <meta name="description" content="AI 驱动的图片生成工具，支持 4K 分辨率、批量处理、提示词优化。自带 API Key，完全透明无暗扣。">
+  <link rel="icon" href="../frontend/src/assets/logo.png" type="image/png">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0A0A0A;
+      --surface: #1A1A1A;
+      --border: #222222;
+      --accent: #A855F7;
+      --accent-dim: rgba(168, 85, 247, 0.15);
+      --fg: #FFFFFF;
+      --fg-sec: #A1A1AA;
+      --fg-muted: #71717A;
+    }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--fg); overflow-x: hidden; }
+
+    /* 动态背景 */
+    .hero-bg {
+      position: absolute; inset: 0; overflow: hidden; z-index: 0;
+    }
+    #particles {
+      position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1;
+    }
+    .hero-bg .orb {
+      position: absolute; border-radius: 50%; filter: blur(100px);
+      animation: orbFloat 10s ease-in-out infinite;
+    }
+    .hero-bg .orb-1 {
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(168,85,247,0.35), transparent 70%);
+      top: -15%; right: 5%;
+    }
+    .hero-bg .orb-2 {
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(99,102,241,0.3), transparent 70%);
+      top: 20%; left: 0%;
+      animation-delay: -3s;
+    }
+    .hero-bg .orb-3 {
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(236,72,153,0.2), transparent 70%);
+      bottom: -10%; right: 15%;
+      animation-delay: -6s;
+    }
+    .hero-bg .grid-overlay {
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(168,85,247,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(168,85,247,0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+      mask-image: radial-gradient(ellipse at center, black 30%, transparent 70%);
+      -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 70%);
+    }
+    .hero-bg .shimmer {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      width: 800px; height: 800px;
+      background: conic-gradient(from 0deg, transparent, rgba(168,85,247,0.08), transparent, rgba(99,102,241,0.06), transparent);
+      animation: shimmerRotate 20s linear infinite;
+      border-radius: 50%;
+    }
+    @keyframes orbFloat {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      33% { transform: translate(30px, -20px) scale(1.05); }
+      66% { transform: translate(-20px, 15px) scale(0.95); }
+    }
+    @keyframes orbFadeIn {
+      from { opacity: 0; } to { opacity: 1; }
+    }
+    @keyframes shimmerRotate {
+      from { transform: translate(-50%, -50%) rotate(0deg); }
+      to { transform: translate(-50%, -50%) rotate(360deg); }
+    }
+
+    /* 导航栏 */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      background: rgba(10,10,10,0.8);
+      border-bottom: 1px solid rgba(168,85,247,0.1);
+    }
+    .nav-inner {
+      max-width: 1200px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 40px;
+    }
+    .nav-left { display: flex; align-items: center; gap: 10px; }
+    .nav-left img { width: 32px; height: 32px; border-radius: 8px; }
+    .nav-left span { font-size: 18px; font-weight: 700; }
+    .nav-links { display: flex; gap: 32px; }
+    .nav-links a { color: var(--fg-sec); text-decoration: none; font-size: 14px; transition: color 0.2s; }
+    .nav-links a:hover { color: var(--fg); }
+    .nav-cta {
+      padding: 10px 24px; border-radius: 9999px; background: var(--accent);
+      color: white; font-size: 14px; font-weight: 600; text-decoration: none;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .nav-cta:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(168,85,247,0.4); }
+
+    /* 导航发光线 */
+    .nav-glow {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(168,85,247,0.3), transparent);
+    }
+
+    /* Hero */
+    .hero {
+      position: relative;
+      display: flex; flex-direction: column; align-items: center;
+      padding: 160px 40px 100px;
+      text-align: center;
+      height: 100vh;
+      width: 100%;
+      max-width: 100%;
+      margin: 0;
+      justify-content: center;
+    }
+    .hero > *:not(.hero-bg) { position: relative; z-index: 1; }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 8px 20px; border-radius: 9999px;
+      background: var(--surface); border: 1px solid rgba(168,85,247,0.2);
+      margin-bottom: 32px;
+      animation: fadeUp 0.6s ease-out 0.2s both;
+    }
+    .hero-badge .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: pulse 2s infinite; }
+    .hero-badge span { font-size: 13px; color: var(--fg-sec); font-family: 'JetBrains Mono', monospace; }
+    .hero h1 {
+      font-size: clamp(40px, 6vw, 72px); font-weight: 800;
+      line-height: 1.1; max-width: 900px; margin-bottom: 24px;
+      background: linear-gradient(135deg, #FFFFFF 0%, #A1A1AA 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: fadeUp 0.6s ease-out 0.4s both;
+    }
+    .hero p {
+      font-size: 18px; color: var(--fg-muted); line-height: 1.6;
+      max-width: 640px; margin-bottom: 40px;
+      animation: fadeUp 0.6s ease-out 0.6s both;
+    }
+    .hero-buttons {
+      display: flex; gap: 16px;
+      animation: fadeUp 0.6s ease-out 0.8s both;
+    }
+    .btn-primary {
+      padding: 16px 36px; border-radius: 12px; background: var(--accent);
+      color: white; font-size: 16px; font-weight: 600; border: none; cursor: pointer;
+      transition: all 0.2s; text-decoration: none;
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(168,85,247,0.4); }
+    .btn-secondary {
+      padding: 16px 36px; border-radius: 12px; background: var(--surface);
+      color: var(--fg-sec); font-size: 16px; font-weight: 500; border: 1px solid #333;
+      cursor: pointer; transition: all 0.2s; text-decoration: none;
+    }
+    .btn-secondary:hover { border-color: var(--accent); color: var(--fg); }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.3); }
+    }
+
+    /* 通用区域 */
+    section { padding: 100px 40px; max-width: 1200px; margin: 0 auto; }
+    .section-header { text-align: center; margin-bottom: 48px; }
+    .section-header h2 { font-size: 40px; font-weight: 700; margin-bottom: 16px; }
+    .section-header p { font-size: 16px; color: var(--fg-muted); }
+
+    /* 滚动动效 */
+    .reveal {
+      opacity: 0; transform: translateY(30px);
+      transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+    }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+    .reveal-delay-1 { transition-delay: 0.1s; }
+    .reveal-delay-2 { transition-delay: 0.2s; }
+    .reveal-delay-3 { transition-delay: 0.3s; }
+
+    /* 功能卡片 */
+    .features-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+      margin-bottom: 16px;
+    }
+    .feature-card {
+      background: var(--surface); border-radius: 16px; padding: 32px;
+      transition: transform 0.3s, border-color 0.3s;
+      border: 1px solid transparent;
+    }
+    .feature-card:hover { transform: translateY(-4px); border-color: rgba(168,85,247,0.3); }
+    .feature-icon {
+      width: 48px; height: 48px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px; margin-bottom: 16px;
+    }
+    .feature-card h3 { font-size: 18px; font-weight: 600; margin-bottom: 12px; }
+    .feature-card p { font-size: 14px; color: var(--fg-muted); line-height: 1.7; }
+
+    /* 定价 */
+    .pricing-grid { display: flex; gap: 24px; justify-content: center; }
+    .pricing-card {
+      width: 320px; padding: 36px; border-radius: 16px; background: var(--surface);
+      transition: transform 0.3s;
+    }
+    .pricing-card:hover { transform: translateY(-4px); }
+    .pricing-card.featured { border: 2px solid var(--accent); }
+    .pricing-card .plan-name { font-size: 16px; color: var(--fg-sec); margin-bottom: 16px; }
+    .pricing-card .badge {
+      display: inline-block; padding: 4px 12px; border-radius: 9999px;
+      background: var(--accent-dim); color: var(--accent);
+      font-size: 12px; font-weight: 600; margin-bottom: 12px;
+    }
+    .pricing-card .price { font-size: 48px; font-weight: 800; margin-bottom: 4px; }
+    .pricing-card .period { font-size: 16px; color: var(--fg-muted); }
+    .pricing-card .save { font-size: 13px; color: var(--accent); font-family: 'JetBrains Mono', monospace; margin: 12px 0 20px; }
+    .pricing-card .price-row { display: flex; align-items: end; gap: 4px; margin-bottom: 20px; }
+    .pricing-btn {
+      display: block; width: 100%; padding: 14px; border-radius: 12px;
+      text-align: center; font-size: 14px; font-weight: 600;
+      text-decoration: none; transition: all 0.2s; border: none; cursor: pointer;
+    }
+    .pricing-btn.primary { background: var(--accent); color: white; }
+    .pricing-btn.primary:hover { box-shadow: 0 4px 20px rgba(168,85,247,0.4); }
+    .pricing-btn.outline { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+    .pricing-btn.outline:hover { background: var(--accent-dim); }
+    .pricing-btn.ghost { background: transparent; color: var(--fg-sec); border: 1px solid #333; }
+    .pricing-btn.ghost:hover { border-color: var(--fg-sec); }
+
+    /* FAQ */
+    .faq-list { max-width: 800px; margin: 0 auto; }
+    .faq-item { border-bottom: 1px solid var(--border); padding: 24px 0; cursor: pointer; }
+    .faq-item:last-child { border-bottom: none; }
+    .faq-question {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 17px; font-weight: 600; transition: color 0.2s;
+    }
+    .faq-question:hover { color: var(--accent); }
+    .faq-question .arrow { transition: transform 0.3s; font-size: 20px; color: var(--fg-muted); }
+    .faq-question.open .arrow { transform: rotate(180deg); }
+    .faq-answer {
+      max-height: 0; overflow: hidden; transition: max-height 0.4s ease-out, padding 0.3s;
+      font-size: 14px; color: var(--fg-muted); line-height: 1.7;
+    }
+    .faq-answer.open { max-height: 200px; padding-top: 12px; }
+
+    /* 下载区 */
+    .download-section { padding: 100px 40px; max-width: 1200px; margin: 0 auto; }
+    .download-cards { display: flex; gap: 24px; justify-content: center; margin-top: 48px; }
+    .download-card {
+      width: 360px; padding: 40px; border-radius: 20px; background: var(--surface);
+      border: 1px solid var(--border); text-align: center;
+      transition: transform 0.3s, border-color 0.3s;
+    }
+    .download-card:hover { transform: translateY(-4px); border-color: rgba(168,85,247,0.3); }
+    .download-card .os-icon { font-size: 48px; margin-bottom: 16px; }
+    .download-card h3 { font-size: 20px; font-weight: 600; margin-bottom: 8px; }
+    .download-card .os-desc { font-size: 13px; color: var(--fg-muted); margin-bottom: 8px; }
+    .download-card .file-size { font-size: 12px; color: var(--fg-muted); font-family: 'JetBrains Mono', monospace; margin-bottom: 20px; }
+    .download-card .version-tag {
+      display: inline-block; padding: 3px 10px; border-radius: 9999px;
+      background: var(--accent-dim); color: var(--accent);
+      font-size: 11px; font-family: 'JetBrains Mono', monospace; margin-bottom: 20px;
+    }
+    .download-btn {
+      display: block; width: 100%; padding: 14px; border-radius: 12px;
+      font-size: 15px; font-weight: 600; text-decoration: none;
+      transition: all 0.2s; border: none; cursor: pointer;
+    }
+    .download-btn.mac { background: var(--accent); color: white; }
+    .download-btn.mac:hover { box-shadow: 0 4px 20px rgba(168,85,247,0.4); }
+    .download-btn.win { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+    .download-btn.win:hover { background: var(--accent-dim); }
+
+    /* CTA */
+    .cta-section {
+      padding: 100px 40px; max-width: 1200px; margin: 0 auto;
+    }
+    .cta-box {
+      padding: 80px 60px; border-radius: 24px; text-align: center;
+      background: linear-gradient(135deg, rgba(168,85,247,0.15), var(--surface));
+      border: 1px solid rgba(168,85,247,0.1);
+      position: relative; overflow: hidden;
+    }
+    .cta-box::before {
+      content: ''; position: absolute; top: -50%; left: -50%;
+      width: 200%; height: 200%;
+      background: conic-gradient(from 0deg, transparent, rgba(168,85,247,0.05), transparent, rgba(99,102,241,0.03), transparent);
+      animation: shimmerRotate 15s linear infinite;
+    }
+    .cta-box > * { position: relative; z-index: 1; }
+    .cta-box h2 { font-size: 36px; font-weight: 700; margin-bottom: 16px; }
+    .cta-box p { font-size: 16px; color: var(--fg-sec); margin-bottom: 32px; }
+
+    /* Footer */
+    footer {
+      max-width: 1200px; margin: 0 auto;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 40px; border-top: 1px solid var(--border);
+      font-size: 13px; color: var(--fg-muted);
+    }
+    footer a { color: var(--fg-muted); text-decoration: none; transition: color 0.2s; }
+    footer a:hover { color: var(--fg-sec); }
+    .footer-links { display: flex; gap: 24px; }
+
+    /* 响应式 */
+    @media (max-width: 768px) {
+      .features-grid { grid-template-columns: repeat(2, 1fr); }
+      .pricing-grid { flex-direction: column; align-items: center; }
+      .nav-links { display: none; }
+      .hero h1 { font-size: 36px; }
+      .hero-buttons { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- 导航栏 -->
+<nav>
+  <div class="nav-inner">
+    <a href="#" class="nav-left" style="text-decoration:none;color:white;">
+      <img src="../frontend/src/assets/logo.png" alt="筋斗云AI">
+      <span>筋斗云AI</span>
+    </a>
+    <div class="nav-links">
+      <a href="#features">功能</a>
+      <a href="#pricing">价格</a>
+      <a href="#faq">常见问题</a>
+      <a href="#download">下载</a>
+    </div>
+    <a href="#pricing" class="nav-cta">免费试用</a>
+  </div>
+  <div class="nav-glow"></div>
+</nav>
+
+<!-- Hero -->
+<section class="hero" id="home">
+  <div class="hero-bg">
+    <canvas id="particles"></canvas>
+    <div class="shimmer"></div>
+    <div class="grid-overlay"></div>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+  <div class="hero-badge">
+    <div class="dot"></div>
+    <span>AI 驱动的图片生成工具</span>
+  </div>
+  <h1>用 AI 释放你的创造力</h1>
+  <p>一句话生成电商主图、产品海报、社交素材。支持 4K 分辨率、提示词智能优化、批量出图，让每张图都是爆款。</p>
+  <div class="hero-buttons">
+    <a href="#pricing" class="btn-primary">免费试用 3 天</a>
+    <a href="#download" class="btn-secondary">立即下载 &rarr;</a>
+  </div>
+</section>
+
+<!-- 功能亮点 -->
+<section id="features">
+  <div class="section-header reveal">
+    <h2>为创作者打造的 AI 工具</h2>
+    <p>从文生图到批量处理，一站式满足你的所有创作需求</p>
+  </div>
+  <div class="features-grid">
+    <div class="feature-card reveal reveal-delay-0">
+      <div class="feature-icon" style="background:rgba(168,85,247,0.12)">🎨</div>
+      <h3>AI 文生图 &middot; 4K</h3>
+      <p>一句话生成电商主图、产品白底图、营销海报，最高 4K 分辨率，多种比例适配各平台</p>
+    </div>
+    <div class="feature-card reveal reveal-delay-1">
+      <div class="feature-icon" style="background:rgba(168,85,247,0.12)">🖼️</div>
+      <h3>图生图 &middot; 提示词优化</h3>
+      <p>上传产品实拍图，AI 自动生成场景图、模特图、创意展示图，告别高价摄影</p>
+    </div>
+    <div class="feature-card reveal reveal-delay-2">
+      <div class="feature-icon" style="background:rgba(168,85,247,0.12)">⚡</div>
+      <h3>批量处理 &middot; 批量下载</h3>
+      <p>上百款 SKU 一次导入，批量生成主图/详情图，一键下载，电商换季上新效率翻倍</p>
+    </div>
+    <div class="feature-card reveal reveal-delay-3">
+      <div class="feature-icon" style="background:rgba(168,85,247,0.12)">💡</div>
+      <h3>灵感广场</h3>
+      <p>129+ 精选模板覆盖电商、社交、海报、头像等场景，一键套用零门槛出图</p>
+    </div>
+  </div>
+  <div class="features-grid">
+    <div class="feature-card reveal reveal-delay-0">
+      <div class="feature-icon" style="background:rgba(16,185,129,0.12)">✨</div>
+      <h3>提示词智能优化</h3>
+      <p>不会写提示词？AI 自动补全画面细节、光影、构图，小白也能出大片级电商图</p>
+    </div>
+    <div class="feature-card reveal reveal-delay-1">
+      <div class="feature-icon" style="background:rgba(59,130,246,0.12)">📱</div>
+      <h3>跨平台支持</h3>
+      <p>macOS / Windows 双平台原生客户端，自动更新，随时随地创作</p>
+    </div>
+    <div class="feature-card reveal reveal-delay-2">
+      <div class="feature-icon" style="background:rgba(245,158,11,0.12)">🤖</div>
+      <h3>模型自定义</h3>
+      <p>自由对接 Gemini 等主流 AI 绘图模型，也可填入自定义模型地址，按需灵活切换</p>
+    </div>
+    <div class="feature-card reveal reveal-delay-3">
+      <div class="feature-icon" style="background:rgba(239,68,68,0.12)">📂</div>
+      <h3>智能相册管理</h3>
+      <p>按月自动归档，按品类/店铺自建文件夹，所有素材一目了然，再也不翻找</p>
+    </div>
+  </div>
+</section>
+
+<!-- 定价 -->
+<section id="pricing">
+  <div class="section-header reveal">
+    <h2>简单透明的价格</h2>
+    <p>3 天免费试用，无需绑定信用卡</p>
+  </div>
+  <div class="pricing-grid">
+    <div class="pricing-card reveal reveal-delay-0">
+      <div class="plan-name">月卡</div>
+      <div class="price-row">
+        <span class="price">&yen;29</span>
+        <span class="period">/月</span>
+      </div>
+      <button class="pricing-btn outline">开始试用</button>
+    </div>
+    <div class="pricing-card featured reveal reveal-delay-1">
+      <div class="badge">热门</div>
+      <div class="plan-name">季卡</div>
+      <div class="price-row">
+        <span class="price">&yen;69</span>
+        <span class="period">/季</span>
+      </div>
+      <div class="save">相比月付省 &yen;18</div>
+      <button class="pricing-btn primary">立即订阅</button>
+    </div>
+    <div class="pricing-card reveal reveal-delay-2">
+      <div class="plan-name">年卡</div>
+      <div class="price-row">
+        <span class="price">&yen;199</span>
+        <span class="period">/年</span>
+      </div>
+      <div class="save">相比月付省 &yen;149</div>
+      <button class="pricing-btn ghost">开始试用</button>
+    </div>
+  </div>
+</section>
+
+<!-- 常见问题 -->
+<section id="faq">
+  <div class="section-header reveal">
+    <h2>常见问题</h2>
+    <p>关于筋斗云AI，你可能想知道的</p>
+  </div>
+  <div class="faq-list">
+    <div class="faq-item reveal">
+      <div class="faq-question" onclick="toggleFaq(this)">
+        <span>需要自己提供 API Key 吗？</span>
+        <span class="arrow">&#x25BE;</span>
+      </div>
+      <div class="faq-answer">是的，筋斗云AI 采用自带 Key 模式。你在 Gemini / OpenAI 等平台申请自己的 API Key，填入软件即可使用。API 费用直接结算给官方，我们不经手、不抽成。</div>
+    </div>
+    <div class="faq-item reveal">
+      <div class="faq-question" onclick="toggleFaq(this)">
+        <span>订阅费包含什么？会不会有隐藏收费？</span>
+        <span class="arrow">&#x25BE;</span>
+      </div>
+      <div class="faq-answer">订阅费仅为软件使用费，包含全部功能（文生图、图生图、批量处理、灵感广场等），不限使用次数。绝无暗扣、不限次数、不额外收费。</div>
+    </div>
+    <div class="faq-item reveal">
+      <div class="faq-question" onclick="toggleFaq(this)">
+        <span>我的数据安全吗？</span>
+        <span class="arrow">&#x25BE;</span>
+      </div>
+      <div class="faq-answer">所有生成的图片保存在你自己的电脑上，不经过我们的服务器。API 请求直连官方服务，我们不存储、不转发你的任何数据。</div>
+    </div>
+    <div class="faq-item reveal">
+      <div class="faq-question" onclick="toggleFaq(this)">
+        <span>支持哪些 AI 模型？</span>
+        <span class="arrow">&#x25BE;</span>
+      </div>
+      <div class="faq-answer">目前支持 Gemini 系列模型（推荐），同时支持自定义模型地址，可对接任何兼容 API。后续会持续接入更多主流模型。</div>
+    </div>
+    <div class="faq-item reveal">
+      <div class="faq-question" onclick="toggleFaq(this)">
+        <span>免费试用有什么限制？</span>
+        <span class="arrow">&#x25BE;</span>
+      </div>
+      <div class="faq-answer">注册即享 3 天免费试用，全功能开放，无需绑定支付方式。试用到期后可选择月卡、季卡或年卡继续使用。</div>
+    </div>
+    <div class="faq-item reveal">
+      <div class="faq-question" onclick="toggleFaq(this)">
+        <span>支持哪些平台？</span>
+        <span class="arrow">&#x25BE;</span>
+      </div>
+      <div class="faq-answer">提供 macOS（Apple Silicon + Intel）和 Windows 原生客户端，支持应用内自动更新。Web 版也在规划中。</div>
+    </div>
+  </div>
+</section>
+
+<!-- 下载 -->
+<div class="download-section" id="download">
+  <div class="section-header reveal">
+    <h2>下载筋斗云AI</h2>
+    <p>macOS 和 Windows 双平台原生客户端，安装即用</p>
+  </div>
+  <div class="download-cards">
+    <div class="download-card reveal reveal-delay-0">
+      <div class="os-icon">🍎</div>
+      <h3>macOS</h3>
+      <p class="os-desc">支持 Apple Silicon 和 Intel 芯片</p>
+      <div class="version-tag">v2.9.2</div>
+      <div class="file-size">49 MB · .dmg</div>
+      <a href="http://pic.3ux.cn/releases/2.9.2/%E7%AD%8B%E6%96%97%E4%BA%91AI_macOS.dmg" class="download-btn mac">下载 macOS 版</a>
+    </div>
+    <div class="download-card reveal reveal-delay-1">
+      <div class="os-icon">🪟</div>
+      <h3>Windows</h3>
+      <p class="os-desc">Windows 10 及以上，64 位系统</p>
+      <div class="version-tag">v2.9.2</div>
+      <div class="file-size">17 MB · .exe</div>
+      <a href="http://pic.3ux.cn/releases/2.9.2/%E7%AD%8B%E6%96%97%E4%BA%91AI_Windows.exe" class="download-btn win">下载 Windows 版</a>
+    </div>
+  </div>
+</div>
+
+<!-- 底部 CTA -->
+<div class="cta-section">
+  <div class="cta-box reveal">
+    <h2>告别高价美工，AI 秒出爆款图</h2>
+    <p>电商主图、产品海报、社交素材，免费试用 3 天，感受 AI 出图的效率</p>
+    <a href="#pricing" class="btn-primary" style="display:inline-block">立即开始 &rarr;</a>
+  </div>
+</div>
+
+<!-- Footer -->
+<footer>
+  <span>&copy; 2026 筋斗云AI. All rights reserved.</span>
+  <div class="footer-links">
+    <a href="#">隐私政策</a>
+    <a href="#">服务条款</a>
+    <a href="#">联系我们</a>
+  </div>
+</footer>
+
+<script>
+// 滚动动效
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+    }
+  });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+// FAQ 手风琴
+function toggleFaq(el) {
+  const answer = el.nextElementSibling;
+  const isOpen = answer.classList.contains('open');
+  // 关闭所有
+  document.querySelectorAll('.faq-answer').forEach(a => a.classList.remove('open'));
+  document.querySelectorAll('.faq-question').forEach(q => q.classList.remove('open'));
+  // 切换当前
+  if (!isOpen) {
+    answer.classList.add('open');
+    el.classList.add('open');
+  }
+}
+
+// 粒子动画
+const canvas = document.getElementById('particles');
+const ctx = canvas.getContext('2d');
+let particles = [];
+
+function resizeCanvas() {
+  const hero = document.querySelector('.hero');
+  canvas.width = hero.offsetWidth;
+  canvas.height = hero.offsetHeight;
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+class Particle {
+  constructor() { this.reset(); }
+  reset() {
+    this.x = Math.random() * canvas.width;
+    this.y = Math.random() * canvas.height;
+    this.size = Math.random() * 2 + 0.5;
+    this.speedX = (Math.random() - 0.5) * 0.3;
+    this.speedY = (Math.random() - 0.5) * 0.3;
+    this.opacity = Math.random() * 0.5 + 0.1;
+    this.color = Math.random() > 0.5 ? '168,85,247' : '99,102,241';
+    this.pulse = Math.random() * Math.PI * 2;
+  }
+  update() {
+    this.x += this.speedX;
+    this.y += this.speedY;
+    this.pulse += 0.02;
+    if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) this.reset();
+  }
+  draw() {
+    const o = this.opacity * (0.7 + 0.3 * Math.sin(this.pulse));
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(${this.color},${o})`;
+    ctx.fill();
+  }
+}
+
+for (let i = 0; i < 80; i++) particles.push(new Particle());
+
+function drawLines() {
+  for (let i = 0; i < particles.length; i++) {
+    for (let j = i + 1; j < particles.length; j++) {
+      const dx = particles[i].x - particles[j].x;
+      const dy = particles[i].y - particles[j].y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < 120) {
+        ctx.beginPath();
+        ctx.moveTo(particles[i].x, particles[i].y);
+        ctx.lineTo(particles[j].x, particles[j].y);
+        ctx.strokeStyle = `rgba(168,85,247,${0.08 * (1 - dist / 120)})`;
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+      }
+    }
+  }
+}
+
+function animateParticles() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  particles.forEach(p => { p.update(); p.draw(); });
+  drawLines();
+  requestAnimationFrame(animateParticles);
+}
+animateParticles();
+
+// 鼠标互动
+document.querySelector('.hero').addEventListener('mousemove', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+  particles.forEach(p => {
+    const dx = mx - p.x;
+    const dy = my - p.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist < 150) {
+      p.speedX -= dx * 0.0003;
+      p.speedY -= dy * 0.0003;
+    }
+  });
+});
+
+// 导航栏滚动效果
+let lastScroll = 0;
+window.addEventListener('scroll', () => {
+  const nav = document.querySelector('nav');
+  const scroll = window.scrollY;
+  if (scroll > 50) {
+    nav.style.background = 'rgba(10,10,10,0.95)';
+  } else {
+    nav.style.background = 'rgba(10,10,10,0.8)';
+  }
+  lastScroll = scroll;
+});
+
+// 数字动画（价格区域进入视口时）
+const priceObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.style.transition = 'transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)';
+      entry.target.style.transform = 'scale(1)';
+    }
+  });
+}, { threshold: 0.3 });
+
+document.querySelectorAll('.pricing-card').forEach(el => {
+  el.style.transform = 'scale(0.95)';
+  priceObserver.observe(el);
+});
+</script>
+
+</body>
+</html>

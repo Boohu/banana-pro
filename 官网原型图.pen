@@ -1,0 +1,1718 @@
+{
+  "version": "2.10",
+  "children": [
+    {
+      "type": "frame",
+      "id": "syjZm",
+      "x": 0,
+      "y": 0,
+      "name": "筋斗云AI 官网",
+      "width": 1440,
+      "fill": "#0A0A0A",
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "ep2My",
+          "name": "导航栏",
+          "width": "fill_container",
+          "padding": [
+            20,
+            80
+          ],
+          "justifyContent": "space_between",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "lafaU",
+              "name": "navLeft",
+              "gap": 10,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "H6YZk",
+                  "name": "navLogo",
+                  "width": 32,
+                  "height": 32,
+                  "fill": {
+                    "type": "image",
+                    "enabled": true,
+                    "url": "./logo.png",
+                    "mode": "fill"
+                  },
+                  "cornerRadius": 8
+                },
+                {
+                  "type": "text",
+                  "id": "6TKeI",
+                  "name": "logo",
+                  "fill": "#FFFFFF",
+                  "content": "筋斗云AI",
+                  "fontFamily": "Inter",
+                  "fontSize": 18,
+                  "fontWeight": "700"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "qkPN3",
+              "name": "navCenter",
+              "gap": 32,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "ZDaAd",
+                  "name": "n1",
+                  "fill": "#A1A1AA",
+                  "content": "功能",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "sziwe",
+                  "name": "n2",
+                  "fill": "#A1A1AA",
+                  "content": "价格",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "LhPE5",
+                  "name": "n3",
+                  "fill": "#A1A1AA",
+                  "content": "模板",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "ZDTeS",
+                  "name": "n4",
+                  "fill": "#A1A1AA",
+                  "content": "下载",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "9spnc",
+              "name": "navCta",
+              "fill": "#A855F7",
+              "cornerRadius": 9999,
+              "padding": [
+                10,
+                24
+              ],
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "uCkCu",
+                  "name": "ctaTxt",
+                  "fill": "#FFFFFF",
+                  "content": "免费试用",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "600"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "B7Cu1",
+          "name": "navLine",
+          "width": "fill_container",
+          "height": 1,
+          "fill": {
+            "type": "gradient",
+            "gradientType": "linear",
+            "enabled": true,
+            "rotation": 90,
+            "size": {
+              "height": 1
+            },
+            "colors": [
+              {
+                "color": "#A855F700",
+                "position": 0
+              },
+              {
+                "color": "#A855F740",
+                "position": 0.5
+              },
+              {
+                "color": "#A855F700",
+                "position": 1
+              }
+            ]
+          }
+        },
+        {
+          "type": "frame",
+          "id": "Y11yr",
+          "name": "Hero",
+          "clip": true,
+          "width": "fill_container",
+          "fill": "#0A0A0A",
+          "layout": "vertical",
+          "gap": 32,
+          "padding": [
+            100,
+            80,
+            80,
+            80
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "694sH",
+              "name": "badge",
+              "fill": "#1A1A1A",
+              "cornerRadius": 9999,
+              "stroke": {
+                "thickness": 1,
+                "fill": "#A855F733"
+              },
+              "gap": 8,
+              "padding": [
+                8,
+                20
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "ellipse",
+                  "id": "QalX1",
+                  "name": "badgeDot",
+                  "fill": "#A855F7",
+                  "width": 8,
+                  "height": 8
+                },
+                {
+                  "type": "text",
+                  "id": "i3nx9",
+                  "name": "badgeTxt",
+                  "fill": "#A1A1AA",
+                  "content": "AI 驱动的图片生成工具",
+                  "fontFamily": "Geist Mono",
+                  "fontSize": 13,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "AJdRQ",
+              "name": "headline",
+              "fill": "#FFFFFF",
+              "textGrowth": "fixed-width",
+              "width": 900,
+              "content": "用 AI 释放你的创造力",
+              "lineHeight": 1.1,
+              "textAlign": "center",
+              "fontFamily": "Inter",
+              "fontSize": 72,
+              "fontWeight": "800"
+            },
+            {
+              "type": "text",
+              "id": "PvI82",
+              "name": "subhead",
+              "fill": "#71717A",
+              "textGrowth": "fixed-width",
+              "width": 640,
+              "content": "输入文字描述，AI 秒级生成高质量图片。支持 4K 分辨率、提示词智能优化、批量处理、一键批量下载。",
+              "lineHeight": 1.6,
+              "textAlign": "center",
+              "fontFamily": "Inter",
+              "fontSize": 18,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "frame",
+              "id": "dOQXp",
+              "name": "btnRow",
+              "gap": 16,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "l4mvu",
+                  "name": "btnPrimary",
+                  "fill": "#A855F7",
+                  "cornerRadius": 12,
+                  "gap": 8,
+                  "padding": [
+                    16,
+                    36
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "AH8mX",
+                      "name": "btnPTxt",
+                      "fill": "#FFFFFF",
+                      "content": "免费试用 3 天",
+                      "fontFamily": "Inter",
+                      "fontSize": 16,
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "MYB5n",
+                  "name": "btnSecondary",
+                  "fill": "#1A1A1A",
+                  "cornerRadius": 12,
+                  "stroke": {
+                    "thickness": 1,
+                    "fill": "#333333"
+                  },
+                  "gap": 8,
+                  "padding": [
+                    16,
+                    36
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "q9muE",
+                      "name": "btnSTxt",
+                      "fill": "#A1A1AA",
+                      "content": "立即下载 →",
+                      "fontFamily": "Inter",
+                      "fontSize": 16,
+                      "fontWeight": "500"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "ellipse",
+              "id": "F5HqX",
+              "layoutPosition": "absolute",
+              "x": 800,
+              "y": -100,
+              "name": "glow1",
+              "fill": {
+                "type": "gradient",
+                "gradientType": "radial",
+                "enabled": true,
+                "rotation": 0,
+                "size": {
+                  "width": 1,
+                  "height": 1
+                },
+                "colors": [
+                  {
+                    "color": "#A855F735",
+                    "position": 0
+                  },
+                  {
+                    "color": "#A855F700",
+                    "position": 1
+                  }
+                ]
+              },
+              "width": 500,
+              "height": 500
+            },
+            {
+              "type": "ellipse",
+              "id": "t4VOH",
+              "layoutPosition": "absolute",
+              "x": 100,
+              "y": 200,
+              "name": "glow2",
+              "fill": {
+                "type": "gradient",
+                "gradientType": "radial",
+                "enabled": true,
+                "rotation": 0,
+                "size": {
+                  "width": 1,
+                  "height": 1
+                },
+                "colors": [
+                  {
+                    "color": "#6366F130",
+                    "position": 0
+                  },
+                  {
+                    "color": "#6366F100",
+                    "position": 1
+                  }
+                ]
+              },
+              "width": 400,
+              "height": 400
+            },
+            {
+              "type": "ellipse",
+              "id": "XuPcr",
+              "layoutPosition": "absolute",
+              "x": 900,
+              "y": 300,
+              "name": "glow3",
+              "opacity": 0.8,
+              "fill": {
+                "type": "gradient",
+                "gradientType": "radial",
+                "enabled": true,
+                "rotation": 0,
+                "size": {
+                  "width": 1,
+                  "height": 1
+                },
+                "colors": [
+                  {
+                    "color": "#EC489915",
+                    "position": 0
+                  },
+                  {
+                    "color": "#EC489900",
+                    "position": 1
+                  }
+                ]
+              },
+              "width": 300,
+              "height": 300
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "km9ez",
+          "name": "功能亮点",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 48,
+          "padding": 80,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "EHFXn",
+              "name": "fTitle",
+              "fill": "#FFFFFF",
+              "content": "为创作者打造的 AI 工具",
+              "textAlign": "center",
+              "fontFamily": "Inter",
+              "fontSize": 40,
+              "fontWeight": "700"
+            },
+            {
+              "type": "text",
+              "id": "dGdFv",
+              "name": "fSub",
+              "fill": "#71717A",
+              "content": "从文生图到批量处理，一站式满足你的所有创作需求",
+              "textAlign": "center",
+              "fontFamily": "Inter",
+              "fontSize": 16,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "frame",
+              "id": "QwT9h",
+              "name": "Bento Grid",
+              "width": "fill_container",
+              "gap": 16,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "3sAp1",
+                  "name": "card1",
+                  "width": "fill_container",
+                  "height": 220,
+                  "fill": "#1A1A1A",
+                  "cornerRadius": 16,
+                  "layout": "vertical",
+                  "gap": 16,
+                  "padding": 32,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "pksVu",
+                      "name": "c1icon",
+                      "width": 48,
+                      "height": 48,
+                      "fill": "#A855F720",
+                      "cornerRadius": 12,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "Na42O",
+                          "name": "c1iTxt",
+                          "content": "🎨",
+                          "fontFamily": "Inter",
+                          "fontSize": 24,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "3GK9f",
+                      "name": "c1t",
+                      "fill": "#FFFFFF",
+                      "content": "AI 文生图 · 4K",
+                      "fontFamily": "Inter",
+                      "fontSize": 20,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "mZuJJ",
+                      "name": "c1d",
+                      "fill": "#71717A",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "输入文字描述，AI 自动生成高质量图片，最高支持 4K 分辨率，多种比例自由选择",
+                      "lineHeight": 1.6,
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "ulNhb",
+                  "name": "card2",
+                  "width": "fill_container",
+                  "height": 220,
+                  "fill": "#1A1A1A",
+                  "cornerRadius": 16,
+                  "layout": "vertical",
+                  "gap": 16,
+                  "padding": 32,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "wKlxs",
+                      "name": "c2icon",
+                      "width": 48,
+                      "height": 48,
+                      "fill": "#A855F720",
+                      "cornerRadius": 12,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "KZjK2",
+                          "name": "c2iTxt",
+                          "content": "🖼️",
+                          "fontFamily": "Inter",
+                          "fontSize": 24,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "KHsJq",
+                      "name": "c2t",
+                      "fill": "#FFFFFF",
+                      "content": "图生图 · 提示词优化",
+                      "fontFamily": "Inter",
+                      "fontSize": 20,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "nZt02",
+                      "name": "c2d",
+                      "fill": "#71717A",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "上传参考图，AI 理解内容后生成全新创意图片，支持提示词智能优化，出图更精准",
+                      "lineHeight": 1.6,
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "tN9vn",
+                  "name": "card3",
+                  "width": "fill_container",
+                  "height": 220,
+                  "fill": "#1A1A1A",
+                  "cornerRadius": 16,
+                  "layout": "vertical",
+                  "gap": 16,
+                  "padding": 32,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "eJ3ap",
+                      "name": "c3icon",
+                      "width": 48,
+                      "height": 48,
+                      "fill": "#A855F720",
+                      "cornerRadius": 12,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "xzQ6f",
+                          "name": "c3iTxt",
+                          "content": "⚡",
+                          "fontFamily": "Inter",
+                          "fontSize": 24,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "Sn3gB",
+                      "name": "c3t",
+                      "fill": "#FFFFFF",
+                      "content": "批量处理 · 批量下载",
+                      "fontFamily": "Inter",
+                      "fontSize": 20,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "wtGCR",
+                      "name": "c3d",
+                      "fill": "#71717A",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "一次导入数百张图片，自动批量处理并一键批量下载，支持自定义输出格式和命名规则",
+                      "lineHeight": 1.6,
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "AtixA",
+                  "name": "card4",
+                  "width": "fill_container",
+                  "height": 220,
+                  "fill": "#1A1A1A",
+                  "cornerRadius": 16,
+                  "layout": "vertical",
+                  "gap": 16,
+                  "padding": 32,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "XSXjN",
+                      "name": "c4icon",
+                      "width": 48,
+                      "height": 48,
+                      "fill": "#A855F720",
+                      "cornerRadius": 12,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "xQuzP",
+                          "name": "c4iTxt",
+                          "content": "💡",
+                          "fontFamily": "Inter",
+                          "fontSize": 24,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "haPxw",
+                      "name": "c4t",
+                      "fill": "#FFFFFF",
+                      "content": "灵感广场",
+                      "fontFamily": "Inter",
+                      "fontSize": 20,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "MYcfA",
+                      "name": "c4d",
+                      "fill": "#71717A",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "129+ 精选 Prompt 模板，一键套用，快速上手 AI 创作",
+                      "lineHeight": 1.6,
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "9U9HG",
+              "name": "功能行2",
+              "width": "fill_container",
+              "gap": 16,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "KsyKk",
+                  "name": "c5",
+                  "width": "fill_container",
+                  "height": 220,
+                  "fill": "#1A1A1A",
+                  "cornerRadius": 16,
+                  "layout": "vertical",
+                  "gap": 16,
+                  "padding": 32,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "JZ5wA",
+                      "name": "c5icon",
+                      "width": 48,
+                      "height": 48,
+                      "fill": "#10B98120",
+                      "cornerRadius": 12,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "SVowo",
+                          "name": "c5iTxt",
+                          "content": "✨",
+                          "fontFamily": "Inter",
+                          "fontSize": 24,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "1cgip",
+                      "name": "c5t",
+                      "fill": "#FFFFFF",
+                      "content": "提示词智能优化",
+                      "fontFamily": "Inter",
+                      "fontSize": 20,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "vvseb",
+                      "name": "c5d",
+                      "fill": "#71717A",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "AI 自动优化你的提示词，让描述更精准，生成效果更出色",
+                      "lineHeight": 1.6,
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "ZVTJC",
+                  "name": "c6",
+                  "width": "fill_container",
+                  "height": 220,
+                  "fill": "#1A1A1A",
+                  "cornerRadius": 16,
+                  "layout": "vertical",
+                  "gap": 16,
+                  "padding": 32,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "G1EZb",
+                      "name": "c6icon",
+                      "width": 48,
+                      "height": 48,
+                      "fill": "#3B82F620",
+                      "cornerRadius": 12,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "QY7na",
+                          "name": "c6iTxt",
+                          "content": "📱",
+                          "fontFamily": "Inter",
+                          "fontSize": 24,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "KNjiK",
+                      "name": "c6t",
+                      "fill": "#FFFFFF",
+                      "content": "跨平台支持",
+                      "fontFamily": "Inter",
+                      "fontSize": 20,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "wdngd",
+                      "name": "c6d",
+                      "fill": "#71717A",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "macOS / Windows 双平台原生客户端，自动更新，随时随地创作",
+                      "lineHeight": 1.6,
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Q95dE",
+                  "name": "c7",
+                  "width": "fill_container",
+                  "height": 220,
+                  "fill": "#1A1A1A",
+                  "cornerRadius": 16,
+                  "layout": "vertical",
+                  "gap": 16,
+                  "padding": 32,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "jxuFp",
+                      "name": "c7icon",
+                      "width": 48,
+                      "height": 48,
+                      "fill": "#F59E0B20",
+                      "cornerRadius": 12,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "kXVKu",
+                          "name": "c7iTxt",
+                          "content": "🤖",
+                          "fontFamily": "Inter",
+                          "fontSize": 24,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "mOEBo",
+                      "name": "c7t",
+                      "fill": "#FFFFFF",
+                      "content": "模型自定义",
+                      "fontFamily": "Inter",
+                      "fontSize": 20,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "5tCH7",
+                      "name": "c7d",
+                      "fill": "#71717A",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "自由对接 Gemini 等主流 AI 绘图模型，也可填入自定义模型地址，按需灵活切换",
+                      "lineHeight": 1.6,
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "LzrB0",
+                  "name": "c8",
+                  "width": "fill_container",
+                  "height": 220,
+                  "fill": "#1A1A1A",
+                  "cornerRadius": 16,
+                  "layout": "vertical",
+                  "gap": 16,
+                  "padding": 32,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "9SYlY",
+                      "name": "c8icon",
+                      "width": 48,
+                      "height": 48,
+                      "fill": "#EF444420",
+                      "cornerRadius": 12,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "V11Hn",
+                          "name": "c8iTxt",
+                          "content": "📂",
+                          "fontFamily": "Inter",
+                          "fontSize": 24,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "kAgQW",
+                      "name": "c8t",
+                      "fill": "#FFFFFF",
+                      "content": "智能相册管理",
+                      "fontFamily": "Inter",
+                      "fontSize": 20,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "t0jU1",
+                      "name": "c8d",
+                      "fill": "#71717A",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "按月自动归档、自定义文件夹、拖拽整理，生成记录永不丢失",
+                      "lineHeight": 1.6,
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "vPf8V",
+          "name": "价格",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 48,
+          "padding": 80,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "78g5U",
+              "name": "pTitle",
+              "fill": "#FFFFFF",
+              "content": "简单透明的价格",
+              "fontFamily": "Inter",
+              "fontSize": 40,
+              "fontWeight": "700"
+            },
+            {
+              "type": "text",
+              "id": "QAJ7D",
+              "name": "pSub",
+              "fill": "#71717A",
+              "content": "3 天免费试用，无需绑定信用卡",
+              "fontFamily": "Inter",
+              "fontSize": 16,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "frame",
+              "id": "leL41",
+              "name": "pGrid",
+              "gap": 24,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "Qw0kq",
+                  "name": "pm",
+                  "width": 320,
+                  "fill": "#1A1A1A",
+                  "cornerRadius": 16,
+                  "layout": "vertical",
+                  "gap": 20,
+                  "padding": 36,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "ZVbTl",
+                      "name": "pmName",
+                      "fill": "#A1A1AA",
+                      "content": "月卡",
+                      "fontFamily": "Inter",
+                      "fontSize": 16,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "U8A0F",
+                      "name": "pmPrice",
+                      "gap": 4,
+                      "alignItems": "end",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "binWR",
+                          "name": "pmP",
+                          "fill": "#FFFFFF",
+                          "content": "¥29",
+                          "fontFamily": "Inter",
+                          "fontSize": 48,
+                          "fontWeight": "800"
+                        },
+                        {
+                          "type": "text",
+                          "id": "Qa23h",
+                          "name": "pmPer",
+                          "fill": "#71717A",
+                          "content": "/月",
+                          "fontFamily": "Inter",
+                          "fontSize": 16,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "sAIY4",
+                      "name": "pmBtn",
+                      "width": "fill_container",
+                      "fill": "#1A1A1A",
+                      "cornerRadius": 12,
+                      "stroke": {
+                        "thickness": 1,
+                        "fill": "#A855F7"
+                      },
+                      "padding": [
+                        14,
+                        0
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "zDpei",
+                          "name": "pmBTxt",
+                          "fill": "#A855F7",
+                          "content": "开始试用",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "oLy2U",
+                  "name": "pq",
+                  "width": 320,
+                  "fill": "#1A1A1A",
+                  "cornerRadius": 16,
+                  "stroke": {
+                    "thickness": 2,
+                    "fill": "#A855F7"
+                  },
+                  "layout": "vertical",
+                  "gap": 20,
+                  "padding": 36,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "7ejgT",
+                      "name": "pqBadge",
+                      "fill": "#A855F720",
+                      "cornerRadius": 9999,
+                      "padding": [
+                        4,
+                        12
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "pKyub",
+                          "name": "pqBTxt",
+                          "fill": "#A855F7",
+                          "content": "热门",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "SvWGD",
+                      "name": "pqName",
+                      "fill": "#A1A1AA",
+                      "content": "季卡",
+                      "fontFamily": "Inter",
+                      "fontSize": 16,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "mBr6g",
+                      "name": "pqPrice",
+                      "gap": 4,
+                      "alignItems": "end",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "ADuUn",
+                          "name": "pqP",
+                          "fill": "#FFFFFF",
+                          "content": "¥69",
+                          "fontFamily": "Inter",
+                          "fontSize": 48,
+                          "fontWeight": "800"
+                        },
+                        {
+                          "type": "text",
+                          "id": "BgKIl",
+                          "name": "pqPer",
+                          "fill": "#71717A",
+                          "content": "/季",
+                          "fontFamily": "Inter",
+                          "fontSize": 16,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "ukLhu",
+                      "name": "pqSave",
+                      "fill": "#A855F7",
+                      "content": "相比月付省 ¥18",
+                      "fontFamily": "Geist Mono",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "kgpgZ",
+                      "name": "pqBtn",
+                      "width": "fill_container",
+                      "fill": "#A855F7",
+                      "cornerRadius": 12,
+                      "padding": [
+                        14,
+                        0
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "hI6lO",
+                          "name": "pqBtnTxt",
+                          "fill": "#FFFFFF",
+                          "content": "立即订阅",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "YDOyX",
+                  "name": "py",
+                  "width": 320,
+                  "fill": "#1A1A1A",
+                  "cornerRadius": 16,
+                  "layout": "vertical",
+                  "gap": 20,
+                  "padding": 36,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "Ycflq",
+                      "name": "pyName",
+                      "fill": "#A1A1AA",
+                      "content": "年卡",
+                      "fontFamily": "Inter",
+                      "fontSize": 16,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "9DY4s",
+                      "name": "pyPrice",
+                      "gap": 4,
+                      "alignItems": "end",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "FWMNv",
+                          "name": "pyP",
+                          "fill": "#FFFFFF",
+                          "content": "¥199",
+                          "fontFamily": "Inter",
+                          "fontSize": 48,
+                          "fontWeight": "800"
+                        },
+                        {
+                          "type": "text",
+                          "id": "uVCaw",
+                          "name": "pyPer",
+                          "fill": "#71717A",
+                          "content": "/年",
+                          "fontFamily": "Inter",
+                          "fontSize": 16,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "xwZdQ",
+                      "name": "pySave",
+                      "fill": "#A855F7",
+                      "content": "相比月付省 ¥149",
+                      "fontFamily": "Geist Mono",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "L2LGr",
+                      "name": "pyBtn",
+                      "width": "fill_container",
+                      "fill": "#1A1A1A",
+                      "cornerRadius": 12,
+                      "stroke": {
+                        "thickness": 1,
+                        "fill": "#333333"
+                      },
+                      "padding": [
+                        14,
+                        0
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "koGlu",
+                          "name": "pyBTxt",
+                          "fill": "#A1A1AA",
+                          "content": "开始试用",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "unGSp",
+          "name": "透明承诺",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 48,
+          "padding": 80,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "WeNRx",
+              "name": "tTitle",
+              "fill": "#FFFFFF",
+              "content": "常见问题",
+              "textAlign": "center",
+              "fontFamily": "Inter",
+              "fontSize": 40,
+              "fontWeight": "700"
+            },
+            {
+              "type": "text",
+              "id": "E9Rac",
+              "name": "tSub",
+              "fill": "#71717A",
+              "textGrowth": "fixed-width",
+              "width": 600,
+              "content": "关于筋斗云AI，你可能想知道的",
+              "textAlign": "center",
+              "fontFamily": "Inter",
+              "fontSize": 16,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "frame",
+              "id": "0wCvy",
+              "name": "faqList",
+              "width": 900,
+              "layout": "vertical",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "STDPk",
+                  "name": "q1",
+                  "width": "fill_container",
+                  "stroke": {
+                    "thickness": {
+                      "bottom": 1
+                    },
+                    "fill": "#222222"
+                  },
+                  "layout": "vertical",
+                  "gap": 8,
+                  "padding": [
+                    24,
+                    0
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "Rxlcw",
+                      "name": "q1t",
+                      "fill": "#FFFFFF",
+                      "content": "需要自己提供 API Key 吗？",
+                      "fontFamily": "Inter",
+                      "fontSize": 17,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "fd5Cz",
+                      "name": "q1a",
+                      "fill": "#71717A",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "是的，筋斗云AI 采用自带 Key 模式。你在 Gemini / OpenAI 等平台申请自己的 API Key，填入软件即可使用。API 费用直接结算给官方，我们不经手、不抽成。",
+                      "lineHeight": 1.7,
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "dvEy0",
+                  "name": "q2",
+                  "width": "fill_container",
+                  "stroke": {
+                    "thickness": {
+                      "bottom": 1
+                    },
+                    "fill": "#222222"
+                  },
+                  "layout": "vertical",
+                  "gap": 8,
+                  "padding": [
+                    24,
+                    0
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "tSeW1",
+                      "name": "q2t",
+                      "fill": "#FFFFFF",
+                      "content": "订阅费包含什么？会不会有隐藏收费？",
+                      "fontFamily": "Inter",
+                      "fontSize": 17,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "afYEm",
+                      "name": "q2a",
+                      "fill": "#71717A",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "订阅费仅为软件使用费，包含全部功能（文生图、图生图、批量处理、灵感广场等），不限使用次数。绝无暗扣、不限次数、不额外收费。",
+                      "lineHeight": 1.7,
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "cfY3D",
+                  "name": "q3",
+                  "width": "fill_container",
+                  "stroke": {
+                    "thickness": {
+                      "bottom": 1
+                    },
+                    "fill": "#222222"
+                  },
+                  "layout": "vertical",
+                  "gap": 8,
+                  "padding": [
+                    24,
+                    0
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "YAzAJ",
+                      "name": "q3t",
+                      "fill": "#FFFFFF",
+                      "content": "我的数据安全吗？",
+                      "fontFamily": "Inter",
+                      "fontSize": 17,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "2dwhy",
+                      "name": "q3a",
+                      "fill": "#71717A",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "所有生成的图片保存在你自己的电脑上，不经过我们的服务器。API 请求直连官方服务，我们不存储、不转发你的任何数据。",
+                      "lineHeight": 1.7,
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "iY0Bn",
+                  "name": "q4",
+                  "width": "fill_container",
+                  "stroke": {
+                    "thickness": {
+                      "bottom": 1
+                    },
+                    "fill": "#222222"
+                  },
+                  "layout": "vertical",
+                  "gap": 8,
+                  "padding": [
+                    24,
+                    0
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "sgMJv",
+                      "name": "q4t",
+                      "fill": "#FFFFFF",
+                      "content": "支持哪些 AI 模型？",
+                      "fontFamily": "Inter",
+                      "fontSize": 17,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "CqjUB",
+                      "name": "q4a",
+                      "fill": "#71717A",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "目前支持 Gemini 系列模型（推荐），同时支持自定义模型地址，可对接任何兼容 API。后续会持续接入更多主流模型。",
+                      "lineHeight": 1.7,
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "bEeMu",
+                  "name": "q5",
+                  "width": "fill_container",
+                  "stroke": {
+                    "thickness": {
+                      "bottom": 1
+                    },
+                    "fill": "#222222"
+                  },
+                  "layout": "vertical",
+                  "gap": 8,
+                  "padding": [
+                    24,
+                    0
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "0aWGQ",
+                      "name": "q5t",
+                      "fill": "#FFFFFF",
+                      "content": "免费试用有什么限制？",
+                      "fontFamily": "Inter",
+                      "fontSize": 17,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "KwlfJ",
+                      "name": "q5a",
+                      "fill": "#71717A",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "注册即享 3 天免费试用，全功能开放，无需绑定支付方式。试用到期后可选择月卡、季卡或年卡继续使用。",
+                      "lineHeight": 1.7,
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "ScE0H",
+                  "name": "q6",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "padding": [
+                    24,
+                    0
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "WRAkO",
+                      "name": "q6t",
+                      "fill": "#FFFFFF",
+                      "content": "支持哪些平台？",
+                      "fontFamily": "Inter",
+                      "fontSize": 17,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "xeNHW",
+                      "name": "q6a",
+                      "fill": "#71717A",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "提供 macOS（Apple Silicon + Intel）和 Windows 原生客户端，支持应用内自动更新。Web 版也在规划中。",
+                      "lineHeight": 1.7,
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "MWT7W",
+          "name": "底部CTA",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 32,
+          "padding": [
+            100,
+            80
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "fYlqq",
+              "name": "ctaBg",
+              "width": "fill_container",
+              "fill": {
+                "type": "gradient",
+                "gradientType": "linear",
+                "enabled": true,
+                "rotation": 135,
+                "size": {
+                  "height": 1
+                },
+                "colors": [
+                  {
+                    "color": "#A855F730",
+                    "position": 0
+                  },
+                  {
+                    "color": "#1A1A1A",
+                    "position": 1
+                  }
+                ]
+              },
+              "cornerRadius": 24,
+              "layout": "vertical",
+              "gap": 24,
+              "padding": [
+                80,
+                60
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "fDQm5",
+                  "name": "ctaH",
+                  "fill": "#FFFFFF",
+                  "content": "准备好开始创作了吗？",
+                  "textAlign": "center",
+                  "fontFamily": "Inter",
+                  "fontSize": 36,
+                  "fontWeight": "700"
+                },
+                {
+                  "type": "text",
+                  "id": "jo0rL",
+                  "name": "ctaP",
+                  "fill": "#A1A1AA",
+                  "content": "免费试用 3 天，体验 AI 驱动的图片生成",
+                  "textAlign": "center",
+                  "fontFamily": "Inter",
+                  "fontSize": 16,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "frame",
+                  "id": "DtGHT",
+                  "name": "ctaBtn",
+                  "fill": "#A855F7",
+                  "cornerRadius": 12,
+                  "padding": [
+                    16,
+                    40
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "zokJg",
+                      "name": "ctaBTxt",
+                      "fill": "#FFFFFF",
+                      "content": "立即开始 →",
+                      "fontFamily": "Inter",
+                      "fontSize": 16,
+                      "fontWeight": "600"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "vZSsz",
+          "name": "Footer",
+          "width": "fill_container",
+          "fill": "#0A0A0A",
+          "padding": [
+            40,
+            80
+          ],
+          "justifyContent": "space_between",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "wpfVv",
+              "name": "fLeft",
+              "fill": "#71717A",
+              "content": "© 2026 筋斗云AI. All rights reserved.",
+              "fontFamily": "Geist Mono",
+              "fontSize": 13,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "frame",
+              "id": "CQkU7",
+              "name": "fRight",
+              "gap": 24,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "WJzEr",
+                  "name": "fLink1",
+                  "fill": "#71717A",
+                  "content": "隐私政策",
+                  "fontFamily": "Inter",
+                  "fontSize": 13,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "uPRhE",
+                  "name": "fLink2",
+                  "fill": "#71717A",
+                  "content": "服务条款",
+                  "fontFamily": "Inter",
+                  "fontSize": 13,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "UTT0t",
+                  "name": "fLink3",
+                  "fill": "#71717A",
+                  "content": "联系我们",
+                  "fontFamily": "Inter",
+                  "fontSize": 13,
+                  "fontWeight": "normal"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

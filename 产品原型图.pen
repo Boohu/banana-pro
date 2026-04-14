@@ -159,7 +159,8 @@
                       "fill": "$fg-secondary",
                       "content": "批量处理",
                       "fontFamily": "Inter",
-                      "fontSize": 14
+                      "fontSize": 14,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -193,7 +194,8 @@
                       "fill": "$fg-secondary",
                       "content": "历史记录",
                       "fontFamily": "Inter",
-                      "fontSize": 14
+                      "fontSize": 14,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -227,7 +229,8 @@
                       "fill": "$fg-secondary",
                       "content": "模板市场",
                       "fontFamily": "Inter",
-                      "fontSize": 14
+                      "fontSize": 14,
+                      "fontWeight": "normal"
                     }
                   ]
                 }
@@ -286,7 +289,8 @@
                       "fill": "$fg-secondary",
                       "content": "设置",
                       "fontFamily": "Inter",
-                      "fontSize": 14
+                      "fontSize": 14,
+                      "fontWeight": "normal"
                     }
                   ]
                 }
@@ -351,7 +355,8 @@
                       "fill": "$fg-muted",
                       "content": "描述你想生成的图片，例如：一只在星空下漫步的猫咪，赛博朋克风格...",
                       "fontFamily": "Inter",
-                      "fontSize": 14
+                      "fontSize": 14,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -620,7 +625,8 @@
                       "fill": "$fg-muted",
                       "content": "添加",
                       "fontFamily": "Inter",
-                      "fontSize": 9
+                      "fontSize": 9,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -631,7 +637,8 @@
                   "fill": "$fg-muted",
                   "content": "3 / 10 张",
                   "fontFamily": "Inter",
-                  "fontSize": 12
+                  "fontSize": 12,
+                  "fontWeight": "normal"
                 }
               ]
             },
@@ -982,7 +989,8 @@
                           "fill": "$fg-muted",
                           "content": "等待生成",
                           "fontFamily": "Inter",
-                          "fontSize": 12
+                          "fontSize": 12,
+                          "fontWeight": "normal"
                         }
                       ]
                     },
@@ -1017,7 +1025,8 @@
                           "fill": "$fg-muted",
                           "content": "等待生成",
                           "fontFamily": "Inter",
-                          "fontSize": 12
+                          "fontSize": 12,
+                          "fontWeight": "normal"
                         }
                       ]
                     },
@@ -1052,7 +1061,8 @@
                           "fill": "$fg-muted",
                           "content": "等待生成",
                           "fontFamily": "Inter",
-                          "fontSize": 12
+                          "fontSize": 12,
+                          "fontWeight": "normal"
                         }
                       ]
                     }
@@ -1105,7 +1115,8 @@
                       "fill": "$fg-secondary",
                       "content": "赛博朋克猫咪",
                       "fontFamily": "Inter",
-                      "fontSize": 12
+                      "fontSize": 12,
+                      "fontWeight": "normal"
                     },
                     {
                       "type": "text",
@@ -1141,7 +1152,8 @@
                       "fill": "$fg-secondary",
                       "content": "极光山景",
                       "fontFamily": "Inter",
-                      "fontSize": 12
+                      "fontSize": 12,
+                      "fontWeight": "normal"
                     },
                     {
                       "type": "text",
@@ -1177,7 +1189,8 @@
                       "fill": "$fg-secondary",
                       "content": "水彩花园",
                       "fontFamily": "Inter",
-                      "fontSize": 12
+                      "fontSize": 12,
+                      "fontWeight": "normal"
                     },
                     {
                       "type": "text",
@@ -1213,7 +1226,8 @@
                       "fill": "$fg-muted",
                       "content": "未来城市",
                       "fontFamily": "Inter",
-                      "fontSize": 12
+                      "fontSize": 12,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -1253,7 +1267,8 @@
                       "fill": "$fg-muted",
                       "content": "展开",
                       "fontFamily": "Inter",
-                      "fontSize": 11
+                      "fontSize": 11,
+                      "fontWeight": "normal"
                     }
                   ]
                 }
@@ -1326,7 +1341,8 @@
                       "fill": "$fg-primary",
                       "content": "Gemini 2.0 Flash",
                       "fontFamily": "Inter",
-                      "fontSize": 14
+                      "fontSize": 14,
+                      "fontWeight": "normal"
                     },
                     {
                       "type": "icon_font",
@@ -1419,7 +1435,8 @@
                           "fill": "$fg-secondary",
                           "content": "16:9",
                           "fontFamily": "Inter",
-                          "fontSize": 13
+                          "fontSize": 13,
+                          "fontWeight": "normal"
                         }
                       ]
                     },
@@ -1444,7 +1461,8 @@
                           "fill": "$fg-secondary",
                           "content": "9:16",
                           "fontFamily": "Inter",
-                          "fontSize": 13
+                          "fontSize": 13,
+                          "fontWeight": "normal"
                         }
                       ]
                     },
@@ -1469,7 +1487,8 @@
                           "fill": "$fg-secondary",
                           "content": "4:3",
                           "fontFamily": "Inter",
-                          "fontSize": 13
+                          "fontSize": 13,
+                          "fontWeight": "normal"
                         }
                       ]
                     }
@@ -1521,7 +1540,8 @@
                       "fill": "$fg-primary",
                       "content": "1024 × 1024",
                       "fontFamily": "Geist Mono",
-                      "fontSize": 14
+                      "fontSize": 14,
+                      "fontWeight": "normal"
                     },
                     {
                       "type": "icon_font",
@@ -1560,7 +1580,8 @@
                       "fill": "$fg-muted",
                       "content": "更高分辨率会消耗更多算力",
                       "fontFamily": "Inter",
-                      "fontSize": 11
+                      "fontSize": 11,
+                      "fontWeight": "normal"
                     }
                   ]
                 }
@@ -1862,7 +1883,8 @@
                       "fill": "$fg-secondary",
                       "content": "AI 绘图",
                       "fontFamily": "Inter",
-                      "fontSize": 14
+                      "fontSize": 14,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -1932,7 +1954,8 @@
                       "fill": "$fg-secondary",
                       "content": "历史记录",
                       "fontFamily": "Inter",
-                      "fontSize": 14
+                      "fontSize": 14,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -1966,7 +1989,8 @@
                       "fill": "$fg-secondary",
                       "content": "模板市场",
                       "fontFamily": "Inter",
-                      "fontSize": 14
+                      "fontSize": 14,
+                      "fontWeight": "normal"
                     }
                   ]
                 }
@@ -2017,7 +2041,8 @@
                   "fill": "$fg-secondary",
                   "content": "设置",
                   "fontFamily": "Inter",
-                  "fontSize": 14
+                  "fontSize": 14,
+                  "fontWeight": "normal"
                 }
               ]
             }
@@ -2093,7 +2118,8 @@
                   "width": "fill_container",
                   "content": "/Users/photos/portraits",
                   "fontFamily": "Geist Mono",
-                  "fontSize": 13
+                  "fontSize": 13,
+                  "fontWeight": "normal"
                 },
                 {
                   "type": "frame",
@@ -2299,7 +2325,8 @@
                               "fill": "$fg-muted",
                               "content": "3024 × 4032 · 4.2 MB",
                               "fontFamily": "Geist Mono",
-                              "fontSize": 11
+                              "fontSize": 11,
+                              "fontWeight": "normal"
                             }
                           ]
                         },
@@ -2433,7 +2460,8 @@
                               "fill": "$fg-muted",
                               "content": "2048 × 2048 · 3.1 MB",
                               "fontFamily": "Geist Mono",
-                              "fontSize": 11
+                              "fontSize": 11,
+                              "fontWeight": "normal"
                             }
                           ]
                         },
@@ -2713,7 +2741,8 @@
                               "fill": "$fg-muted",
                               "content": "1920 × 1080 · 2.8 MB",
                               "fontFamily": "Geist Mono",
-                              "fontSize": 11
+                              "fontSize": 11,
+                              "fontWeight": "normal"
                             }
                           ]
                         },
@@ -2770,7 +2799,8 @@
                               "fill": "$fg-muted",
                               "content": "等待",
                               "fontFamily": "Inter",
-                              "fontSize": 11
+                              "fontSize": 11,
+                              "fontWeight": "normal"
                             }
                           ]
                         }
@@ -2842,7 +2872,8 @@
                               "fill": "$fg-muted",
                               "content": "4096 × 4096 · 6.7 MB",
                               "fontFamily": "Geist Mono",
-                              "fontSize": 11
+                              "fontSize": 11,
+                              "fontWeight": "normal"
                             }
                           ]
                         },
@@ -2899,7 +2930,8 @@
                               "fill": "$fg-muted",
                               "content": "等待",
                               "fontFamily": "Inter",
-                              "fontSize": 11
+                              "fontSize": 11,
+                              "fontWeight": "normal"
                             }
                           ]
                         }
@@ -2986,7 +3018,8 @@
                       "fill": "$fg-muted",
                       "content": "剩余 12 分钟",
                       "fontFamily": "Inter",
-                      "fontSize": 12
+                      "fontSize": 12,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -3104,7 +3137,8 @@
                       "width": "fill_container",
                       "content": "将人物照片转换为吉卜力动画风格，保持原始构图和表情，添加柔和的水彩质感...",
                       "fontFamily": "Inter",
-                      "fontSize": 13
+                      "fontSize": 13,
+                      "fontWeight": "normal"
                     }
                   ]
                 }
@@ -3154,7 +3188,8 @@
                       "fill": "$fg-primary",
                       "content": "Gemini 2.0 Flash",
                       "fontFamily": "Inter",
-                      "fontSize": 14
+                      "fontSize": 14,
+                      "fontWeight": "normal"
                     },
                     {
                       "type": "icon_font",
@@ -3214,7 +3249,8 @@
                       "fill": "$fg-primary",
                       "content": "1024 × 1024",
                       "fontFamily": "Geist Mono",
-                      "fontSize": 14
+                      "fontSize": 14,
+                      "fontWeight": "normal"
                     },
                     {
                       "type": "icon_font",
@@ -3307,7 +3343,8 @@
                           "fill": "$fg-secondary",
                           "content": "JPG",
                           "fontFamily": "Inter",
-                          "fontSize": 13
+                          "fontSize": 13,
+                          "fontWeight": "normal"
                         }
                       ]
                     },
@@ -3332,7 +3369,8 @@
                           "fill": "$fg-secondary",
                           "content": "WebP",
                           "fontFamily": "Inter",
-                          "fontSize": 13
+                          "fontSize": 13,
+                          "fontWeight": "normal"
                         }
                       ]
                     }
@@ -3543,7 +3581,8 @@
                       "width": "fill_container",
                       "content": "/Users/photos/output",
                       "fontFamily": "Geist Mono",
-                      "fontSize": 13
+                      "fontSize": 13,
+                      "fontWeight": "normal"
                     },
                     {
                       "type": "icon_font",
@@ -3603,7 +3642,8 @@
                       "fill": "$fg-primary",
                       "content": "原文件名_edited",
                       "fontFamily": "Geist Mono",
-                      "fontSize": 13
+                      "fontSize": 13,
+                      "fontWeight": "normal"
                     },
                     {
                       "type": "icon_font",
@@ -3624,7 +3664,8 @@
                   "fill": "$fg-muted",
                   "content": "示例: portrait_001_edited.png",
                   "fontFamily": "Geist Mono",
-                  "fontSize": 11
+                  "fontSize": 11,
+                  "fontWeight": "normal"
                 }
               ]
             },
@@ -3917,7 +3958,8 @@
                       "fill": "$fg-secondary",
                       "content": "AI 绘图",
                       "fontFamily": "Inter",
-                      "fontSize": 14
+                      "fontSize": 14,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -3951,7 +3993,8 @@
                       "fill": "$fg-secondary",
                       "content": "批量处理",
                       "fontFamily": "Inter",
-                      "fontSize": 14
+                      "fontSize": 14,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -4021,7 +4064,8 @@
                       "fill": "$fg-secondary",
                       "content": "模板市场",
                       "fontFamily": "Inter",
-                      "fontSize": 14
+                      "fontSize": 14,
+                      "fontWeight": "normal"
                     }
                   ]
                 }
@@ -4072,7 +4116,8 @@
                   "fill": "$fg-secondary",
                   "content": "设置",
                   "fontFamily": "Inter",
-                  "fontSize": 14
+                  "fontSize": 14,
+                  "fontWeight": "normal"
                 }
               ]
             }
@@ -4132,7 +4177,8 @@
                       "fill": "$fg-muted",
                       "content": "搜索历史记录...",
                       "fontFamily": "Inter",
-                      "fontSize": 13
+                      "fontSize": 13,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -4235,7 +4281,8 @@
                       "fill": "$fg-secondary",
                       "content": "人物肖像",
                       "fontFamily": "Inter",
-                      "fontSize": 12
+                      "fontSize": 12,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -4259,7 +4306,8 @@
                       "fill": "$fg-secondary",
                       "content": "风景",
                       "fontFamily": "Inter",
-                      "fontSize": 12
+                      "fontSize": 12,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -4283,7 +4331,8 @@
                       "fill": "$fg-secondary",
                       "content": "赛博朋克",
                       "fontFamily": "Inter",
-                      "fontSize": 12
+                      "fontSize": 12,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -4317,7 +4366,8 @@
                       "fill": "$fg-muted",
                       "content": "新建",
                       "fontFamily": "Inter",
-                      "fontSize": 12
+                      "fontSize": 12,
+                      "fontWeight": "normal"
                     }
                   ]
                 }
@@ -4413,7 +4463,8 @@
                           "fill": "$fg-muted",
                           "content": "2026-04-09 14:32",
                           "fontFamily": "Geist Mono",
-                          "fontSize": 10
+                          "fontSize": 10,
+                          "fontWeight": "normal"
                         }
                       ]
                     }
@@ -4501,7 +4552,8 @@
                           "fill": "$fg-muted",
                           "content": "2026-04-09 14:28",
                           "fontFamily": "Geist Mono",
-                          "fontSize": 10
+                          "fontSize": 10,
+                          "fontWeight": "normal"
                         }
                       ]
                     }
@@ -4585,7 +4637,8 @@
                           "fill": "$fg-muted",
                           "content": "2026-04-08 22:15",
                           "fontFamily": "Geist Mono",
-                          "fontSize": 10
+                          "fontSize": 10,
+                          "fontWeight": "normal"
                         }
                       ]
                     }
@@ -4669,7 +4722,8 @@
                           "fill": "$fg-muted",
                           "content": "2026-04-08 20:43",
                           "fontFamily": "Geist Mono",
-                          "fontSize": 10
+                          "fontSize": 10,
+                          "fontWeight": "normal"
                         }
                       ]
                     }
@@ -4763,7 +4817,8 @@
                           "fill": "$fg-muted",
                           "content": "2026-04-08 18:02",
                           "fontFamily": "Geist Mono",
-                          "fontSize": 10
+                          "fontSize": 10,
+                          "fontWeight": "normal"
                         }
                       ]
                     }
@@ -4847,7 +4902,8 @@
                           "fill": "$fg-muted",
                           "content": "2026-04-07 16:45",
                           "fontFamily": "Geist Mono",
-                          "fontSize": 10
+                          "fontSize": 10,
+                          "fontWeight": "normal"
                         }
                       ]
                     }
@@ -4931,7 +4987,8 @@
                           "fill": "$fg-muted",
                           "content": "2026-04-07 11:20",
                           "fontFamily": "Geist Mono",
-                          "fontSize": 10
+                          "fontSize": 10,
+                          "fontWeight": "normal"
                         }
                       ]
                     }
@@ -5019,7 +5076,8 @@
                           "fill": "$fg-muted",
                           "content": "2026-04-06 09:38",
                           "fontFamily": "Geist Mono",
-                          "fontSize": 10
+                          "fontSize": 10,
+                          "fontWeight": "normal"
                         }
                       ]
                     }
@@ -5153,7 +5211,8 @@
                       "fill": "$fg-secondary",
                       "content": "AI 绘图",
                       "fontFamily": "Inter",
-                      "fontSize": 14
+                      "fontSize": 14,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -5187,7 +5246,8 @@
                       "fill": "$fg-secondary",
                       "content": "批量处理",
                       "fontFamily": "Inter",
-                      "fontSize": 14
+                      "fontSize": 14,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -5221,7 +5281,8 @@
                       "fill": "$fg-secondary",
                       "content": "历史记录",
                       "fontFamily": "Inter",
-                      "fontSize": 14
+                      "fontSize": 14,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -5308,7 +5369,8 @@
                   "fill": "$fg-secondary",
                   "content": "设置",
                   "fontFamily": "Inter",
-                  "fontSize": 14
+                  "fontSize": 14,
+                  "fontWeight": "normal"
                 }
               ]
             }
@@ -5379,7 +5441,8 @@
                       "fill": "$fg-muted",
                       "content": "搜索模板...",
                       "fontFamily": "Inter",
-                      "fontSize": 13
+                      "fontSize": 13,
+                      "fontWeight": "normal"
                     }
                   ]
                 }
@@ -5433,7 +5496,8 @@
                       "fill": "$fg-secondary",
                       "content": "人物",
                       "fontFamily": "Inter",
-                      "fontSize": 13
+                      "fontSize": 13,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -5455,7 +5519,8 @@
                       "fill": "$fg-secondary",
                       "content": "风景",
                       "fontFamily": "Inter",
-                      "fontSize": 13
+                      "fontSize": 13,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -5477,7 +5542,8 @@
                       "fill": "$fg-secondary",
                       "content": "动漫",
                       "fontFamily": "Inter",
-                      "fontSize": 13
+                      "fontSize": 13,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -5499,7 +5565,8 @@
                       "fill": "$fg-secondary",
                       "content": "写实",
                       "fontFamily": "Inter",
-                      "fontSize": 13
+                      "fontSize": 13,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -5521,7 +5588,8 @@
                       "fill": "$fg-secondary",
                       "content": "抽象",
                       "fontFamily": "Inter",
-                      "fontSize": 13
+                      "fontSize": 13,
+                      "fontWeight": "normal"
                     }
                   ]
                 }
@@ -5601,7 +5669,8 @@
                           "fill": "$fg-muted",
                           "content": "宫崎骏动画风格转换",
                           "fontFamily": "Inter",
-                          "fontSize": 11
+                          "fontSize": 11,
+                          "fontWeight": "normal"
                         },
                         {
                           "type": "frame",
@@ -5628,7 +5697,8 @@
                               "fill": "$fg-muted",
                               "content": "12.4k 使用",
                               "fontFamily": "Inter",
-                              "fontSize": 10
+                              "fontSize": 10,
+                              "fontWeight": "normal"
                             }
                           ]
                         }
@@ -5702,7 +5772,8 @@
                           "fill": "$fg-muted",
                           "content": "霓虹灯光科幻城市",
                           "fontFamily": "Inter",
-                          "fontSize": 11
+                          "fontSize": 11,
+                          "fontWeight": "normal"
                         },
                         {
                           "type": "frame",
@@ -5729,7 +5800,8 @@
                               "fill": "$fg-muted",
                               "content": "8.7k 使用",
                               "fontFamily": "Inter",
-                              "fontSize": 10
+                              "fontSize": 10,
+                              "fontWeight": "normal"
                             }
                           ]
                         }
@@ -5803,7 +5875,8 @@
                           "fill": "$fg-muted",
                           "content": "传统中国水墨画风格",
                           "fontFamily": "Inter",
-                          "fontSize": 11
+                          "fontSize": 11,
+                          "fontWeight": "normal"
                         },
                         {
                           "type": "frame",
@@ -5830,7 +5903,8 @@
                               "fill": "$fg-muted",
                               "content": "6.2k 使用",
                               "fontFamily": "Inter",
-                              "fontSize": 10
+                              "fontSize": 10,
+                              "fontWeight": "normal"
                             }
                           ]
                         }
@@ -5904,7 +5978,8 @@
                           "fill": "$fg-muted",
                           "content": "经典欧洲油画笔触",
                           "fontFamily": "Inter",
-                          "fontSize": 11
+                          "fontSize": 11,
+                          "fontWeight": "normal"
                         },
                         {
                           "type": "frame",
@@ -5931,7 +6006,8 @@
                               "fill": "$fg-muted",
                               "content": "5.1k 使用",
                               "fontFamily": "Inter",
-                              "fontSize": 10
+                              "fontSize": 10,
+                              "fontWeight": "normal"
                             }
                           ]
                         }
@@ -6015,7 +6091,8 @@
                           "fill": "$fg-muted",
                           "content": "复古游戏像素画风",
                           "fontFamily": "Inter",
-                          "fontSize": 11
+                          "fontSize": 11,
+                          "fontWeight": "normal"
                         },
                         {
                           "type": "frame",
@@ -6042,7 +6119,8 @@
                               "fill": "$fg-muted",
                               "content": "4.3k 使用",
                               "fontFamily": "Inter",
-                              "fontSize": 10
+                              "fontSize": 10,
+                              "fontWeight": "normal"
                             }
                           ]
                         }
@@ -6120,7 +6198,8 @@
                           "fill": "$fg-muted",
                           "content": "Blender 风格 3D 效果",
                           "fontFamily": "Inter",
-                          "fontSize": 11
+                          "fontSize": 11,
+                          "fontWeight": "normal"
                         },
                         {
                           "type": "frame",
@@ -6147,7 +6226,8 @@
                               "fill": "$fg-muted",
                               "content": "3.8k 使用",
                               "fontFamily": "Inter",
-                              "fontSize": 10
+                              "fontSize": 10,
+                              "fontWeight": "normal"
                             }
                           ]
                         }
@@ -6221,7 +6301,8 @@
                           "fill": "$fg-muted",
                           "content": "简约线条插画风格",
                           "fontFamily": "Inter",
-                          "fontSize": 11
+                          "fontSize": 11,
+                          "fontWeight": "normal"
                         },
                         {
                           "type": "frame",
@@ -6248,7 +6329,8 @@
                               "fill": "$fg-muted",
                               "content": "2.9k 使用",
                               "fontFamily": "Inter",
-                              "fontSize": 10
+                              "fontSize": 10,
+                              "fontWeight": "normal"
                             }
                           ]
                         }
@@ -6326,7 +6408,8 @@
                           "fill": "$fg-muted",
                           "content": "梦幻渐变迷幻艺术",
                           "fontFamily": "Inter",
-                          "fontSize": 11
+                          "fontSize": 11,
+                          "fontWeight": "normal"
                         },
                         {
                           "type": "frame",
@@ -6366,7 +6449,8 @@
                               "fill": "$fg-muted",
                               "content": "1.2k 使用",
                               "fontFamily": "Inter",
-                              "fontSize": 10
+                              "fontSize": 10,
+                              "fontWeight": "normal"
                             }
                           ]
                         }
@@ -6503,7 +6587,8 @@
                       "fill": "$fg-secondary",
                       "content": "AI 绘图",
                       "fontFamily": "Inter",
-                      "fontSize": 14
+                      "fontSize": 14,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -6537,7 +6622,8 @@
                       "fill": "$fg-secondary",
                       "content": "批量处理",
                       "fontFamily": "Inter",
-                      "fontSize": 14
+                      "fontSize": 14,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -6571,7 +6657,8 @@
                       "fill": "$fg-secondary",
                       "content": "历史记录",
                       "fontFamily": "Inter",
-                      "fontSize": 14
+                      "fontSize": 14,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -6658,7 +6745,8 @@
                   "fill": "$fg-secondary",
                   "content": "设置",
                   "fontFamily": "Inter",
-                  "fontSize": 14
+                  "fontSize": 14,
+                  "fontWeight": "normal"
                 }
               ]
             }
@@ -6733,7 +6821,8 @@
                       "fill": "$fg-secondary",
                       "content": "人物",
                       "fontFamily": "Inter",
-                      "fontSize": 13
+                      "fontSize": 13,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -6755,7 +6844,8 @@
                       "fill": "$fg-secondary",
                       "content": "风景",
                       "fontFamily": "Inter",
-                      "fontSize": 13
+                      "fontSize": 13,
+                      "fontWeight": "normal"
                     }
                   ]
                 }
@@ -7090,7 +7180,8 @@
                   "fill": "#FFFFFFAA",
                   "content": "生成示例（点击查看大图）",
                   "fontFamily": "Inter",
-                  "fontSize": 11
+                  "fontSize": 11,
+                  "fontWeight": "normal"
                 }
               ]
             },
@@ -7136,7 +7227,8 @@
                           "fill": "$fg-secondary",
                           "content": "宫崎骏动画风格转换",
                           "fontFamily": "Inter",
-                          "fontSize": 14
+                          "fontSize": 14,
+                          "fontWeight": "normal"
                         }
                       ]
                     },
@@ -7317,7 +7409,8 @@
                           "content": "Transform this image into Studio Ghibli anime style, with soft watercolor textures, warm lighting, expressive eyes, and Hayao Miyazaki's signature aesthetic. Maintain the original composition and facial expressions.",
                           "lineHeight": 1.5,
                           "fontFamily": "Inter",
-                          "fontSize": 13
+                          "fontSize": 13,
+                          "fontWeight": "normal"
                         },
                         {
                           "type": "frame",
@@ -7349,7 +7442,8 @@
                               "fill": "$fg-muted",
                               "content": "复制",
                               "fontFamily": "Inter",
-                              "fontSize": 11
+                              "fontSize": 11,
+                              "fontWeight": "normal"
                             }
                           ]
                         }
@@ -7985,7 +8079,8 @@
                           "fill": "$fg-muted",
                           "content": "清空已完成",
                           "fontFamily": "Inter",
-                          "fontSize": 11
+                          "fontSize": 11,
+                          "fontWeight": "normal"
                         }
                       ]
                     },
@@ -8018,7 +8113,8 @@
                           "fill": "$fg-muted",
                           "content": "收起",
                           "fontFamily": "Inter",
-                          "fontSize": 11
+                          "fontSize": 11,
+                          "fontWeight": "normal"
                         }
                       ]
                     }
@@ -8078,7 +8174,8 @@
                           "fill": "$fg-muted",
                           "content": "14:32",
                           "fontFamily": "Geist Mono",
-                          "fontSize": 11
+                          "fontSize": 11,
+                          "fontWeight": "normal"
                         },
                         {
                           "type": "frame",
@@ -8158,7 +8255,8 @@
                           "fill": "$fg-muted",
                           "content": "14:28",
                           "fontFamily": "Geist Mono",
-                          "fontSize": 11
+                          "fontSize": 11,
+                          "fontWeight": "normal"
                         },
                         {
                           "type": "frame",
@@ -8307,7 +8405,8 @@
                           "width": "fill_container",
                           "content": "未来城市",
                           "fontFamily": "Inter",
-                          "fontSize": 13
+                          "fontSize": 13,
+                          "fontWeight": "normal"
                         },
                         {
                           "type": "text",
@@ -8316,7 +8415,8 @@
                           "fill": "$fg-muted",
                           "content": "排队中",
                           "fontFamily": "Inter",
-                          "fontSize": 11
+                          "fontSize": 11,
+                          "fontWeight": "normal"
                         },
                         {
                           "type": "icon_font",
@@ -8361,7 +8461,8 @@
                           "width": "fill_container",
                           "content": "梦幻森林",
                           "fontFamily": "Inter",
-                          "fontSize": 13
+                          "fontSize": 13,
+                          "fontWeight": "normal"
                         },
                         {
                           "type": "text",
@@ -8370,7 +8471,8 @@
                           "fill": "$fg-muted",
                           "content": "排队中",
                           "fontFamily": "Inter",
-                          "fontSize": 11
+                          "fontSize": 11,
+                          "fontWeight": "normal"
                         },
                         {
                           "type": "icon_font",
@@ -8415,7 +8517,8 @@
                           "width": "fill_container",
                           "content": "星际旅行",
                           "fontFamily": "Inter",
-                          "fontSize": 13
+                          "fontSize": 13,
+                          "fontWeight": "normal"
                         },
                         {
                           "type": "text",
@@ -8424,7 +8527,8 @@
                           "fill": "$fg-muted",
                           "content": "排队中",
                           "fontFamily": "Inter",
-                          "fontSize": 11
+                          "fontSize": 11,
+                          "fontWeight": "normal"
                         },
                         {
                           "type": "icon_font",
@@ -8492,7 +8596,8 @@
                   "fill": "$fg-primary",
                   "content": "Gemini 2.0 Flash",
                   "fontFamily": "Inter",
-                  "fontSize": 14
+                  "fontSize": 14,
+                  "fontWeight": "normal"
                 },
                 {
                   "type": "icon_font",
@@ -8632,7 +8737,8 @@
                       "fill": "$fg-secondary",
                       "content": "AI 绘图",
                       "fontFamily": "Inter",
-                      "fontSize": 14
+                      "fontSize": 14,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -8702,7 +8808,8 @@
                       "fill": "$fg-secondary",
                       "content": "历史记录",
                       "fontFamily": "Inter",
-                      "fontSize": 14
+                      "fontSize": 14,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -8736,7 +8843,8 @@
                       "fill": "$fg-secondary",
                       "content": "模板市场",
                       "fontFamily": "Inter",
-                      "fontSize": 14
+                      "fontSize": 14,
+                      "fontWeight": "normal"
                     }
                   ]
                 }
@@ -8787,7 +8895,8 @@
                   "fill": "$fg-secondary",
                   "content": "设置",
                   "fontFamily": "Inter",
-                  "fontSize": 14
+                  "fontSize": 14,
+                  "fontWeight": "normal"
                 }
               ]
             }
@@ -8950,7 +9059,8 @@
                           "fill": "$fg-secondary",
                           "content": "24 张",
                           "fontFamily": "Inter",
-                          "fontSize": 11
+                          "fontSize": 11,
+                          "fontWeight": "normal"
                         },
                         {
                           "type": "frame",
@@ -9045,7 +9155,8 @@
                           "fill": "$fg-secondary",
                           "content": "24 张",
                           "fontFamily": "Inter",
-                          "fontSize": 11
+                          "fontSize": 11,
+                          "fontWeight": "normal"
                         },
                         {
                           "type": "frame",
@@ -9065,7 +9176,8 @@
                               "fill": "$fg-muted",
                               "content": "排队中",
                               "fontFamily": "Inter",
-                              "fontSize": 10
+                              "fontSize": 10,
+                              "fontWeight": "normal"
                             }
                           ]
                         }
@@ -9132,7 +9244,8 @@
                           "fill": "$fg-secondary",
                           "content": "10 张",
                           "fontFamily": "Inter",
-                          "fontSize": 11
+                          "fontSize": 11,
+                          "fontWeight": "normal"
                         },
                         {
                           "type": "frame",
@@ -9152,7 +9265,8 @@
                               "fill": "$fg-muted",
                               "content": "排队中",
                               "fontFamily": "Inter",
-                              "fontSize": 10
+                              "fontSize": 10,
+                              "fontWeight": "normal"
                             }
                           ]
                         }
@@ -9219,7 +9333,8 @@
                           "fill": "$fg-muted",
                           "content": "8 张",
                           "fontFamily": "Inter",
-                          "fontSize": 11
+                          "fontSize": 11,
+                          "fontWeight": "normal"
                         },
                         {
                           "type": "frame",
@@ -9307,7 +9422,8 @@
                           "fill": "$fg-muted",
                           "content": "16 张",
                           "fontFamily": "Inter",
-                          "fontSize": 11
+                          "fontSize": 11,
+                          "fontWeight": "normal"
                         },
                         {
                           "type": "frame",
@@ -9540,7 +9656,8 @@
                           "fill": "$fg-muted",
                           "content": "3024 × 4032 · 4.2 MB",
                           "fontFamily": "Geist Mono",
-                          "fontSize": 10
+                          "fontSize": 10,
+                          "fontWeight": "normal"
                         }
                       ]
                     },
@@ -9674,7 +9791,8 @@
                           "fill": "$fg-muted",
                           "content": "2048 × 2048 · 3.1 MB",
                           "fontFamily": "Geist Mono",
-                          "fontSize": 10
+                          "fontSize": 10,
+                          "fontWeight": "normal"
                         }
                       ]
                     },
@@ -9944,7 +10062,8 @@
                           "fill": "$fg-secondary",
                           "content": "portrait_004.jpg",
                           "fontFamily": "Inter",
-                          "fontSize": 13
+                          "fontSize": 13,
+                          "fontWeight": "normal"
                         },
                         {
                           "type": "text",
@@ -9953,7 +10072,8 @@
                           "fill": "$fg-muted",
                           "content": "1920 × 1080 · 2.8 MB",
                           "fontFamily": "Geist Mono",
-                          "fontSize": 10
+                          "fontSize": 10,
+                          "fontWeight": "normal"
                         }
                       ]
                     },
@@ -10010,7 +10130,8 @@
                           "fill": "$fg-muted",
                           "content": "等待",
                           "fontFamily": "Inter",
-                          "fontSize": 10
+                          "fontSize": 10,
+                          "fontWeight": "normal"
                         }
                       ]
                     }
@@ -10078,7 +10199,8 @@
                   "fill": "$fg-muted",
                   "content": "剩余 8 分钟",
                   "fontFamily": "Inter",
-                  "fontSize": 11
+                  "fontSize": 11,
+                  "fontWeight": "normal"
                 },
                 {
                   "type": "frame",
@@ -10210,7 +10332,8 @@
                       "content": "将人物照片转换为吉卜力动画风格，保持原始构图和表情，添加柔和水彩质感",
                       "lineHeight": 1.5,
                       "fontFamily": "Inter",
-                      "fontSize": 12
+                      "fontSize": 12,
+                      "fontWeight": "normal"
                     }
                   ]
                 }
@@ -10260,7 +10383,8 @@
                       "fill": "$fg-primary",
                       "content": "Gemini 2.0 Flash",
                       "fontFamily": "Inter",
-                      "fontSize": 13
+                      "fontSize": 13,
+                      "fontWeight": "normal"
                     },
                     {
                       "type": "icon_font",
@@ -10320,7 +10444,8 @@
                       "fill": "$fg-primary",
                       "content": "1024 × 1024",
                       "fontFamily": "Geist Mono",
-                      "fontSize": 13
+                      "fontSize": 13,
+                      "fontWeight": "normal"
                     },
                     {
                       "type": "icon_font",
@@ -10411,7 +10536,8 @@
                           "fill": "$fg-secondary",
                           "content": "JPG",
                           "fontFamily": "Inter",
-                          "fontSize": 12
+                          "fontSize": 12,
+                          "fontWeight": "normal"
                         }
                       ]
                     },
@@ -10435,7 +10561,8 @@
                           "fill": "$fg-secondary",
                           "content": "WebP",
                           "fontFamily": "Inter",
-                          "fontSize": 12
+                          "fontSize": 12,
+                          "fontWeight": "normal"
                         }
                       ]
                     }
@@ -10497,7 +10624,8 @@
                       "width": "fill_container",
                       "content": "/Users/photos/ghibli",
                       "fontFamily": "Geist Mono",
-                      "fontSize": 12
+                      "fontSize": 12,
+                      "fontWeight": "normal"
                     },
                     {
                       "type": "icon_font",
@@ -10557,7 +10685,8 @@
                       "fill": "$fg-primary",
                       "content": "原文件名_ghibli",
                       "fontFamily": "Geist Mono",
-                      "fontSize": 12
+                      "fontSize": 12,
+                      "fontWeight": "normal"
                     },
                     {
                       "type": "icon_font",
@@ -10827,7 +10956,8 @@
                           "fill": "$fg-secondary",
                           "content": "结果大图",
                           "fontFamily": "Inter",
-                          "fontSize": 12
+                          "fontSize": 12,
+                          "fontWeight": "normal"
                         }
                       ]
                     },
@@ -11087,7 +11217,8 @@
                           "fill": "$fg-muted",
                           "content": "文件名",
                           "fontFamily": "Inter",
-                          "fontSize": 12
+                          "fontSize": 12,
+                          "fontWeight": "normal"
                         },
                         {
                           "type": "text",
@@ -11115,7 +11246,8 @@
                           "fill": "$fg-muted",
                           "content": "原始尺寸",
                           "fontFamily": "Inter",
-                          "fontSize": 12
+                          "fontSize": 12,
+                          "fontWeight": "normal"
                         },
                         {
                           "type": "text",
@@ -11143,7 +11275,8 @@
                           "fill": "$fg-muted",
                           "content": "生成尺寸",
                           "fontFamily": "Inter",
-                          "fontSize": 12
+                          "fontSize": 12,
+                          "fontWeight": "normal"
                         },
                         {
                           "type": "text",
@@ -11171,7 +11304,8 @@
                           "fill": "$fg-muted",
                           "content": "模型",
                           "fontFamily": "Inter",
-                          "fontSize": 12
+                          "fontSize": 12,
+                          "fontWeight": "normal"
                         },
                         {
                           "type": "text",
@@ -11199,7 +11333,8 @@
                           "fill": "$fg-muted",
                           "content": "生成时间",
                           "fontFamily": "Inter",
-                          "fontSize": 12
+                          "fontSize": 12,
+                          "fontWeight": "normal"
                         },
                         {
                           "type": "text",
@@ -11343,7 +11478,8 @@
                       "fill": "$fg-muted",
                       "content": "第 1 张为主参考图（白色边框标识）",
                       "fontFamily": "Inter",
-                      "fontSize": 10
+                      "fontSize": 10,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -11396,7 +11532,8 @@
                           "content": "将人物照片转换为吉卜力动画风格，保持原始构图和表情，添加柔和的水彩质感和温暖光线",
                           "lineHeight": 1.5,
                           "fontFamily": "Inter",
-                          "fontSize": 12
+                          "fontSize": 12,
+                          "fontWeight": "normal"
                         }
                       ]
                     }
@@ -11736,7 +11873,8 @@
                       "fill": "$fg-secondary",
                       "content": "AI 绘图",
                       "fontFamily": "Inter",
-                      "fontSize": 14
+                      "fontSize": 14,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -11770,7 +11908,8 @@
                       "fill": "$fg-secondary",
                       "content": "批量处理",
                       "fontFamily": "Inter",
-                      "fontSize": 14
+                      "fontSize": 14,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -11804,7 +11943,8 @@
                       "fill": "$fg-secondary",
                       "content": "历史记录",
                       "fontFamily": "Inter",
-                      "fontSize": 14
+                      "fontSize": 14,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -11838,7 +11978,8 @@
                       "fill": "$fg-secondary",
                       "content": "模板市场",
                       "fontFamily": "Inter",
-                      "fontSize": 14
+                      "fontSize": 14,
+                      "fontWeight": "normal"
                     }
                   ]
                 }
@@ -12001,7 +12142,8 @@
                       "fill": "$fg-secondary",
                       "content": "模型管理",
                       "fontFamily": "Inter",
-                      "fontSize": 14
+                      "fontSize": 14,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -12035,7 +12177,8 @@
                       "fill": "$fg-secondary",
                       "content": "存储设置",
                       "fontFamily": "Inter",
-                      "fontSize": 14
+                      "fontSize": 14,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -12069,7 +12212,8 @@
                       "fill": "$fg-secondary",
                       "content": "语言与外观",
                       "fontFamily": "Inter",
-                      "fontSize": 14
+                      "fontSize": 14,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -12103,7 +12247,8 @@
                       "fill": "$fg-secondary",
                       "content": "关于",
                       "fontFamily": "Inter",
-                      "fontSize": 14
+                      "fontSize": 14,
+                      "fontWeight": "normal"
                     }
                   ]
                 }
@@ -12143,7 +12288,8 @@
                       "fill": "$fg-muted",
                       "content": "配置 AI 模型的 API 密钥和端点地址",
                       "fontFamily": "Inter",
-                      "fontSize": 13
+                      "fontSize": 13,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -12268,7 +12414,8 @@
                                   "width": "fill_container",
                                   "content": "AIza••••••••••••••••••••••Xk",
                                   "fontFamily": "Geist Mono",
-                                  "fontSize": 13
+                                  "fontSize": 13,
+                                  "fontWeight": "normal"
                                 },
                                 {
                                   "type": "icon_font",
@@ -12329,7 +12476,8 @@
                                   "width": "fill_container",
                                   "content": "https://generativelanguage.googleapis.com",
                                   "fontFamily": "Geist Mono",
-                                  "fontSize": 13
+                                  "fontSize": 13,
+                                  "fontWeight": "normal"
                                 }
                               ]
                             }
@@ -12439,7 +12587,8 @@
                               "fill": "$fg-muted",
                               "content": "未配置",
                               "fontFamily": "Inter",
-                              "fontSize": 11
+                              "fontSize": 11,
+                              "fontWeight": "normal"
                             }
                           ]
                         }
@@ -12496,7 +12645,8 @@
                                   "fill": "$fg-muted",
                                   "content": "输入 API Key...",
                                   "fontFamily": "Inter",
-                                  "fontSize": 13
+                                  "fontSize": 13,
+                                  "fontWeight": "normal"
                                 }
                               ]
                             }
@@ -12545,7 +12695,8 @@
                                   "fill": "$fg-muted",
                                   "content": "https://api.openai.com/v1",
                                   "fontFamily": "Geist Mono",
-                                  "fontSize": 13
+                                  "fontSize": 13,
+                                  "fontWeight": "normal"
                                 }
                               ]
                             }
@@ -12657,7 +12808,8 @@
           "fill": "$fg-secondary",
           "content": "AI 驱动的图片生成与批量处理工具",
           "fontFamily": "Inter",
-          "fontSize": 16
+          "fontSize": 16,
+          "fontWeight": "normal"
         },
         {
           "type": "frame",
@@ -12726,7 +12878,8 @@
                   "lineHeight": 1.4,
                   "textAlign": "center",
                   "fontFamily": "Inter",
-                  "fontSize": 13
+                  "fontSize": 13,
+                  "fontWeight": "normal"
                 }
               ]
             },
@@ -12791,7 +12944,8 @@
                   "lineHeight": 1.4,
                   "textAlign": "center",
                   "fontFamily": "Inter",
-                  "fontSize": 13
+                  "fontSize": 13,
+                  "fontWeight": "normal"
                 }
               ]
             },
@@ -12856,7 +13010,8 @@
                   "lineHeight": 1.4,
                   "textAlign": "center",
                   "fontFamily": "Inter",
-                  "fontSize": 13
+                  "fontSize": 13,
+                  "fontWeight": "normal"
                 }
               ]
             }
@@ -12904,7 +13059,8 @@
           "fill": "$fg-muted",
           "content": "跳过，稍后在设置中配置",
           "fontFamily": "Inter",
-          "fontSize": 13
+          "fontSize": 13,
+          "fontWeight": "normal"
         }
       ]
     },
@@ -13095,7 +13251,8 @@
                   "lineHeight": 1.4,
                   "textAlign": "center",
                   "fontFamily": "Inter",
-                  "fontSize": 12
+                  "fontSize": 12,
+                  "fontWeight": "normal"
                 },
                 {
                   "type": "frame",
@@ -13220,7 +13377,8 @@
                       "width": "fill_container",
                       "content": "模型 gemini-3-flash 无可用渠道，请检查模型名称",
                       "fontFamily": "Inter",
-                      "fontSize": 12
+                      "fontSize": 12,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -13317,7 +13475,8 @@
                       "width": "fill_container",
                       "content": "API 积分已用完，请充值后继续使用",
                       "fontFamily": "Inter",
-                      "fontSize": 12
+                      "fontSize": 12,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -13427,7 +13586,8 @@
                       "width": "fill_container",
                       "content": "无法连接到 API 服务器，请检查网络设置",
                       "fontFamily": "Inter",
-                      "fontSize": 12
+                      "fontSize": 12,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -13688,7 +13848,8 @@
               "fill": "#FFFFFFCC",
               "content": "AI 驱动的图片生成与批量处理平台",
               "fontFamily": "Inter",
-              "fontSize": 18
+              "fontSize": 18,
+              "fontWeight": "normal"
             },
             {
               "type": "frame",
@@ -13859,7 +14020,8 @@
               "fill": "$fg-secondary",
               "content": "登录你的账户继续使用",
               "fontFamily": "Inter",
-              "fontSize": 14
+              "fontSize": 14,
+              "fontWeight": "normal"
             },
             {
               "type": "frame",
@@ -13915,7 +14077,8 @@
                       "fill": "$fg-muted",
                       "content": "your@email.com",
                       "fontFamily": "Inter",
-                      "fontSize": 14
+                      "fontSize": 14,
+                      "fontWeight": "normal"
                     }
                   ]
                 }
@@ -13953,7 +14116,8 @@
                       "fill": "$accent",
                       "content": "忘记密码？",
                       "fontFamily": "Inter",
-                      "fontSize": 12
+                      "fontSize": 12,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -13995,7 +14159,8 @@
                       "width": "fill_container",
                       "content": "••••••••",
                       "fontFamily": "Inter",
-                      "fontSize": 14
+                      "fontSize": 14,
+                      "fontWeight": "normal"
                     },
                     {
                       "type": "icon_font",
@@ -14060,7 +14225,8 @@
                   "fill": "$fg-muted",
                   "content": "或",
                   "fontFamily": "Inter",
-                  "fontSize": 12
+                  "fontSize": 12,
+                  "fontWeight": "normal"
                 },
                 {
                   "type": "rectangle",
@@ -14129,7 +14295,8 @@
                   "fill": "$fg-muted",
                   "content": "还没有账户？",
                   "fontFamily": "Inter",
-                  "fontSize": 13
+                  "fontSize": 13,
+                  "fontWeight": "normal"
                 },
                 {
                   "type": "text",
@@ -14146,6 +14313,1668 @@
           ]
         }
       ]
+    },
+    {
+      "type": "frame",
+      "id": "z4T8p",
+      "x": 0,
+      "y": 11760,
+      "name": "AI 绘图 v2（配置左侧）",
+      "clip": true,
+      "width": 1440,
+      "height": 900,
+      "fill": "$surface-primary",
+      "children": [
+        {
+          "type": "frame",
+          "id": "8JSnA",
+          "name": "v2Sidebar",
+          "width": 220,
+          "height": "fill_container",
+          "fill": "$surface-secondary",
+          "layout": "vertical",
+          "gap": 16,
+          "padding": [
+            20,
+            14
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "1K9Ln",
+              "name": "vLogo",
+              "width": "fill_container",
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "X12IC",
+                  "name": "vLogoI",
+                  "width": 30,
+                  "height": 30,
+                  "fill": "$accent",
+                  "cornerRadius": 8,
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "G8SrO",
+                      "name": "vLogoS",
+                      "width": 18,
+                      "height": 18,
+                      "iconFontName": "sparkles",
+                      "iconFontFamily": "lucide",
+                      "fill": "$fg-inverse"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "Qsen4",
+                  "name": "vLogoT",
+                  "fill": "$fg-primary",
+                  "content": "Banana AI",
+                  "fontFamily": "Inter",
+                  "fontSize": 16,
+                  "fontWeight": "700"
+                }
+              ]
+            },
+            {
+              "type": "rectangle",
+              "id": "lfPs8",
+              "name": "vDiv",
+              "fill": "$border",
+              "width": "fill_container",
+              "height": 1
+            },
+            {
+              "type": "text",
+              "id": "FZ53S",
+              "name": "vNavL",
+              "fill": "$fg-muted",
+              "content": "工具",
+              "fontFamily": "Inter",
+              "fontSize": 11,
+              "fontWeight": "500"
+            },
+            {
+              "type": "frame",
+              "id": "EU3aR",
+              "name": "vNavG",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 3,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "vP9Ev",
+                  "name": "vN1",
+                  "width": "fill_container",
+                  "fill": "$accent-subtle",
+                  "cornerRadius": 8,
+                  "gap": 9,
+                  "padding": [
+                    9,
+                    12
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "OUB7E",
+                      "name": "vN1I",
+                      "width": 17,
+                      "height": 17,
+                      "iconFontName": "image",
+                      "iconFontFamily": "lucide",
+                      "fill": "$accent"
+                    },
+                    {
+                      "type": "text",
+                      "id": "s0stj",
+                      "name": "vN1T",
+                      "fill": "$accent",
+                      "content": "AI 绘图",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "6mjMI",
+                  "name": "vN2",
+                  "width": "fill_container",
+                  "cornerRadius": 8,
+                  "gap": 9,
+                  "padding": [
+                    9,
+                    12
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "oslnT",
+                      "name": "vN2I",
+                      "width": 17,
+                      "height": 17,
+                      "iconFontName": "layers",
+                      "iconFontFamily": "lucide",
+                      "fill": "$fg-muted"
+                    },
+                    {
+                      "type": "text",
+                      "id": "kYda7",
+                      "name": "vN2T",
+                      "fill": "$fg-secondary",
+                      "content": "批量处理",
+                      "fontFamily": "Inter",
+                      "fontSize": 13
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "dUX9b",
+                  "name": "vN3",
+                  "width": "fill_container",
+                  "cornerRadius": 8,
+                  "gap": 9,
+                  "padding": [
+                    9,
+                    12
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "3j8we",
+                      "name": "vN3I",
+                      "width": 17,
+                      "height": 17,
+                      "iconFontName": "folder-open",
+                      "iconFontFamily": "lucide",
+                      "fill": "$fg-muted"
+                    },
+                    {
+                      "type": "text",
+                      "id": "jl2pz",
+                      "name": "vN3T",
+                      "fill": "$fg-secondary",
+                      "content": "历史记录",
+                      "fontFamily": "Inter",
+                      "fontSize": 13
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Yf3Ds",
+                  "name": "vN4",
+                  "width": "fill_container",
+                  "cornerRadius": 8,
+                  "gap": 9,
+                  "padding": [
+                    9,
+                    12
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "EHqwh",
+                      "name": "vN4I",
+                      "width": 17,
+                      "height": 17,
+                      "iconFontName": "layout-template",
+                      "iconFontFamily": "lucide",
+                      "fill": "$fg-muted"
+                    },
+                    {
+                      "type": "text",
+                      "id": "L6M0i",
+                      "name": "vN4T",
+                      "fill": "$fg-secondary",
+                      "content": "模板市场",
+                      "fontFamily": "Inter",
+                      "fontSize": 13
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "Xdh96",
+              "name": "vSpacer",
+              "width": "fill_container",
+              "height": "fill_container"
+            },
+            {
+              "type": "rectangle",
+              "id": "qejB6",
+              "name": "vDiv2",
+              "fill": "$border",
+              "width": "fill_container",
+              "height": 1
+            },
+            {
+              "type": "frame",
+              "id": "aP1xn",
+              "name": "vSet",
+              "width": "fill_container",
+              "cornerRadius": 8,
+              "gap": 9,
+              "padding": [
+                9,
+                12
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon_font",
+                  "id": "bd8vW",
+                  "name": "vSetI",
+                  "width": 17,
+                  "height": 17,
+                  "iconFontName": "settings",
+                  "iconFontFamily": "lucide",
+                  "fill": "$fg-muted"
+                },
+                {
+                  "type": "text",
+                  "id": "FyyLM",
+                  "name": "vSetT",
+                  "fill": "$fg-secondary",
+                  "content": "设置",
+                  "fontFamily": "Inter",
+                  "fontSize": 13
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "Y4iRB",
+          "name": "v2Config",
+          "width": 320,
+          "height": "fill_container",
+          "fill": "$surface-secondary",
+          "stroke": {
+            "align": "inside",
+            "thickness": {
+              "right": 1,
+              "left": 1
+            },
+            "fill": "$border"
+          },
+          "layout": "vertical",
+          "gap": 14,
+          "padding": [
+            20,
+            18
+          ],
+          "children": [
+            {
+              "type": "text",
+              "id": "Na5JX",
+              "name": "cfTitle",
+              "fill": "$fg-primary",
+              "content": "生成配置",
+              "fontFamily": "Inter",
+              "fontSize": 15,
+              "fontWeight": "600"
+            },
+            {
+              "type": "frame",
+              "id": "Sa7Aa",
+              "name": "cfPromptSec",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 6,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "f4Gtr",
+                  "name": "cfPromptLabel",
+                  "fill": "$fg-secondary",
+                  "content": "提示词",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "frame",
+                  "id": "PoaHu",
+                  "name": "cfPromptBox",
+                  "width": "fill_container",
+                  "height": 110,
+                  "fill": "$surface-tertiary",
+                  "cornerRadius": 10,
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": 1,
+                    "fill": "$border"
+                  },
+                  "layout": "vertical",
+                  "padding": [
+                    12,
+                    14
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "KmYgu",
+                      "name": "cfPromptText",
+                      "fill": "$fg-muted",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "描述你想要生成的图片，例如：一只在星空下漫步的猫咪，赛博朋克风格，霓虹灯光...",
+                      "lineHeight": 1.5,
+                      "fontFamily": "Inter",
+                      "fontSize": 13
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "vtsbQ",
+              "name": "cfRefSec",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "RQreQ",
+                  "name": "cfRefLabel",
+                  "width": "fill_container",
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "iUYQ1",
+                      "name": "cfRefLabelT",
+                      "fill": "$fg-secondary",
+                      "content": "参考图",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "text",
+                      "id": "UrFnO",
+                      "name": "cfRefCount",
+                      "fill": "$fg-muted",
+                      "content": "3 / 10",
+                      "fontFamily": "Inter",
+                      "fontSize": 11
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "4lL8s",
+                  "name": "cfRefRow",
+                  "width": "fill_container",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "T1HfK",
+                      "name": "cfRef1",
+                      "clip": true,
+                      "width": "fill_container",
+                      "height": 64,
+                      "fill": {
+                        "type": "gradient",
+                        "gradientType": "linear",
+                        "enabled": true,
+                        "rotation": 45,
+                        "size": {
+                          "height": 1
+                        },
+                        "colors": [
+                          {
+                            "color": "#F59E0BFF",
+                            "position": 0
+                          },
+                          {
+                            "color": "#EF4444FF",
+                            "position": 1
+                          }
+                        ]
+                      },
+                      "cornerRadius": 8,
+                      "layout": "none",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "ACpKr",
+                          "x": 50,
+                          "y": 2,
+                          "name": "cfRef1X",
+                          "width": 14,
+                          "height": 14,
+                          "fill": "#000000AA",
+                          "cornerRadius": 9999,
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "TfKDY",
+                              "name": "cfRef1XI",
+                              "width": 9,
+                              "height": 9,
+                              "iconFontName": "x",
+                              "iconFontFamily": "lucide",
+                              "fill": "$fg-primary"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "UtH9P",
+                      "name": "cfRef2",
+                      "width": "fill_container",
+                      "height": 64,
+                      "fill": {
+                        "type": "gradient",
+                        "gradientType": "linear",
+                        "enabled": true,
+                        "rotation": 135,
+                        "size": {
+                          "height": 1
+                        },
+                        "colors": [
+                          {
+                            "color": "#06B6D4FF",
+                            "position": 0
+                          },
+                          {
+                            "color": "#8B5CF6FF",
+                            "position": 1
+                          }
+                        ]
+                      },
+                      "cornerRadius": 8
+                    },
+                    {
+                      "type": "frame",
+                      "id": "Ke0LQ",
+                      "name": "cfRef3",
+                      "width": "fill_container",
+                      "height": 64,
+                      "fill": {
+                        "type": "gradient",
+                        "gradientType": "linear",
+                        "enabled": true,
+                        "rotation": 200,
+                        "size": {
+                          "height": 1
+                        },
+                        "colors": [
+                          {
+                            "color": "#EC4899FF",
+                            "position": 0
+                          },
+                          {
+                            "color": "#F97316FF",
+                            "position": 1
+                          }
+                        ]
+                      },
+                      "cornerRadius": 8
+                    },
+                    {
+                      "type": "frame",
+                      "id": "S82jE",
+                      "name": "cfRefAdd",
+                      "width": "fill_container",
+                      "height": 64,
+                      "fill": "$surface-tertiary",
+                      "cornerRadius": 8,
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1,
+                        "fill": "$border"
+                      },
+                      "layout": "vertical",
+                      "gap": 2,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "4SZqA",
+                          "name": "cfRefAddI",
+                          "width": 16,
+                          "height": 16,
+                          "iconFontName": "plus",
+                          "iconFontFamily": "lucide",
+                          "fill": "$fg-muted"
+                        },
+                        {
+                          "type": "text",
+                          "id": "NwYv6",
+                          "name": "cfRefAddT",
+                          "fill": "$fg-muted",
+                          "content": "添加",
+                          "fontFamily": "Inter",
+                          "fontSize": 9
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "rectangle",
+              "id": "t3DkA",
+              "name": "cfDiv1",
+              "fill": "$border",
+              "width": "fill_container",
+              "height": 1
+            },
+            {
+              "type": "frame",
+              "id": "g76ZK",
+              "name": "cfModelSec",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 6,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "rrfed",
+                  "name": "cfModelL",
+                  "fill": "$fg-secondary",
+                  "content": "模型",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "frame",
+                  "id": "8U4HR",
+                  "name": "cfModelSel",
+                  "width": "fill_container",
+                  "fill": "$surface-tertiary",
+                  "cornerRadius": 10,
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": 1,
+                    "fill": "$border"
+                  },
+                  "padding": [
+                    9,
+                    12
+                  ],
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "SU0Cy",
+                      "name": "cfModelV",
+                      "fill": "$fg-primary",
+                      "content": "Gemini 2.0 Flash",
+                      "fontFamily": "Inter",
+                      "fontSize": 13
+                    },
+                    {
+                      "type": "icon_font",
+                      "id": "BVUbp",
+                      "name": "cfModelC",
+                      "width": 14,
+                      "height": 14,
+                      "iconFontName": "chevron-down",
+                      "iconFontFamily": "lucide",
+                      "fill": "$fg-muted"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "LqK8M",
+              "name": "cfSizeSec",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 6,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "6t2y4",
+                  "name": "cfSizeL",
+                  "fill": "$fg-secondary",
+                  "content": "尺寸",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "frame",
+                  "id": "LxzDg",
+                  "name": "cfSizeRow",
+                  "width": "fill_container",
+                  "gap": 6,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "S3bxo",
+                      "name": "cfS1",
+                      "width": "fill_container",
+                      "fill": "$accent-subtle",
+                      "cornerRadius": 8,
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1,
+                        "fill": "$accent"
+                      },
+                      "padding": [
+                        7,
+                        0
+                      ],
+                      "justifyContent": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "UDF7d",
+                          "name": "cfS1T",
+                          "fill": "$accent",
+                          "content": "1:1",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "500"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "es9E8",
+                      "name": "cfS2",
+                      "width": "fill_container",
+                      "fill": "$surface-tertiary",
+                      "cornerRadius": 8,
+                      "padding": [
+                        7,
+                        0
+                      ],
+                      "justifyContent": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "1oeCC",
+                          "name": "cfS2T",
+                          "fill": "$fg-secondary",
+                          "content": "16:9",
+                          "fontFamily": "Inter",
+                          "fontSize": 12
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "rwQZb",
+                      "name": "cfS3",
+                      "width": "fill_container",
+                      "fill": "$surface-tertiary",
+                      "cornerRadius": 8,
+                      "padding": [
+                        7,
+                        0
+                      ],
+                      "justifyContent": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "2btwI",
+                          "name": "cfS3T",
+                          "fill": "$fg-secondary",
+                          "content": "9:16",
+                          "fontFamily": "Inter",
+                          "fontSize": 12
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "0CKyx",
+                      "name": "cfS4",
+                      "width": "fill_container",
+                      "fill": "$surface-tertiary",
+                      "cornerRadius": 8,
+                      "padding": [
+                        7,
+                        0
+                      ],
+                      "justifyContent": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "pbVuj",
+                          "name": "cfS4T",
+                          "fill": "$fg-secondary",
+                          "content": "4:3",
+                          "fontFamily": "Inter",
+                          "fontSize": 12
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "Afbcz",
+              "name": "cfResSec",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 6,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "XwH2d",
+                  "name": "cfResL",
+                  "fill": "$fg-secondary",
+                  "content": "分辨率",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "frame",
+                  "id": "agOUo",
+                  "name": "cfResSel",
+                  "width": "fill_container",
+                  "fill": "$surface-tertiary",
+                  "cornerRadius": 10,
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": 1,
+                    "fill": "$border"
+                  },
+                  "padding": [
+                    9,
+                    12
+                  ],
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "MGHBi",
+                      "name": "cfResV",
+                      "fill": "$fg-primary",
+                      "content": "1024 × 1024",
+                      "fontFamily": "Geist Mono",
+                      "fontSize": 13
+                    },
+                    {
+                      "type": "icon_font",
+                      "id": "jZCBs",
+                      "name": "cfResC",
+                      "width": 14,
+                      "height": 14,
+                      "iconFontName": "chevron-down",
+                      "iconFontFamily": "lucide",
+                      "fill": "$fg-muted"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "2f1BJ",
+              "name": "cfBatchSec",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 6,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "ZDUBP",
+                  "name": "cfBatchH",
+                  "width": "fill_container",
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "30O9C",
+                      "name": "cfBatchL",
+                      "fill": "$fg-secondary",
+                      "content": "批量数量",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "text",
+                      "id": "Zpj7V",
+                      "name": "cfBatchV",
+                      "fill": "$accent",
+                      "content": "4",
+                      "fontFamily": "Geist Mono",
+                      "fontSize": 12,
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "dtFTh",
+                  "name": "cfBatchBar",
+                  "width": "fill_container",
+                  "height": 5,
+                  "fill": "$surface-tertiary",
+                  "cornerRadius": 9999,
+                  "children": [
+                    {
+                      "type": "rectangle",
+                      "cornerRadius": 9999,
+                      "id": "tCt4N",
+                      "name": "cfBatchFill",
+                      "fill": "$accent",
+                      "width": 112,
+                      "height": 5
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "n2IFt",
+                  "name": "cfBatchRange",
+                  "width": "fill_container",
+                  "justifyContent": "space_between",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "LoEaa",
+                      "name": "cfBatchMin",
+                      "fill": "$fg-muted",
+                      "content": "1",
+                      "fontFamily": "Geist Mono",
+                      "fontSize": 10,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "b0csg",
+                      "name": "cfBatchMax",
+                      "fill": "$fg-muted",
+                      "content": "10",
+                      "fontFamily": "Geist Mono",
+                      "fontSize": 10,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "rectangle",
+              "id": "JkQfO",
+              "name": "cfDiv2",
+              "fill": "$border",
+              "width": "fill_container",
+              "height": 1
+            },
+            {
+              "type": "frame",
+              "id": "tp04H",
+              "name": "cfOpt",
+              "width": "fill_container",
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "mHWd5",
+                  "name": "cfOptL",
+                  "fill": "$fg-secondary",
+                  "content": "提示词优化",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "frame",
+                  "id": "656IP",
+                  "name": "cfOptBg",
+                  "width": 38,
+                  "height": 20,
+                  "fill": "$accent",
+                  "cornerRadius": 9999,
+                  "padding": 2,
+                  "justifyContent": "end",
+                  "children": [
+                    {
+                      "type": "ellipse",
+                      "id": "uFEVR",
+                      "name": "cfOptDot",
+                      "fill": "$surface-inverse",
+                      "width": 16,
+                      "height": 16
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "mtZg2",
+              "name": "cfNeg",
+              "width": "fill_container",
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "gKMdP",
+                  "name": "cfNegL",
+                  "fill": "$fg-secondary",
+                  "content": "反向提示词",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "frame",
+                  "id": "sL3IP",
+                  "name": "cfNegBg",
+                  "width": 38,
+                  "height": 20,
+                  "fill": "$surface-tertiary",
+                  "cornerRadius": 9999,
+                  "padding": 2,
+                  "children": [
+                    {
+                      "type": "ellipse",
+                      "id": "QmlPS",
+                      "name": "cfNegDot",
+                      "fill": "$fg-muted",
+                      "width": 16,
+                      "height": 16
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "vISTU",
+              "name": "cfSpacer",
+              "width": "fill_container",
+              "height": "fill_container"
+            },
+            {
+              "type": "frame",
+              "id": "3MAhf",
+              "name": "cfGenBtn",
+              "width": "fill_container",
+              "fill": "$accent",
+              "cornerRadius": 10,
+              "gap": 8,
+              "padding": [
+                12,
+                0
+              ],
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon_font",
+                  "id": "W6vlB",
+                  "name": "cfGenI",
+                  "width": 17,
+                  "height": 17,
+                  "iconFontName": "wand",
+                  "iconFontFamily": "lucide",
+                  "fill": "$surface-inverse"
+                },
+                {
+                  "type": "text",
+                  "id": "85y6Z",
+                  "name": "cfGenT",
+                  "fill": "$surface-inverse",
+                  "content": "开始生成",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "600"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "kOIVz",
+          "name": "v2Main",
+          "width": "fill_container",
+          "height": "fill_container",
+          "layout": "vertical",
+          "children": [
+            {
+              "type": "frame",
+              "id": "IJ79x",
+              "name": "mHeader",
+              "width": "fill_container",
+              "padding": [
+                16,
+                24,
+                12,
+                24
+              ],
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "N1596",
+                  "name": "mTitle",
+                  "fill": "$fg-primary",
+                  "content": "生成结果",
+                  "fontFamily": "Inter",
+                  "fontSize": 16,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "frame",
+                  "id": "GMQDZ",
+                  "name": "mActions",
+                  "gap": 8,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "5Gde9",
+                      "name": "mViewBtn1",
+                      "fill": "$accent-subtle",
+                      "cornerRadius": 6,
+                      "padding": [
+                        5,
+                        10
+                      ],
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "pk5F4",
+                          "name": "mViewI1",
+                          "width": 15,
+                          "height": 15,
+                          "iconFontName": "grid-3x3",
+                          "iconFontFamily": "lucide",
+                          "fill": "$accent"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "1Nhya",
+                      "name": "mViewBtn2",
+                      "cornerRadius": 6,
+                      "padding": [
+                        5,
+                        10
+                      ],
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "qlOQK",
+                          "name": "mViewI2",
+                          "width": 15,
+                          "height": 15,
+                          "iconFontName": "list",
+                          "iconFontFamily": "lucide",
+                          "fill": "$fg-muted"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "0zpuZ",
+              "name": "mGrid",
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "vertical",
+              "gap": 16,
+              "padding": [
+                0,
+                24,
+                24,
+                24
+              ],
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "mcDem",
+                  "name": "mRow1",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "gap": 16,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "aSPsH",
+                      "name": "mc1",
+                      "clip": true,
+                      "width": "fill_container",
+                      "height": "fill_container",
+                      "fill": {
+                        "type": "gradient",
+                        "gradientType": "linear",
+                        "enabled": true,
+                        "rotation": 135,
+                        "size": {
+                          "height": 1
+                        },
+                        "colors": [
+                          {
+                            "color": "#7C3AEDFF",
+                            "position": 0
+                          },
+                          {
+                            "color": "#2563EBFF",
+                            "position": 0.5
+                          },
+                          {
+                            "color": "#06B6D4FF",
+                            "position": 1
+                          }
+                        ]
+                      },
+                      "cornerRadius": 16,
+                      "layout": "vertical",
+                      "justifyContent": "end",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "PY9xq",
+                          "name": "mc1ov",
+                          "width": "fill_container",
+                          "fill": {
+                            "type": "gradient",
+                            "gradientType": "linear",
+                            "enabled": true,
+                            "rotation": 0,
+                            "size": {
+                              "height": 1
+                            },
+                            "colors": [
+                              {
+                                "color": "#00000000",
+                                "position": 0
+                              },
+                              {
+                                "color": "#000000CC",
+                                "position": 1
+                              }
+                            ]
+                          },
+                          "padding": [
+                            10,
+                            12
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "UX8XD",
+                              "name": "mc1t",
+                              "fill": "$fg-primary",
+                              "content": "赛博朋克猫咪",
+                              "fontFamily": "Inter",
+                              "fontSize": 12,
+                              "fontWeight": "500"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "zkDtI",
+                      "name": "mc2",
+                      "clip": true,
+                      "width": "fill_container",
+                      "height": "fill_container",
+                      "fill": {
+                        "type": "gradient",
+                        "gradientType": "linear",
+                        "enabled": true,
+                        "rotation": 200,
+                        "size": {
+                          "height": 1
+                        },
+                        "colors": [
+                          {
+                            "color": "#059669FF",
+                            "position": 0
+                          },
+                          {
+                            "color": "#7C3AEDFF",
+                            "position": 0.6
+                          },
+                          {
+                            "color": "#1E1B4BFF",
+                            "position": 1
+                          }
+                        ]
+                      },
+                      "cornerRadius": 16,
+                      "layout": "vertical",
+                      "justifyContent": "end",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "ndnF7",
+                          "name": "mc2ov",
+                          "width": "fill_container",
+                          "fill": {
+                            "type": "gradient",
+                            "gradientType": "linear",
+                            "enabled": true,
+                            "rotation": 0,
+                            "size": {
+                              "height": 1
+                            },
+                            "colors": [
+                              {
+                                "color": "#00000000",
+                                "position": 0
+                              },
+                              {
+                                "color": "#000000CC",
+                                "position": 1
+                              }
+                            ]
+                          },
+                          "padding": [
+                            10,
+                            12
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "924I4",
+                              "name": "mc2t",
+                              "fill": "$fg-primary",
+                              "content": "极光山景",
+                              "fontFamily": "Inter",
+                              "fontSize": 12,
+                              "fontWeight": "500"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "V0nTr",
+                      "name": "mc3",
+                      "width": "fill_container",
+                      "height": "fill_container",
+                      "fill": "$surface-secondary",
+                      "cornerRadius": 16,
+                      "layout": "vertical",
+                      "gap": 8,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "3TX65",
+                          "name": "mc3I",
+                          "width": 26,
+                          "height": 26,
+                          "iconFontName": "loader",
+                          "iconFontFamily": "lucide",
+                          "fill": "$accent"
+                        },
+                        {
+                          "type": "text",
+                          "id": "ZwfLI",
+                          "name": "mc3T",
+                          "fill": "$fg-secondary",
+                          "content": "生成中... 42%",
+                          "fontFamily": "Inter",
+                          "fontSize": 11,
+                          "fontWeight": "500"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "NhAWt",
+                          "name": "mc3Bar",
+                          "width": 100,
+                          "height": 4,
+                          "fill": "$surface-tertiary",
+                          "cornerRadius": 9999,
+                          "children": [
+                            {
+                              "type": "rectangle",
+                              "cornerRadius": 9999,
+                              "id": "0Io3D",
+                              "name": "mc3Fill",
+                              "fill": "$accent",
+                              "width": 42,
+                              "height": 4
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "WeeV1",
+                  "name": "mRow2",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "gap": 16,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "Dgl2a",
+                      "name": "mc4",
+                      "width": "fill_container",
+                      "height": "fill_container",
+                      "fill": "$surface-secondary",
+                      "cornerRadius": 16,
+                      "layout": "vertical",
+                      "gap": 8,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "0bCuv",
+                          "name": "mc4I",
+                          "width": 30,
+                          "height": 30,
+                          "iconFontName": "image-plus",
+                          "iconFontFamily": "lucide",
+                          "fill": "$fg-muted"
+                        },
+                        {
+                          "type": "text",
+                          "id": "tCwhQ",
+                          "name": "mc4T",
+                          "fill": "$fg-muted",
+                          "content": "等待生成",
+                          "fontFamily": "Inter",
+                          "fontSize": 11
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "zezGV",
+                      "name": "mc5",
+                      "width": "fill_container",
+                      "height": "fill_container",
+                      "fill": "$surface-secondary",
+                      "cornerRadius": 16,
+                      "layout": "vertical",
+                      "gap": 8,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "dyiWK",
+                          "name": "mc5I",
+                          "width": 30,
+                          "height": 30,
+                          "iconFontName": "image-plus",
+                          "iconFontFamily": "lucide",
+                          "fill": "$fg-muted"
+                        },
+                        {
+                          "type": "text",
+                          "id": "NV5oF",
+                          "name": "mc5T",
+                          "fill": "$fg-muted",
+                          "content": "等待生成",
+                          "fontFamily": "Inter",
+                          "fontSize": 11
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "Bd09A",
+                      "name": "mc6",
+                      "width": "fill_container",
+                      "height": "fill_container",
+                      "fill": "$surface-secondary",
+                      "cornerRadius": 16,
+                      "layout": "vertical",
+                      "gap": 8,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "wETv6",
+                          "name": "mc6I",
+                          "width": 30,
+                          "height": 30,
+                          "iconFontName": "image-plus",
+                          "iconFontFamily": "lucide",
+                          "fill": "$fg-muted"
+                        },
+                        {
+                          "type": "text",
+                          "id": "RHndx",
+                          "name": "mc6T",
+                          "fill": "$fg-muted",
+                          "content": "等待生成",
+                          "fontFamily": "Inter",
+                          "fontSize": 11
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "Lh848",
+              "name": "mTaskBar",
+              "width": "fill_container",
+              "fill": "$surface-secondary",
+              "gap": 16,
+              "padding": [
+                10,
+                24
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "PoHTL",
+                  "name": "tbLabel",
+                  "fill": "$fg-primary",
+                  "content": "任务队列",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "frame",
+                  "id": "fv7OO",
+                  "name": "tb1",
+                  "gap": 5,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "ellipse",
+                      "id": "L9BI3",
+                      "name": "tb1d",
+                      "fill": "$success",
+                      "width": 7,
+                      "height": 7
+                    },
+                    {
+                      "type": "text",
+                      "id": "WoPvl",
+                      "name": "tb1t",
+                      "fill": "$fg-secondary",
+                      "content": "赛博朋克猫咪",
+                      "fontFamily": "Inter",
+                      "fontSize": 11
+                    },
+                    {
+                      "type": "text",
+                      "id": "EtlmU",
+                      "name": "tb1s",
+                      "fill": "$success",
+                      "content": "完成",
+                      "fontFamily": "Inter",
+                      "fontSize": 10,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "3FROe",
+                  "name": "tb2",
+                  "gap": 5,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "ellipse",
+                      "id": "j3NNF",
+                      "name": "tb2d",
+                      "fill": "$accent",
+                      "width": 7,
+                      "height": 7
+                    },
+                    {
+                      "type": "text",
+                      "id": "sC56U",
+                      "name": "tb2t",
+                      "fill": "$fg-secondary",
+                      "content": "水彩花园",
+                      "fontFamily": "Inter",
+                      "fontSize": 11
+                    },
+                    {
+                      "type": "text",
+                      "id": "RTgVZ",
+                      "name": "tb2s",
+                      "fill": "$accent",
+                      "content": "42%",
+                      "fontFamily": "Geist Mono",
+                      "fontSize": 10,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "VhHkH",
+                  "name": "tb3",
+                  "gap": 5,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "ellipse",
+                      "id": "eB64N",
+                      "name": "tb3d",
+                      "fill": "$fg-muted",
+                      "width": 7,
+                      "height": 7
+                    },
+                    {
+                      "type": "text",
+                      "id": "fFyP8",
+                      "name": "tb3t",
+                      "fill": "$fg-muted",
+                      "content": "未来城市",
+                      "fontFamily": "Inter",
+                      "fontSize": 11
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "ZTbHm",
+                  "name": "tbSp",
+                  "width": "fill_container",
+                  "height": 1
+                },
+                {
+                  "type": "frame",
+                  "id": "Ilb3U",
+                  "name": "tbExpand",
+                  "cornerRadius": 4,
+                  "gap": 3,
+                  "padding": [
+                    3,
+                    8
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "BAAny",
+                      "name": "tbExpI",
+                      "width": 12,
+                      "height": 12,
+                      "iconFontName": "chevron-up",
+                      "iconFontFamily": "lucide",
+                      "fill": "$fg-muted"
+                    },
+                    {
+                      "type": "text",
+                      "id": "W3Wbr",
+                      "name": "tbExpT",
+                      "fill": "$fg-muted",
+                      "content": "展开",
+                      "fontFamily": "Inter",
+                      "fontSize": 10
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "PnIpA",
+      "x": 0,
+      "y": 0,
+      "name": "筋斗云AI 官网",
+      "width": 1440,
+      "height": "fit_content(3000)",
+      "fill": "#0A0A0A",
+      "layout": "vertical"
     }
   ],
   "variables": {
@@ -14229,5 +16058,11 @@
       "type": "color",
       "value": "#F59E0BFF"
     }
+  },
+  "imports": {
+    "a": "pencil:nitro.lib.pen",
+    "A": "pencil:shadcn.lib.pen",
+    "J": "pencil:halo.lib.pen",
+    "U": "pencil:lunaris.lib.pen"
   }
 }
