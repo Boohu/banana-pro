@@ -20,7 +20,7 @@
       }
     ],
     "security": {
-      "csp": null,
+      "csp": "default-src 'self' 'unsafe-inline' 'unsafe-eval' https: http: data: blob: tauri: asset:; img-src * 'self' data: blob: tauri: asset: http://localhost:* http://127.0.0.1:*; connect-src * 'self' ws: wss: http: https: tauri:; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https:;",
       "assetProtocol": {
         "enable": true,
         "scope": [

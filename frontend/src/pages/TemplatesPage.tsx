@@ -6,6 +6,10 @@ import { useConfigStore } from '@/store/configStore';
 import { useNavigationStore } from '@/store/navigationStore';
 import { useTranslation } from 'react-i18next';
 import { AUTH_URL } from '@/services/authApi';
+import axios from 'axios';
+
+// 模板接口走 /api/ 路径，和登录一样的 CORS 策略
+const templatesApi = axios.create({ baseURL: AUTH_URL, timeout: 10000 });
 import type { TemplateItem, TemplateListResponse } from '@/types';
 
 function TemplateCard({ item, onClick }: { item: TemplateItem; onClick: () => void }) {
@@ -15,7 +19,7 @@ function TemplateCard({ item, onClick }: { item: TemplateItem; onClick: () => vo
     <button onClick={onClick} className="flex flex-col rounded-2xl bg-surface-secondary overflow-hidden hover:ring-1 hover:ring-primary/50 transition-all text-left group">
       <div className="aspect-square bg-surface-tertiary overflow-hidden">
         {previewUrl ? (
-          <img src={previewUrl} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
+          <img src={previewUrl} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" referrerPolicy="no-referrer" />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-fg-muted text-xs">{t('templates.noPreview')}</div>
         )}
@@ -53,7 +57,7 @@ function TemplateDetailModal({ item, onClose }: { item: TemplateItem; onClose: (
         {/* Left preview */}
         <div className="w-[380px] shrink-0 bg-surface-tertiary flex items-center justify-center p-8">
           {previewUrl ? (
-            <img src={previewUrl} alt={item.title} className="max-w-full max-h-full rounded-xl object-contain" />
+            <img src={previewUrl} alt={item.title} className="max-w-full max-h-full rounded-xl object-contain" referrerPolicy="no-referrer" />
           ) : (
             <div className="text-fg-muted">{t('templates.noPreviewImage')}</div>
           )}
@@ -128,17 +132,18 @@ export function TemplatesPage() {
   const [allItems, setAllItems] = useState<TemplateItem[]>([]);
 
   useEffect(() => {
-    // 从服务器加载模板
-    const TEMPLATES_URL = AUTH_URL.replace(/\/api$/, '') + '/static/templates.json';
-    fetch(TEMPLATES_URL)
-      .then(res => res.json())
-      .then(data => {
-        setCategories(data.channels || ['全部']);
-        setAllItems(data.templates || []);
+    // 走 /api/templates（和登录接口完全一样的路径，确保 CORS 通过）
+    templatesApi.get('/templates')
+      .then(res => {
+        const data = res.data;
+        if (data?.templates?.length > 0) {
+          setCategories(data.channels || ['全部']);
+          setAllItems(data.templates);
+        } else {
+          throw new Error('empty');
+        }
       })
-      .catch(err => {
-        console.error('[Templates] 加载远程模板失败:', err);
-        // 远程失败时尝试加载本地备份
+      .catch(() => {
         import('@/data/communityTemplates').then(mod => {
           setCategories(mod.communityTemplateChannels);
           setAllItems(mod.communityTemplates as any);
