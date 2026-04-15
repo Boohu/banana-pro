@@ -130,14 +130,18 @@ export function TemplatesPage() {
   useEffect(() => {
     // 从服务器加载模板
     const TEMPLATES_URL = AUTH_URL.replace(/\/api$/, '') + '/static/templates.json';
+    console.log('[Templates] 加载远程模板:', TEMPLATES_URL);
     fetch(TEMPLATES_URL)
-      .then(res => res.json())
+      .then(res => {
+        console.log('[Templates] 响应状态:', res.status);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
       .then(data => {
         setCategories(data.channels || ['全部']);
         setAllItems(data.templates || []);
       })
-      .catch(err => {
-        console.error('[Templates] 加载远程模板失败:', err);
+      .catch(() => {
         // 远程失败时尝试加载本地备份
         import('@/data/communityTemplates').then(mod => {
           setCategories(mod.communityTemplateChannels);
