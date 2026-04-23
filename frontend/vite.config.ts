@@ -1,7 +1,10 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
-import pkg from './package.json' with { type: 'json' }
+import { readFileSync } from 'fs'
+
+// 读取 package.json 的版本号
+const pkg = JSON.parse(readFileSync(path.resolve(__dirname, 'package.json'), 'utf-8'));
 
 // https://vitejs.dev/config/
 export default defineConfig({

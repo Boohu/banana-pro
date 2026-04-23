@@ -541,7 +541,7 @@ function AboutSection() {
     setCheckingUpdate(true);
     setUpdateStatus('');
     try {
-      // @ts-expect-error Tauri 运行时解析
+      // @ts-ignore Tauri 运行时解析
       const { check } = await import(/* @vite-ignore */ '@tauri-apps/plugin-updater');
       const update = await check();
       if (update) {
@@ -550,7 +550,7 @@ function AboutSection() {
         if (yes) {
           setUpdateStatus('下载中...');
           await update.downloadAndInstall();
-          // @ts-expect-error Tauri 运行时解析
+          // @ts-ignore Tauri 运行时解析
           const { relaunch } = await import(/* @vite-ignore */ '@tauri-apps/plugin-process');
           await relaunch();
         }
