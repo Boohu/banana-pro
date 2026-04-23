@@ -441,16 +441,15 @@ jobs:
 
           gh release upload "$TAG" latest.json --clobber --repo "$REPO"
 
-  # 发布到更新服务器：改为本地手动执行 scripts/release-to-server.sh
-  # 原因：GitHub Actions runner 通常在海外，scp 到国内服务器极慢；
-  # 改为本地下载 + 上传，走本地网络更快，同时绕开 admin API 鉴权方式变更问题。
-  # 使用方法：CI 打包完成后，在本地执行：
-  #   ./scripts/release-to-server.sh <version>    # e.g. 2.9.9
-  # 下面旧的 deploy-to-server 已禁用（保留注释备忘）。
-  deploy-to-server-DISABLED:
-    name: "[已禁用] 发布到更新服务器"
+  # 自动发布到自有更新服务器
+  # 需要在仓库 Secrets 中配置：
+  #   DEPLOY_SSH_KEY       - SSH 私钥（root@auth.3ux.cn）
+  #   ADMIN_USERNAME       - admin 账号名（例如 chenhui）
+  #   ADMIN_PASSWORD       - admin 密码
+  deploy-to-server:
+    name: 发布到更新服务器
     needs: [build-and-release, publish-updater-json]
-    if: false
+    if: always() && needs.build-and-release.result == 'success'
     runs-on: ubuntu-22.04
     permissions:
       contents: read
@@ -460,7 +459,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
-          ADMIN_KEY: ${{ secrets.ADMIN_KEY }}
+          ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
         run: |
           set -euo pipefail
 
@@ -471,73 +471,99 @@ jobs:
           UPDATE_DIR="/www/wwwroot/auth.3ux.cn/updates/${VERSION}"
           BASE_URL="https://${SERVER}/updates/${VERSION}"
 
-          # 配置 SSH
+          # === 1. 配置 SSH ===
           mkdir -p ~/.ssh
           echo "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -H "$SERVER" >> ~/.ssh/known_hosts 2>/dev/null
           SSH_OPTS="-i ~/.ssh/deploy_key -o StrictHostKeyChecking=no"
 
-          # 在服务器创建版本目录
-          ssh $SSH_OPTS root@$SERVER "mkdir -p $UPDATE_DIR"
-
-          # 下载所有 Release 资产
+          # === 2. 下载 Release 资产 ===
           mkdir -p artifacts
-          gh release download "$TAG" --repo "$REPO" --dir artifacts --pattern "*.tar.gz" --pattern "*.sig" --pattern "*.exe" --pattern "*.dmg" --pattern "*.json" || true
+          gh release download "$TAG" --repo "$REPO" --dir artifacts \
+            --pattern "*.tar.gz" --pattern "*.sig" --pattern "*.exe" \
+            --pattern "*.dmg" --pattern "*.json"
+          echo "--- artifacts ---"
           ls -la artifacts/
 
-          # 上传到服务器
-          scp $SSH_OPTS artifacts/* root@$SERVER:$UPDATE_DIR/ 2>/dev/null || true
+          # === 3. 上传到服务器 ===
+          ssh $SSH_OPTS root@$SERVER "mkdir -p $UPDATE_DIR"
+          scp $SSH_OPTS artifacts/* root@$SERVER:$UPDATE_DIR/
 
-          # 构建版本信息
-          DARWIN_ARM_URL="" DARWIN_ARM_SIG=""
-          DARWIN_X64_URL="" DARWIN_X64_SIG=""
-          WIN_URL="" WIN_SIG=""
+          # === 4. 提取资产文件名和签名 ===
+          DARWIN_ARM_NAME=""; DARWIN_ARM_SIG=""
+          DARWIN_UNI_NAME=""; DARWIN_UNI_SIG=""
+          WIN_NAME="";        WIN_SIG=""
 
           for f in artifacts/*aarch64*.app.tar.gz; do
-            [ -f "$f" ] && DARWIN_ARM_URL="$BASE_URL/$(basename $f)" && break
+            [ -f "$f" ] && DARWIN_ARM_NAME="$(basename "$f")" && break
           done
           for f in artifacts/*aarch64*.app.tar.gz.sig; do
-            [ -f "$f" ] && DARWIN_ARM_SIG="$(cat $f)" && break
+            [ -f "$f" ] && DARWIN_ARM_SIG="$(base64 -w0 "$f")" && break
           done
           for f in artifacts/*universal*.app.tar.gz; do
-            [ -f "$f" ] && DARWIN_X64_URL="$BASE_URL/$(basename $f)" && break
+            [ -f "$f" ] && DARWIN_UNI_NAME="$(basename "$f")" && break
           done
           for f in artifacts/*universal*.app.tar.gz.sig; do
-            [ -f "$f" ] && DARWIN_X64_SIG="$(cat $f)" && break
+            [ -f "$f" ] && DARWIN_UNI_SIG="$(base64 -w0 "$f")" && break
           done
-          # Intel 回退到 universal
-          [ -z "$DARWIN_X64_URL" ] && DARWIN_X64_URL="$DARWIN_ARM_URL" && DARWIN_X64_SIG="$DARWIN_ARM_SIG"
           for f in artifacts/*x64-setup*.exe; do
-            [ -f "$f" ] && WIN_URL="$BASE_URL/$(basename $f)" && break
+            [ -f "$f" ] && WIN_NAME="$(basename "$f")" && break
           done
           for f in artifacts/*x64-setup*.exe.sig; do
-            [ -f "$f" ] && WIN_SIG="$(cat $f)" && break
+            [ -f "$f" ] && WIN_SIG="$(base64 -w0 "$f")" && break
           done
 
-          # 获取 Release notes
-          NOTES=$(gh release view "$TAG" --repo "$REPO" --json body --jq '.body' | head -50)
-
-          # 调用管理 API 注册版本
-          if [ -n "$ADMIN_KEY" ]; then
-            curl -s -X POST "https://${SERVER}/api/admin/versions" \
-              -H "Content-Type: application/json" \
-              -H "X-Admin-Key: ${ADMIN_KEY}" \
-              -d "$(python3 -c "
-          import json, sys
-          data = {
-              'app_id': 'jdyai',
-              'version': '$VERSION',
-              'notes': $(python3 -c "import json; print(json.dumps('''$NOTES'''))"),
-              'darwin_aarch64_url': '$DARWIN_ARM_URL',
-              'darwin_aarch64_sig': '''$DARWIN_ARM_SIG''',
-              'darwin_x86_64_url': '$DARWIN_X64_URL',
-              'darwin_x86_64_sig': '''$DARWIN_X64_SIG''',
-              'windows_x86_64_url': '$WIN_URL',
-              'windows_x86_64_sig': '''$WIN_SIG''',
-          }
-          print(json.dumps(data))
-          ")" && echo "Version $VERSION registered on update server"
-          else
-            echo "ADMIN_KEY not set, skipping version registration"
+          # === 5. 登录 admin 获取 JWT token ===
+          if [ -z "${ADMIN_USERNAME:-}" ] || [ -z "${ADMIN_PASSWORD:-}" ]; then
+            echo "❌ 未配置 ADMIN_USERNAME / ADMIN_PASSWORD secrets，跳过版本注册。"
+            echo "   文件已上传但客户端无法检测到更新。请在本地手动执行:"
+            echo "   ./scripts/release-to-server.sh ${VERSION}"
+            exit 1
           fi
+
+          LOGIN_RESP="$(curl -sS -X POST "https://${SERVER}/api/admin/login" \
+            -H "Content-Type: application/json" \
+            -d "$(python3 -c "import json,os; print(json.dumps({'username':os.environ['U'],'password':os.environ['P']}))" \
+                  U="$ADMIN_USERNAME" P="$ADMIN_PASSWORD")")"
+          TOKEN="$(echo "$LOGIN_RESP" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('data',{}).get('token',''))")"
+          if [ -z "$TOKEN" ]; then
+            echo "❌ admin 登录失败: $LOGIN_RESP"
+            exit 1
+          fi
+          echo "✓ admin 登录成功"
+
+          # === 6. 注册版本到 auth-server ===
+          NOTES="$(gh release view "$TAG" --repo "$REPO" --json body --jq '.body' | head -200)"
+          PAYLOAD="$(python3 <<PY
+          import json, os
+          base = os.environ["BASE"]
+          print(json.dumps({
+            "app_id": "jdyai",
+            "version": os.environ["V"],
+            "notes": os.environ["NOTES"],
+            "darwin_aarch64_url": f"{base}/{os.environ['A_NAME']}" if os.environ.get('A_NAME') else "",
+            "darwin_aarch64_sig": os.environ.get("A_SIG", ""),
+            "darwin_x86_64_url": f"{base}/{os.environ['U_NAME']}" if os.environ.get('U_NAME') else "",
+            "darwin_x86_64_sig": os.environ.get("U_SIG", ""),
+            "windows_x86_64_url": f"{base}/{os.environ['W_NAME']}" if os.environ.get('W_NAME') else "",
+            "windows_x86_64_sig": os.environ.get("W_SIG", ""),
+          }, ensure_ascii=False))
+          PY
+          )"
+
+          export V="$VERSION" NOTES BASE="$BASE_URL" \
+                 A_NAME="$DARWIN_ARM_NAME" A_SIG="$DARWIN_ARM_SIG" \
+                 U_NAME="$DARWIN_UNI_NAME" U_SIG="$DARWIN_UNI_SIG" \
+                 W_NAME="$WIN_NAME" W_SIG="$WIN_SIG"
+
+          REG_RESP="$(curl -sS -X POST "https://${SERVER}/api/admin/versions" \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD")"
+          CODE="$(echo "$REG_RESP" | python3 -c "import json,sys; print(json.load(sys.stdin).get('code',-1))")"
+          if [ "$CODE" != "200" ]; then
+            echo "❌ 注册失败: $REG_RESP"
+            exit 1
+          fi
+          echo "✅ v${VERSION} 已注册到 auth.3ux.cn"
