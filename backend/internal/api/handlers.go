@@ -594,6 +594,31 @@ func GenerateWithImagesHandler(c *gin.Context) {
 	}
 
 	taskID := uuid.New().String()
+
+	// 保存第一张参考图到 originals 目录，用于对比图功能
+	originalImagePath := ""
+	if len(refImageBytes) > 0 {
+		if content, ok := refImageBytes[0].([]byte); ok && len(content) > 0 {
+			if baseDir := storage.GetBaseDir(); baseDir != "" {
+				origDir := filepath.Join(baseDir, "originals")
+				_ = os.MkdirAll(origDir, 0755)
+				mimeType := http.DetectContentType(content)
+				ext := ".jpg"
+				if strings.Contains(mimeType, "png") {
+					ext = ".png"
+				} else if strings.Contains(mimeType, "webp") {
+					ext = ".webp"
+				}
+				origPath := filepath.Join(origDir, "orig_"+taskID+ext)
+				if writeErr := os.WriteFile(origPath, content, 0644); writeErr != nil {
+					log.Printf("[API] 保存参考图失败 task=%s: %v\n", taskID, writeErr)
+				} else {
+					originalImagePath = "/storage/originals/orig_" + taskID + ext
+				}
+			}
+		}
+	}
+
 	taskModel := &model.Task{
 		TaskID:             taskID,
 		Prompt:             req.Prompt,
@@ -604,6 +629,7 @@ func GenerateWithImagesHandler(c *gin.Context) {
 		TotalCount:         req.Count,
 		Status:             "pending",
 		ConfigSnapshot:     buildConfigSnapshot(req.Provider, modelID, taskParams),
+		OriginalImagePath:  originalImagePath,
 	}
 
 	// 关联批次（如果提供了 batch_id）

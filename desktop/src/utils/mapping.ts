@@ -25,7 +25,10 @@ export const mapBackendTaskToFrontend = (task: BackendTask): GenerationTask => {
     // 弹窗预览使用原图
     url: getFullUrl(task.local_path || task.image_url || task.thumbnail_path || task.thumbnail_url),
     // 卡片展示优先使用缩略图
-    thumbnailUrl: getFullUrl(task.thumbnail_path || task.local_path || task.thumbnail_url || task.image_url)
+    thumbnailUrl: getFullUrl(task.thumbnail_path || task.local_path || task.thumbnail_url || task.image_url),
+    // 参考图（对比图用）
+    originalImagePath: task.original_image_path || '',
+    originalImageUrl: task.original_image_path ? getFullUrl(task.original_image_path) : ''
   };
 
   return {

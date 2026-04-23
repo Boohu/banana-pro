@@ -7,6 +7,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { GeneratedImage, GenerationTask } from '../../types';
 import { getImageUrl } from '../../services/api';
 import { ImagePreview } from '../GenerateArea/ImagePreview';
+import { ComparisonModal } from '../ImageComparison/ComparisonModal';
 import { ImageCard } from './ImageCard';
 import { FailedTaskCard } from './FailedTaskCard';
 
@@ -317,14 +318,31 @@ export function HistoryList({ padding: paddingProp }: HistoryListProps = {}) {
           />
         </div>
 
-        {/* 详情弹窗（显示完整图片） */}
+        {/* 详情弹窗：有参考图 → ComparisonModal（对比图）；否则 → ImagePreview */}
         {selectedImage && (
-            <ImagePreview
-                image={selectedImage}
-                images={allImageItems}
-                onImageChange={setSelectedImage}
-                onClose={() => setSelectedImage(null)}
+          (selectedImage.originalImageUrl || selectedImage.originalImagePath) ? (
+            <ComparisonModal
+              image={selectedImage}
+              onClose={() => setSelectedImage(null)}
+              onPrev={(() => {
+                const idx = allImageItems.findIndex((i) => i.id === selectedImage.id);
+                return idx > 0 ? () => setSelectedImage(allImageItems[idx - 1]) : undefined;
+              })()}
+              onNext={(() => {
+                const idx = allImageItems.findIndex((i) => i.id === selectedImage.id);
+                return idx >= 0 && idx < allImageItems.length - 1
+                  ? () => setSelectedImage(allImageItems[idx + 1])
+                  : undefined;
+              })()}
             />
+          ) : (
+            <ImagePreview
+              image={selectedImage}
+              images={allImageItems}
+              onImageChange={setSelectedImage}
+              onClose={() => setSelectedImage(null)}
+            />
+          )
         )}
     </>
   );

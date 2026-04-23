@@ -51,6 +51,21 @@ const bootstrap = async () => {
   } else if (storedLanguage === 'system' && !languageResolved) {
     setLanguageResolved(language);
   }
+
+  // macOS 的 overlay 标题栏保留红绿灯但清空标题文字
+  // Windows 任务栏需要 title 显示应用名，所以只在 macOS 启动后清空
+  try {
+    const isTauri = Boolean((window as any).__TAURI_INTERNALS__);
+    const isMac = typeof navigator !== 'undefined' && /Mac/i.test(navigator.platform || '');
+    if (isTauri && isMac) {
+      // @ts-ignore Tauri 运行时解析
+      const { getCurrentWindow } = await import(/* @vite-ignore */ '@tauri-apps/api/window');
+      await getCurrentWindow().setTitle('');
+    }
+  } catch (err) {
+    console.warn('[main] setTitle skip:', err);
+  }
+
   mountApp();
 };
 

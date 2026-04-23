@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
 import { getImageUrl } from '@/services/api';
 import { useConfigStore } from '@/store/configStore';
+import { toast } from '@/store/toastStore';
 import type { GeneratedImage } from '@/types';
 
 type ViewMode = 'compare' | 'result';
@@ -101,26 +102,30 @@ function RefImagesSection() {
 export function ComparisonModal({ image, onClose, originalImageUrl, onPrev, onNext, onRegenerate, onUseAsRef }: ComparisonModalProps) {
   const { t } = useTranslation();
   const refFiles = useConfigStore((s) => s.refFiles);
-  // 原图来源：外部传入 > configStore 参考图 > 无
-  const hasOriginal = Boolean(originalImageUrl) || refFiles.length > 0;
+  // 原图来源优先级：外部 prop > 任务自带（image.originalImageUrl） > 当前配置面板的参考图 > 无
+  const taskOriginalUrl = (image as any).originalImageUrl || ((image as any).originalImagePath ? getImageUrl((image as any).originalImagePath) : '');
+  const effectiveOriginalUrl = originalImageUrl || taskOriginalUrl || '';
+  const hasOriginal = Boolean(effectiveOriginalUrl) || refFiles.length > 0;
   const [viewMode, setViewMode] = useState<ViewMode>(hasOriginal ? 'compare' : 'result');
 
   const imageUrl = image.url || getImageUrl(image.filePath);
   // 对比原图
   const [refObjectUrl, setRefObjectUrl] = useState<string | null>(null);
   React.useEffect(() => {
-    if (originalImageUrl) {
-      setRefObjectUrl(null); // 外部传入时不需要 objectUrl
+    // 如果任务自带或外部传入 URL，直接用，不需要 objectUrl
+    if (effectiveOriginalUrl) {
+      setRefObjectUrl(null);
       return;
     }
+    // fallback：当前配置面板的参考图（仅当任务没有自己的原图时）
     if (refFiles.length > 0) {
       const url = URL.createObjectURL(refFiles[0]);
       setRefObjectUrl(url);
       return () => URL.revokeObjectURL(url);
     }
     setRefObjectUrl(null);
-  }, [refFiles, originalImageUrl]);
-  const originalUrl = originalImageUrl || refObjectUrl || imageUrl;
+  }, [refFiles, effectiveOriginalUrl]);
+  const originalUrl = effectiveOriginalUrl || refObjectUrl || imageUrl;
 
   // 键盘快捷键：左右切换
   React.useEffect(() => {
@@ -137,18 +142,51 @@ export function ComparisonModal({ image, onClose, originalImageUrl, onPrev, onNe
 
   const handleDownload = async () => {
     if (!imageUrl) return;
+    const ext = imageUrl.match(/\.\w+$/)?.[0] || '.png';
+    const defaultName = `generated-${image.id}${ext}`;
+    const isTauri = typeof window !== 'undefined' && Boolean((window as any).__TAURI_INTERNALS__);
+
+    if (isTauri) {
+      // 桌面端：Tauri 原生保存对话框 + 记忆上次目录
+      try {
+        // @ts-ignore Tauri 运行时解析
+        const { save } = await import(/* @vite-ignore */ '@tauri-apps/plugin-dialog');
+        // @ts-ignore
+        const { invoke } = await import(/* @vite-ignore */ '@tauri-apps/api/core');
+        const lastDir = localStorage.getItem('banana-last-save-dir') || '';
+        const defaultPath = lastDir ? `${lastDir}/${defaultName}` : defaultName;
+        const destPath = await save({
+          defaultPath,
+          filters: [{ name: 'Image', extensions: [ext.replace('.', '')] }],
+          title: '保存图片',
+        });
+        if (!destPath) return; // 用户取消
+        await invoke('download_file_to_path', { url: imageUrl, destPath });
+        // 记录上次目录
+        const dir = String(destPath).replace(/\/[^/]+$/, '').replace(/\\[^\\]+$/, '');
+        if (dir) localStorage.setItem('banana-last-save-dir', dir);
+        toast.success('已保存到 ' + destPath);
+      } catch (err) {
+        console.error('[ComparisonModal] 保存失败:', err);
+        toast.error('保存失败：' + (err instanceof Error ? err.message : String(err)));
+      }
+      return;
+    }
+
+    // Web 端：浏览器下载
     try {
       const res = await fetch(imageUrl);
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      // 从 URL 提取实际文件后缀
-      const ext = imageUrl.match(/\.\w+$/)?.[0] || '.png';
-      a.download = `generated-${image.id}${ext}`;
+      a.download = defaultName;
       a.click();
       URL.revokeObjectURL(url);
-    } catch {}
+    } catch (err) {
+      console.error('[ComparisonModal] 下载失败:', err);
+      toast.error('下载失败');
+    }
   };
 
   const handleCopy = async () => {

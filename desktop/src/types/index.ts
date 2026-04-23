@@ -23,6 +23,9 @@ export interface GeneratedImage {
   status?: 'pending' | 'success' | 'failed';
   model?: string;
   options?: string | ImageOptions;
+  // 参考图路径（图生图任务专用），用于对比图
+  originalImagePath?: string;
+  originalImageUrl?: string;
 }
 
 // 图片选项配置
