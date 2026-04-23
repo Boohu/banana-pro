@@ -341,9 +341,10 @@ function BatchConfigPanel({ batch, onChange }: { batch: BatchJob; onChange: (upd
           onChange={async (e) => {
             const val = e.target.value;
             if (val === '__local__') {
-              // 桌面端：弹出文件夹选择
+              // 桌面端：弹出文件夹选择（web 端不会走到，isTauri 时才显示此选项）
               try {
-                const { open } = await import('@tauri-apps/plugin-dialog');
+                // @ts-expect-error 运行时 Tauri 环境解析，Web 打包跳过
+                const { open } = await import(/* @vite-ignore */ '@tauri-apps/plugin-dialog');
                 const selected = await open({ directory: true, multiple: false, title: '选择输出文件夹' });
                 if (selected && typeof selected === 'string') {
                   onChange({ outputFolderId: '__local__', outputDir: selected });
@@ -374,7 +375,8 @@ function BatchConfigPanel({ batch, onChange }: { batch: BatchJob; onChange: (upd
           <button
             onClick={async () => {
               try {
-                const { open } = await import('@tauri-apps/plugin-dialog');
+                // @ts-expect-error 运行时 Tauri 环境解析
+                const { open } = await import(/* @vite-ignore */ '@tauri-apps/plugin-dialog');
                 const selected = await open({ directory: true, multiple: false, title: '选择输出文件夹' });
                 if (selected && typeof selected === 'string') onChange({ outputDir: selected });
               } catch (err) {

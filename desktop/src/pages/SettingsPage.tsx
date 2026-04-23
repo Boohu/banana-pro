@@ -523,14 +523,46 @@ function LanguageSection() {
 function AboutSection() {
   const { t } = useTranslation();
   const { user, accessInfo, logout } = useAuthStore();
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const [updateStatus, setUpdateStatus] = useState('');
 
   const isTrial = accessInfo?.access_reason === 'trial';
   const isSubscribed = accessInfo?.access_reason === 'subscription';
+  const isTauri = typeof window !== 'undefined' && Boolean((window as any).__TAURI_INTERNALS__);
 
   const goToSubscription = () => {
     import('@/store/navigationStore').then(({ useNavigationStore }) => {
       useNavigationStore.getState().setPage('subscription');
     });
+  };
+
+  const handleCheckUpdate = async () => {
+    if (!isTauri) return;
+    setCheckingUpdate(true);
+    setUpdateStatus('');
+    try {
+      // @ts-expect-error Tauri 运行时解析
+      const { check } = await import(/* @vite-ignore */ '@tauri-apps/plugin-updater');
+      const update = await check();
+      if (update) {
+        setUpdateStatus(`发现新版本 v${update.version}`);
+        const yes = confirm(`发现新版本 v${update.version}\n\n${update.body || ''}\n\n是否立即更新？`);
+        if (yes) {
+          setUpdateStatus('下载中...');
+          await update.downloadAndInstall();
+          // @ts-expect-error Tauri 运行时解析
+          const { relaunch } = await import(/* @vite-ignore */ '@tauri-apps/plugin-process');
+          await relaunch();
+        }
+      } else {
+        setUpdateStatus('已是最新版本');
+      }
+    } catch (err) {
+      console.error('[Update]', err);
+      setUpdateStatus('检查失败（dev 模式不支持自动更新）');
+    } finally {
+      setCheckingUpdate(false);
+    }
   };
 
   return (
@@ -610,12 +642,24 @@ function AboutSection() {
           <img src={logoImg} alt="logo" className="w-12 h-12 rounded-xl" />
           <div>
             <h4 className="text-base font-semibold text-fg-primary">{t('sidebar.appName')}</h4>
-            <p className="text-xs text-fg-muted">v2.9.7</p>
+            <p className="text-xs text-fg-muted">v{typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '2.9.8'}</p>
           </div>
         </div>
         <div className="space-y-2 text-sm text-fg-secondary">
           <p>{t('onboarding.appDesc')}</p>
         </div>
+        {isTauri && (
+          <div className="flex items-center gap-3 pt-1">
+            <button
+              onClick={handleCheckUpdate}
+              disabled={checkingUpdate}
+              className="px-4 py-2 rounded-lg bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 disabled:opacity-50 transition-colors"
+            >
+              {checkingUpdate ? '检查中...' : '检查更新'}
+            </button>
+            {updateStatus && <span className="text-xs text-fg-muted">{updateStatus}</span>}
+          </div>
+        )}
       </div>
     </div>
   );
