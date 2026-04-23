@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Sparkles, Wand2, X, Plus, Loader2, AlertCircle, ImagePlus, ChevronDown, Info, Grid3X3, List, ChevronUp, FileJson } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useConfigStore, IMAGE_MODEL_OPTIONS, getModelAspectRatios } from '@/store/configStore';
+import { useConfigStore, getModelAspectRatios, getModelResolutions, modelSupportsAutoRatio, resolveGPTImageSize } from '@/store/configStore';
+import { useModelStore } from '@/store/modelStore';
+import { useApiKeyStore } from '@/store/apiKeyStore';
 import { useGenerateStore } from '@/store/generateStore';
 import { useGenerate } from '@/hooks/useGenerate';
 import { useShallow } from 'zustand/react/shallow';
@@ -25,6 +27,7 @@ function LeftConfigPanel() {
     aspectRatio, setAspectRatio,
     refFiles, removeRefFile,
     enableRefImageCompression, setEnableRefImageCompression,
+    selectedImageModelId, setSelectedImageModelId,
   } = useConfigStore(useShallow((s) => ({
     prompt: s.prompt,
     setPrompt: s.setPrompt,
@@ -41,18 +44,78 @@ function LeftConfigPanel() {
     removeRefFile: s.removeRefFile,
     enableRefImageCompression: s.enableRefImageCompression,
     setEnableRefImageCompression: s.setEnableRefImageCompression,
+    selectedImageModelId: s.selectedImageModelId,
+    setSelectedImageModelId: s.setSelectedImageModelId,
   })));
   const chatProvider = useConfigStore((s) => s.chatProvider);
   const chatApiKey = useConfigStore((s) => s.chatApiKey);
   const chatModel = useConfigStore((s) => s.chatModel);
+  const allModels = useModelStore((s) => s.models);
+  const apiKeys = useApiKeyStore((s) => s.keys);
+  const imageModels = useMemo(() => allModels.filter((m) => m.purpose === 'image'), [allModels]);
   const { generate } = useGenerate();
   const isSubmitting = useGenerateStore((s) => s.isSubmitting);
   const status = useGenerateStore((s) => s.status);
   const isGenerating = isSubmitting; // 只在提交请求时禁用，生成中允许提交新任务
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [optimizingMode, setOptimizingMode] = useState<'normal' | 'json' | null>(null);
-  const customModels: string[] = (() => { try { return JSON.parse(localStorage.getItem('banana-custom-models') || '[]'); } catch { return []; } })();
   const aspectRatios = getModelAspectRatios(imageModel);
+
+  // 当前选中模型（配合密钥检查）
+  const activeModel = useMemo(() => {
+    if (!selectedImageModelId) return null;
+    return imageModels.find((m) => m.id === selectedImageModelId) || null;
+  }, [selectedImageModelId, imageModels]);
+  const activeKey = useMemo(() => {
+    if (!activeModel) return null;
+    return apiKeys.find((k) => k.id === activeModel.apiKeyId) || null;
+  }, [activeModel, apiKeys]);
+  // 是否已配置可用的密钥：新架构优先，旧 imageApiKey 作为 fallback
+  const isImageReady = Boolean((activeModel && activeKey?.apiKey) || imageApiKey);
+
+  // 当前模型名（用于过滤 aspect/resolution 选项）
+  const activeModelName = activeModel?.name || imageModel;
+  const resolutions = useMemo(() => getModelResolutions(activeModelName, refFiles.length > 0), [activeModelName, refFiles.length]);
+  // 图生图 + 支持自动比例的模型 → aspectRatio 前加 'auto'
+  const displayAspectRatios = useMemo(() => {
+    const base = aspectRatios;
+    if (refFiles.length > 0 && modelSupportsAutoRatio(activeModelName)) {
+      return ['auto', ...base];
+    }
+    return base;
+  }, [aspectRatios, refFiles.length, activeModelName]);
+
+  // gpt-image-* 模型下的实际输出尺寸（含回落提示）
+  const gptImageSizeHint = useMemo(() => {
+    if (!activeModelName.startsWith('gpt-image-')) return null;
+    return resolveGPTImageSize(aspectRatio, imageSize, refFiles.length > 0);
+  }, [activeModelName, aspectRatio, imageSize, refFiles.length]);
+
+  // 模型/参考图切换后，保证当前 aspectRatio/imageSize 在合法集合里
+  useEffect(() => {
+    if (!displayAspectRatios.includes(aspectRatio)) {
+      setAspectRatio(displayAspectRatios[0]);
+    }
+    if (!resolutions.includes(imageSize)) {
+      setImageSize(resolutions[0]);
+    }
+  }, [displayAspectRatios, resolutions, aspectRatio, imageSize, setAspectRatio, setImageSize]);
+
+  // 从「无参考图」→「有参考图」的瞬间：自动切到 auto（仅当模型支持）
+  const prevHasRefRef = useRef(refFiles.length > 0);
+  useEffect(() => {
+    const hasRef = refFiles.length > 0;
+    if (hasRef && !prevHasRefRef.current && modelSupportsAutoRatio(activeModelName)) {
+      setAspectRatio('auto');
+    }
+    prevHasRefRef.current = hasRef;
+  }, [refFiles.length, activeModelName, setAspectRatio]);
+
+  const handleSelectImageModel = (id: string) => {
+    setSelectedImageModelId(id);
+    const m = imageModels.find((mm) => mm.id === id);
+    if (m) setImageModel(m.name); // 双写，让其他未迁移代码继续读到正确模型名
+  };
 
   const runOptimize = async (mode: 'normal' | 'json') => {
     const raw = prompt.trim();
@@ -146,7 +209,7 @@ function LeftConfigPanel() {
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey && (e.metaKey || e.ctrlKey) && imageApiKey && prompt.trim()) {
+              if (e.key === 'Enter' && !e.shiftKey && (e.metaKey || e.ctrlKey) && isImageReady && prompt.trim()) {
                 e.preventDefault();
                 generate();
               }
@@ -215,19 +278,30 @@ function LeftConfigPanel() {
         {/* Model */}
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-medium text-fg-secondary">{t('config.model', '模型')}</label>
-          <select
-            value={imageModel}
-            onChange={(e) => setImageModel(e.target.value)}
-            className="w-full bg-surface-tertiary border border-border rounded-[10px] px-3 py-2.5 text-[13px] text-fg-primary outline-none appearance-none cursor-pointer focus:border-primary"
-            style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2371717A' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
-          >
-            {IMAGE_MODEL_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-            {customModels.map((m) => (
-              <option key={m} value={m}>{m}</option>
-            ))}
-          </select>
+          {imageModels.length === 0 ? (
+            <div className="bg-warning/10 border border-warning/30 rounded-[10px] px-3 py-2.5 text-[12px] text-warning">
+              还没有配置生图模型，请在「设置 → API 密钥」添加密钥，再在「模型管理」添加模型。
+            </div>
+          ) : (
+            <select
+              value={selectedImageModelId || ''}
+              onChange={(e) => handleSelectImageModel(e.target.value)}
+              className="w-full bg-surface-tertiary border border-border rounded-[10px] px-3 py-2.5 text-[13px] text-fg-primary outline-none appearance-none cursor-pointer focus:border-primary"
+              style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2371717A' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
+            >
+              {!selectedImageModelId && (
+                <option value="" disabled>请选择模型...</option>
+              )}
+              {imageModels.map((m) => {
+                const k = apiKeys.find((kk) => kk.id === m.apiKeyId);
+                const label = m.displayName || m.name;
+                const suffix = k ? ` · ${k.name}` : ' · 密钥缺失';
+                return (
+                  <option key={m.id} value={m.id}>{label}{suffix}</option>
+                );
+              })}
+            </select>
+          )}
         </div>
 
         {/* Aspect Ratio */}
@@ -239,8 +313,8 @@ function LeftConfigPanel() {
             className="w-full bg-surface-tertiary border border-border rounded-[10px] px-3 py-2.5 text-[13px] text-fg-primary outline-none appearance-none cursor-pointer focus:border-primary"
             style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2371717A' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
           >
-            {aspectRatios.map((ratio) => (
-              <option key={ratio} value={ratio}>{ratio}</option>
+            {displayAspectRatios.map((ratio) => (
+              <option key={ratio} value={ratio}>{ratio === 'auto' ? 'auto（跟随参考图）' : ratio}</option>
             ))}
           </select>
         </div>
@@ -254,10 +328,23 @@ function LeftConfigPanel() {
             className="w-full bg-surface-tertiary border border-border rounded-[10px] px-3 py-2.5 text-[13px] text-fg-primary font-mono outline-none appearance-none cursor-pointer focus:border-primary"
             style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2371717A' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
           >
-            <option value="1K">1K (1024 × 1024)</option>
-            <option value="2K">2K (2048 × 2048)</option>
-            <option value="4K">4K (4096 × 4096)</option>
+            {resolutions.map((r) => (
+              <option key={r} value={r}>
+                {r === '1K' ? '1K (1024 × 1024)' : r === '2K' ? '2K (2048 × 2048)' : r === '4K' ? '4K (3840 × 2160)' : r}
+              </option>
+            ))}
           </select>
+          {gptImageSizeHint && (
+            <div className={cn(
+              'text-[10.5px] leading-snug mt-0.5 font-mono',
+              gptImageSizeHint.fallback ? 'text-warning' : 'text-fg-muted'
+            )}>
+              → 实际输出：{gptImageSizeHint.size === 'auto' ? 'auto（模型自选）' : gptImageSizeHint.size.replace('x', ' × ')}
+              {gptImageSizeHint.note && (
+                <span className="block text-[10px] opacity-90">{gptImageSizeHint.note}</span>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Batch count */}
@@ -281,13 +368,13 @@ function LeftConfigPanel() {
         </div>
 
         {/* API key warning */}
-        {!imageApiKey && (
+        {!isImageReady && (
           <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-warning/10 border border-warning/20 text-xs text-warning">
             <Info className="w-3.5 h-3.5 shrink-0" />
             {t('config.apiKeyHint', '请先在设置中配置 API Key')}
           </div>
         )}
-        {!chatApiKey && imageApiKey && (
+        {!chatApiKey && isImageReady && (
           <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-primary/10 border border-primary/20 text-xs text-primary">
             <Sparkles className="w-3.5 h-3.5 shrink-0" />
             {t('配置提示词优化 API 可使用优化功能', '配置提示词优化 API 可使用 ✨ 优化功能')}
@@ -300,7 +387,7 @@ function LeftConfigPanel() {
         {/* Generate button */}
         <button
           onClick={generate}
-          disabled={!imageApiKey || !prompt.trim() || isGenerating}
+          disabled={!isImageReady || !prompt.trim() || isGenerating}
           className={cn(
             'w-full flex items-center justify-center gap-2 py-3 rounded-[10px] text-sm font-semibold transition-colors',
             'bg-primary text-primary-foreground hover:bg-primary/90',

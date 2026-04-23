@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
-import { Key, Box, HardDrive, Globe, Info, Eye, EyeOff, Zap, Save, Loader2, X } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { Key, Box, Globe, Info, Eye, EyeOff, Plus, Trash2, Pencil, X, Check } from 'lucide-react';
 import logoImg from '@/assets/logo.png';
 import { useAuthStore } from '@/store/authStore';
 import { cn } from '@/lib/utils';
-import { useConfigStore, IMAGE_MODEL_OPTIONS, CUSTOM_MODEL_VALUE } from '@/store/configStore';
-import { getProviders, updateProviderConfig, type ProviderConfig } from '@/services/providerApi';
+import { useConfigStore } from '@/store/configStore';
+import { useApiKeyStore, maskApiKey, PROVIDER_DEFAULT_BASE, PROVIDER_LABEL, type ApiKey, type ApiKeyProvider } from '@/store/apiKeyStore';
+import { useModelStore, PURPOSE_LABEL, type CustomModel, type ModelPurpose } from '@/store/modelStore';
 import { toast } from '@/store/toastStore';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
@@ -23,17 +24,18 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
   return <label className="text-xs font-medium text-fg-secondary">{children}</label>;
 }
 
-function FieldInput({ type = 'text', value, onChange, placeholder, mono, secret }: {
-  type?: string; value: string; onChange: (v: string) => void; placeholder?: string; mono?: boolean; secret?: boolean;
+function FieldInput({ type = 'text', value, onChange, placeholder, mono, secret, autoFocus }: {
+  type?: string; value: string; onChange: (v: string) => void; placeholder?: string; mono?: boolean; secret?: boolean; autoFocus?: boolean;
 }) {
   const [show, setShow] = useState(false);
   return (
     <div className="relative">
       <input
-        type={secret && !show ? 'password' : 'text'}
+        type={secret && !show ? 'password' : type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
+        autoFocus={autoFocus}
         className={cn(
           'w-full bg-surface-tertiary border border-border rounded-[10px] px-3.5 py-2.5 text-[13px] text-fg-primary outline-none focus:border-primary transition-colors',
           mono && 'font-mono',
@@ -49,177 +51,419 @@ function FieldInput({ type = 'text', value, onChange, placeholder, mono, secret 
   );
 }
 
-function ApiConfigSection() {
-  const { t } = useTranslation();
-  const {
-    imageProvider, imageApiBaseUrl, imageApiKey, imageModel, imageTimeoutSeconds,
-    setImageProvider, setImageApiBaseUrl, setImageApiKey, setImageModel, setImageTimeoutSeconds,
-    chatProvider, chatApiBaseUrl, chatApiKey, chatModel, chatTimeoutSeconds,
-    setChatProvider, setChatApiBaseUrl, setChatApiKey, setChatModel, setChatTimeoutSeconds,
-    setChatSyncedConfig,
-  } = useConfigStore(useShallow((s) => ({
-    imageProvider: s.imageProvider, imageApiBaseUrl: s.imageApiBaseUrl, imageApiKey: s.imageApiKey,
-    imageModel: s.imageModel, imageTimeoutSeconds: s.imageTimeoutSeconds,
-    setImageProvider: s.setImageProvider, setImageApiBaseUrl: s.setImageApiBaseUrl,
-    setImageApiKey: s.setImageApiKey, setImageModel: s.setImageModel, setImageTimeoutSeconds: s.setImageTimeoutSeconds,
-    chatProvider: s.chatProvider, chatApiBaseUrl: s.chatApiBaseUrl, chatApiKey: s.chatApiKey,
-    chatModel: s.chatModel, chatTimeoutSeconds: s.chatTimeoutSeconds,
-    setChatProvider: s.setChatProvider, setChatApiBaseUrl: s.setChatApiBaseUrl,
-    setChatApiKey: s.setChatApiKey, setChatModel: s.setChatModel, setChatTimeoutSeconds: s.setChatTimeoutSeconds,
-    setChatSyncedConfig: s.setChatSyncedConfig,
-  })));
+// ============ API 密钥管理 ============
 
-  const [testing, setTesting] = useState(false);
-  const [testResult, setTestResult] = useState<'success' | 'error' | null>(null);
+function ApiKeyDialog({ editKey, onClose }: { editKey: ApiKey | null; onClose: () => void }) {
+  const isEdit = !!editKey;
+  const addKey = useApiKeyStore((s) => s.addKey);
+  const updateKey = useApiKeyStore((s) => s.updateKey);
+  const [name, setName] = useState(editKey?.name || '');
+  const [provider, setProvider] = useState<ApiKeyProvider>(editKey?.provider || 'openai');
+  const [apiBaseUrl, setApiBaseUrl] = useState(editKey?.apiBaseUrl || PROVIDER_DEFAULT_BASE['openai']);
+  const [apiKey, setApiKey] = useState(editKey?.apiKey || '');
 
-  const syncConfigToBackend = async () => {
-    try {
-      // Sync image provider
-      await updateProviderConfig({
-        provider_name: imageProvider,
-        display_name: imageProvider === 'gemini' ? 'Gemini' : 'OpenAI',
-        api_base: imageApiBaseUrl,
-        api_key: imageApiKey,
-        enabled: true,
-        model_id: imageModel,
-        timeout_seconds: imageTimeoutSeconds,
-      });
-      // Sync chat provider
-      if (chatApiKey) {
-        await updateProviderConfig({
-          provider_name: chatProvider,
-          display_name: chatProvider === 'gemini-chat' ? 'Gemini Chat' : 'OpenAI Chat',
-          api_base: chatApiBaseUrl,
-          api_key: chatApiKey,
-          enabled: true,
-          model_id: chatModel,
-          timeout_seconds: chatTimeoutSeconds,
-        });
-        // Update synced config
-        setChatSyncedConfig({
-          apiBaseUrl: chatApiBaseUrl,
-          apiKey: chatApiKey,
-          model: chatModel,
-          timeoutSeconds: chatTimeoutSeconds,
-        });
-      }
-      return true;
-    } catch {
-      return false;
+  // provider 切换时自动填默认 base URL（仅当 base 为空或是另一个默认值时）
+  const handleProviderChange = (p: ApiKeyProvider) => {
+    setProvider(p);
+    const isCurrentDefault = Object.values(PROVIDER_DEFAULT_BASE).includes(apiBaseUrl.trim());
+    if (!apiBaseUrl.trim() || isCurrentDefault) {
+      setApiBaseUrl(PROVIDER_DEFAULT_BASE[p]);
     }
   };
 
-  const testConnection = async () => {
-    setTesting(true);
-    setTestResult(null);
-    try {
-      const synced = await syncConfigToBackend();
-      if (synced) {
-        setTestResult('success');
-        toast.success(t('配置已保存并连接成功', '配置已保存并连接成功'));
-      } else {
-        setTestResult('error');
-        toast.error(t('同步配置失败', '同步配置失败'));
-      }
-    } catch {
-      setTestResult('error');
-      toast.error(t('连接失败', '连接失败，请检查配置'));
-    } finally {
-      setTesting(false);
+  const handleSave = () => {
+    const trimmedName = name.trim();
+    const trimmedBase = apiBaseUrl.trim();
+    const trimmedKey = apiKey.trim();
+    if (!trimmedName) { toast.error('请输入密钥名称'); return; }
+    if (!trimmedBase) { toast.error('请输入 API Base URL'); return; }
+    if (!trimmedKey) { toast.error('请输入 API Key'); return; }
+    if (isEdit && editKey) {
+      updateKey(editKey.id, { name: trimmedName, provider, apiBaseUrl: trimmedBase, apiKey: trimmedKey });
+      toast.success('密钥已更新');
+    } else {
+      addKey({ name: trimmedName, provider, apiBaseUrl: trimmedBase, apiKey: trimmedKey });
+      toast.success('密钥已添加');
     }
+    onClose();
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-semibold text-fg-primary">{t('API 配置', 'API 配置')}</h3>
-        <p className="text-sm text-fg-muted mt-1">{t('配置 AI 模型的 API 密钥和端点地址', '配置 AI 模型的 API 密钥和端点地址')}</p>
-      </div>
-
-      {/* Image Generation API */}
-      <div className="bg-surface-secondary border border-border rounded-2xl p-5 space-y-4">
-        <div className="flex items-center gap-2.5">
-          <div className={cn('w-2.5 h-2.5 rounded-full', imageApiKey ? 'bg-success' : 'bg-fg-muted')} />
-          <h4 className="text-[15px] font-semibold text-fg-primary">{t('图像生成 API', '图像生成 API')}</h4>
-          <span className={cn('text-[11px] px-2 py-0.5 rounded-full', imageApiKey ? 'bg-success/15 text-success' : 'bg-surface-tertiary text-fg-muted')}>
-            {imageApiKey ? t('已配置', '已配置') : t('未配置', '未配置')}
-          </span>
-        </div>
-
-        <div className="space-y-3">
-          <div className="space-y-1.5">
-            <FieldLabel>Provider</FieldLabel>
-            <select
-              value={imageProvider}
-              onChange={(e) => setImageProvider(e.target.value)}
-              className="w-full bg-surface-tertiary border border-border rounded-[10px] px-3.5 py-2.5 text-[13px] text-fg-primary outline-none appearance-none cursor-pointer focus:border-primary"
-            >
-              <option value="gemini">Gemini</option>
-              <option value="openai">OpenAI</option>
-            </select>
-          </div>
-          <div className="space-y-1.5">
-            <FieldLabel>API Key</FieldLabel>
-            <FieldInput value={imageApiKey} onChange={setImageApiKey} placeholder="输入 API Key..." secret />
-          </div>
-          <div className="space-y-1.5">
-            <FieldLabel>API Base URL</FieldLabel>
-            <FieldInput value={imageApiBaseUrl} onChange={setImageApiBaseUrl} placeholder="https://generativelanguage.googleapis.com" mono />
-          </div>
-          <div className="space-y-1.5">
-            <FieldLabel>{t('超时时间（秒）', '超时时间（秒）')}</FieldLabel>
-            <FieldInput value={String(imageTimeoutSeconds)} onChange={(v) => setImageTimeoutSeconds(Number(v) || 500)} placeholder="500" mono />
-          </div>
-          <button
-            onClick={testConnection}
-            disabled={testing}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-tertiary border border-border text-xs font-medium text-fg-secondary hover:text-fg-primary transition-colors"
-          >
-            {testing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
-            {t('保存并测试连接', '保存并测试连接')}
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70" onClick={onClose}>
+      <div className="bg-surface-secondary rounded-2xl w-[480px] p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-lg font-semibold text-fg-primary">{isEdit ? '编辑密钥' : '添加密钥'}</h3>
+          <button onClick={onClose} className="w-8 h-8 rounded-full bg-surface-tertiary flex items-center justify-center text-fg-secondary hover:text-fg-primary">
+            <X className="w-4 h-4" />
           </button>
         </div>
-      </div>
-
-      {/* Chat/Prompt Optimization API */}
-      <div className="bg-surface-secondary border border-border rounded-2xl p-5 space-y-4">
-        <div className="flex items-center gap-2.5">
-          <div className={cn('w-2.5 h-2.5 rounded-full', chatApiKey ? 'bg-success' : 'bg-fg-muted')} />
-          <h4 className="text-[15px] font-semibold text-fg-primary">{t('提示词优化 API', '提示词优化 API')}</h4>
-          <span className={cn('text-[11px] px-2 py-0.5 rounded-full', chatApiKey ? 'bg-success/15 text-success' : 'bg-surface-tertiary text-fg-muted')}>
-            {chatApiKey ? t('已配置', '已配置') : t('未配置', '未配置')}
-          </span>
-        </div>
-
-        <div className="space-y-3">
+        <div className="space-y-4">
           <div className="space-y-1.5">
-            <FieldLabel>Provider</FieldLabel>
+            <FieldLabel>密钥名称</FieldLabel>
+            <FieldInput value={name} onChange={setName} placeholder="如：云雾主账户" autoFocus />
+          </div>
+          <div className="space-y-1.5">
+            <FieldLabel>Provider 类型</FieldLabel>
             <select
-              value={chatProvider}
-              onChange={(e) => setChatProvider(e.target.value)}
+              value={provider}
+              onChange={(e) => handleProviderChange(e.target.value as ApiKeyProvider)}
               className="w-full bg-surface-tertiary border border-border rounded-[10px] px-3.5 py-2.5 text-[13px] text-fg-primary outline-none appearance-none cursor-pointer focus:border-primary"
             >
-              <option value="gemini-chat">Gemini (/v1beta)</option>
-              <option value="openai-chat">OpenAI (/v1)</option>
+              <option value="openai">{PROVIDER_LABEL['openai']}</option>
+              <option value="gemini">{PROVIDER_LABEL['gemini']}</option>
+              <option value="openai-chat">{PROVIDER_LABEL['openai-chat']}</option>
+              <option value="gemini-chat">{PROVIDER_LABEL['gemini-chat']}</option>
             </select>
           </div>
           <div className="space-y-1.5">
-            <FieldLabel>API Key</FieldLabel>
-            <FieldInput value={chatApiKey} onChange={setChatApiKey} placeholder="输入 API Key..." secret />
-          </div>
-          <div className="space-y-1.5">
             <FieldLabel>API Base URL</FieldLabel>
-            <FieldInput value={chatApiBaseUrl} onChange={setChatApiBaseUrl} placeholder="https://api.openai.com/v1" mono />
+            <FieldInput value={apiBaseUrl} onChange={setApiBaseUrl} placeholder="https://..." mono />
           </div>
           <div className="space-y-1.5">
-            <FieldLabel>{t('模型', '模型')}</FieldLabel>
-            <FieldInput value={chatModel} onChange={setChatModel} placeholder="gemini-3-flash-preview" mono />
+            <FieldLabel>API Key</FieldLabel>
+            <FieldInput value={apiKey} onChange={setApiKey} placeholder="sk-..." secret mono />
           </div>
+        </div>
+        <div className="flex gap-3 mt-6">
+          <button onClick={onClose} className="flex-1 py-2.5 rounded-lg bg-surface-tertiary border border-border text-sm text-fg-secondary hover:text-fg-primary transition-colors">
+            取消
+          </button>
+          <button onClick={handleSave} className="flex-1 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors">
+            保存
+          </button>
         </div>
       </div>
     </div>
   );
 }
+
+function ApiKeyCard({ k, onEdit, onRemove }: { k: ApiKey; onEdit: () => void; onRemove: () => void }) {
+  const [showFull, setShowFull] = useState(false);
+  return (
+    <div className="bg-surface-tertiary border border-border rounded-xl p-4 space-y-2">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <h4 className="text-sm font-semibold text-fg-primary truncate">{k.name}</h4>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary shrink-0">
+              {PROVIDER_LABEL[k.provider]}
+            </span>
+          </div>
+          <p className="text-[11px] text-fg-muted font-mono mt-1 truncate">{k.apiBaseUrl}</p>
+          <div className="flex items-center gap-2 mt-1.5">
+            <code className="text-[11px] text-fg-secondary font-mono">
+              {showFull ? k.apiKey : maskApiKey(k.apiKey)}
+            </code>
+            <button onClick={() => setShowFull(!showFull)} className="text-fg-muted hover:text-fg-secondary">
+              {showFull ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+            </button>
+          </div>
+        </div>
+        <div className="flex items-center gap-1 shrink-0">
+          <button onClick={onEdit} className="w-7 h-7 rounded-md bg-surface-secondary flex items-center justify-center text-fg-muted hover:text-fg-primary transition-colors">
+            <Pencil className="w-3.5 h-3.5" />
+          </button>
+          <button onClick={onRemove} className="w-7 h-7 rounded-md bg-surface-secondary flex items-center justify-center text-fg-muted hover:text-error transition-colors">
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ApiKeyListSection() {
+  const { t } = useTranslation();
+  const keys = useApiKeyStore((s) => s.keys);
+  const removeKey = useApiKeyStore((s) => s.removeKey);
+  const modelsUsing = useModelStore((s) => s.models);
+  const [dialogKey, setDialogKey] = useState<ApiKey | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  const handleRemove = (id: string) => {
+    const inUse = modelsUsing.filter((m) => m.apiKeyId === id);
+    if (inUse.length > 0) {
+      const modelNames = inUse.map((m) => m.name).join('、');
+      if (!window.confirm(`该密钥被 ${inUse.length} 个模型使用（${modelNames}），删除后这些模型将无法使用。确定删除？`)) {
+        return;
+      }
+    } else {
+      if (!window.confirm('确定删除此密钥？')) return;
+    }
+    removeKey(id);
+    toast.success('已删除');
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-end justify-between gap-3">
+        <div>
+          <h3 className="text-lg font-semibold text-fg-primary">{t('API 密钥管理', 'API 密钥管理')}</h3>
+          <p className="text-sm text-fg-muted mt-1">{t('添加多个 API 密钥，模型可按需绑定使用', '添加多个 API 密钥，模型可按需绑定使用')}</p>
+        </div>
+        <button
+          onClick={() => { setDialogKey(null); setDialogOpen(true); }}
+          className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors shrink-0"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          添加密钥
+        </button>
+      </div>
+
+      {keys.length === 0 ? (
+        <div className="bg-surface-secondary border border-dashed border-border rounded-2xl p-10 text-center space-y-3">
+          <Key className="w-10 h-10 mx-auto text-fg-muted" />
+          <p className="text-sm text-fg-secondary">还没有添加密钥</p>
+          <button
+            onClick={() => { setDialogKey(null); setDialogOpen(true); }}
+            className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors"
+          >
+            添加第一把密钥
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-2.5">
+          {keys.map((k) => (
+            <ApiKeyCard
+              key={k.id}
+              k={k}
+              onEdit={() => { setDialogKey(k); setDialogOpen(true); }}
+              onRemove={() => handleRemove(k.id)}
+            />
+          ))}
+        </div>
+      )}
+
+      {dialogOpen && (
+        <ApiKeyDialog editKey={dialogKey} onClose={() => setDialogOpen(false)} />
+      )}
+    </div>
+  );
+}
+
+// ============ 模型管理 ============
+
+function ModelDialog({ editModel, onClose }: { editModel: CustomModel | null; onClose: () => void }) {
+  const isEdit = !!editModel;
+  const addModel = useModelStore((s) => s.addModel);
+  const updateModel = useModelStore((s) => s.updateModel);
+  const keys = useApiKeyStore((s) => s.keys);
+  const [name, setName] = useState(editModel?.name || '');
+  const [displayName, setDisplayName] = useState(editModel?.displayName || '');
+  const [purpose, setPurpose] = useState<ModelPurpose>(editModel?.purpose || 'image');
+  const [apiKeyId, setApiKeyId] = useState(editModel?.apiKeyId || keys[0]?.id || '');
+
+  const handleSave = () => {
+    const trimmedName = name.trim();
+    if (!trimmedName) { toast.error('请输入模型名称'); return; }
+    if (!apiKeyId) { toast.error('请选择绑定的密钥'); return; }
+    if (isEdit && editModel) {
+      updateModel(editModel.id, { name: trimmedName, displayName: displayName.trim() || undefined, apiKeyId, purpose });
+      toast.success('模型已更新');
+    } else {
+      addModel({ name: trimmedName, displayName: displayName.trim() || undefined, apiKeyId, purpose });
+      toast.success('模型已添加');
+    }
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70" onClick={onClose}>
+      <div className="bg-surface-secondary rounded-2xl w-[480px] p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-lg font-semibold text-fg-primary">{isEdit ? '编辑模型' : '添加模型'}</h3>
+          <button onClick={onClose} className="w-8 h-8 rounded-full bg-surface-tertiary flex items-center justify-center text-fg-secondary hover:text-fg-primary">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        {keys.length === 0 ? (
+          <div className="bg-warning/10 border border-warning/30 rounded-xl p-4 text-sm text-warning">
+            请先在「API 密钥管理」添加一把密钥，再来添加模型。
+          </div>
+        ) : (
+          <>
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <FieldLabel>模型名称（API 参数）</FieldLabel>
+                <FieldInput value={name} onChange={setName} placeholder="如：gpt-image-2" mono autoFocus />
+              </div>
+              <div className="space-y-1.5">
+                <FieldLabel>展示名（可选）</FieldLabel>
+                <FieldInput value={displayName} onChange={setDisplayName} placeholder="如：GPT Image 2（按量）" />
+              </div>
+              <div className="space-y-1.5">
+                <FieldLabel>用途</FieldLabel>
+                <select
+                  value={purpose}
+                  onChange={(e) => setPurpose(e.target.value as ModelPurpose)}
+                  className="w-full bg-surface-tertiary border border-border rounded-[10px] px-3.5 py-2.5 text-[13px] text-fg-primary outline-none appearance-none cursor-pointer focus:border-primary"
+                >
+                  <option value="image">{PURPOSE_LABEL['image']}</option>
+                  <option value="vision">{PURPOSE_LABEL['vision']}</option>
+                  <option value="chat">{PURPOSE_LABEL['chat']}</option>
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <FieldLabel>绑定密钥</FieldLabel>
+                <select
+                  value={apiKeyId}
+                  onChange={(e) => setApiKeyId(e.target.value)}
+                  className="w-full bg-surface-tertiary border border-border rounded-[10px] px-3.5 py-2.5 text-[13px] text-fg-primary outline-none appearance-none cursor-pointer focus:border-primary"
+                >
+                  {keys.map((k) => (
+                    <option key={k.id} value={k.id}>{k.name}（{PROVIDER_LABEL[k.provider]}）</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button onClick={onClose} className="flex-1 py-2.5 rounded-lg bg-surface-tertiary border border-border text-sm text-fg-secondary hover:text-fg-primary transition-colors">
+                取消
+              </button>
+              <button onClick={handleSave} className="flex-1 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors">
+                保存
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ModelListSection() {
+  const { t } = useTranslation();
+  const models = useModelStore((s) => s.models);
+  const removeModel = useModelStore((s) => s.removeModel);
+  const keys = useApiKeyStore((s) => s.keys);
+  const { selectedImageModelId, selectedVisionModelId, selectedChatModelId, setSelectedImageModelId, setSelectedVisionModelId, setSelectedChatModelId } =
+    useConfigStore(useShallow((s) => ({
+      selectedImageModelId: s.selectedImageModelId,
+      selectedVisionModelId: s.selectedVisionModelId,
+      selectedChatModelId: s.selectedChatModelId,
+      setSelectedImageModelId: s.setSelectedImageModelId,
+      setSelectedVisionModelId: s.setSelectedVisionModelId,
+      setSelectedChatModelId: s.setSelectedChatModelId,
+    })));
+  const [dialogModel, setDialogModel] = useState<CustomModel | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [activePurpose, setActivePurpose] = useState<ModelPurpose>('image');
+
+  const filteredModels = useMemo(() => models.filter((m) => m.purpose === activePurpose), [models, activePurpose]);
+  const keyMap = useMemo(() => new Map(keys.map((k) => [k.id, k])), [keys]);
+
+  const selectedMap: Record<ModelPurpose, string | null> = {
+    image: selectedImageModelId,
+    vision: selectedVisionModelId,
+    chat: selectedChatModelId,
+  };
+  const setSelectedByPurpose = (p: ModelPurpose, id: string) => {
+    if (p === 'image') setSelectedImageModelId(id);
+    else if (p === 'vision') setSelectedVisionModelId(id);
+    else setSelectedChatModelId(id);
+  };
+
+  const handleRemove = (m: CustomModel) => {
+    if (!window.confirm(`确定删除模型「${m.displayName || m.name}」？`)) return;
+    removeModel(m.id);
+    // 如果删的是当前选中的，清空
+    if (selectedMap[m.purpose] === m.id) setSelectedByPurpose(m.purpose, '');
+    toast.success('已删除');
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-end justify-between gap-3">
+        <div>
+          <h3 className="text-lg font-semibold text-fg-primary">{t('模型管理', '模型管理')}</h3>
+          <p className="text-sm text-fg-muted mt-1">{t('添加模型并绑定密钥，生成页从这里选择', '添加模型并绑定密钥，生成页从这里选择')}</p>
+        </div>
+        <button
+          onClick={() => { setDialogModel(null); setDialogOpen(true); }}
+          className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors shrink-0"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          添加模型
+        </button>
+      </div>
+
+      {/* 用途 tab */}
+      <div className="flex gap-2">
+        {(['image', 'vision', 'chat'] as ModelPurpose[]).map((p) => (
+          <button
+            key={p}
+            onClick={() => setActivePurpose(p)}
+            className={cn(
+              'px-3.5 py-1.5 rounded-full text-xs font-medium transition-colors',
+              activePurpose === p
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-surface-secondary text-fg-secondary hover:text-fg-primary'
+            )}
+          >
+            {PURPOSE_LABEL[p]}（{models.filter((m) => m.purpose === p).length}）
+          </button>
+        ))}
+      </div>
+
+      {filteredModels.length === 0 ? (
+        <div className="bg-surface-secondary border border-dashed border-border rounded-2xl p-10 text-center space-y-3">
+          <Box className="w-10 h-10 mx-auto text-fg-muted" />
+          <p className="text-sm text-fg-secondary">还没有{PURPOSE_LABEL[activePurpose]}的模型</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {filteredModels.map((m) => {
+            const k = keyMap.get(m.apiKeyId);
+            const isSelected = selectedMap[m.purpose] === m.id;
+            return (
+              <div
+                key={m.id}
+                className={cn(
+                  'flex items-center justify-between px-4 py-3 rounded-xl transition-colors group',
+                  isSelected ? 'bg-primary/15 ring-1 ring-primary' : 'bg-surface-tertiary'
+                )}
+              >
+                <button
+                  onClick={() => setSelectedByPurpose(m.purpose, m.id)}
+                  className="flex-1 text-left min-w-0"
+                >
+                  <div className="flex items-center gap-2">
+                    <p className={cn('text-sm font-medium truncate', isSelected ? 'text-primary' : 'text-fg-primary')}>
+                      {m.displayName || m.name}
+                    </p>
+                    {isSelected && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/15 text-primary shrink-0 flex items-center gap-0.5">
+                        <Check className="w-3 h-3" />当前
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-fg-muted font-mono mt-0.5 truncate">
+                    {m.name}{m.displayName && m.displayName !== m.name ? '' : ''}
+                    {k ? ` · ${k.name}` : ' · 密钥不存在'}
+                  </p>
+                </button>
+                <div className="flex items-center gap-1 shrink-0">
+                  <button onClick={(e) => { e.stopPropagation(); setDialogModel(m); setDialogOpen(true); }} className="w-7 h-7 rounded-md bg-surface-secondary flex items-center justify-center text-fg-muted hover:text-fg-primary transition-colors">
+                    <Pencil className="w-3.5 h-3.5" />
+                  </button>
+                  <button onClick={(e) => { e.stopPropagation(); handleRemove(m); }} className="w-7 h-7 rounded-md bg-surface-secondary flex items-center justify-center text-fg-muted hover:text-error transition-colors">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {dialogOpen && (
+        <ModelDialog editModel={dialogModel} onClose={() => setDialogOpen(false)} />
+      )}
+    </div>
+  );
+}
+
+// ============ 语言 / 关于（保留原样） ============
 
 function LanguageSection() {
   const { t } = useTranslation();
@@ -276,101 +520,6 @@ function LanguageSection() {
   );
 }
 
-function ModelManageSection() {
-  const { t } = useTranslation();
-  const { imageModel, setImageModel } = useConfigStore(
-    useShallow((s) => ({ imageModel: s.imageModel, setImageModel: s.setImageModel }))
-  );
-  const STORAGE_KEY = 'banana-custom-models';
-  const [customModels, setCustomModels] = useState<string[]>(() => {
-    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch { return []; }
-  });
-  const [inputVal, setInputVal] = useState('');
-
-  const addModel = () => {
-    const val = inputVal.trim();
-    if (!val) { toast.error('请输入模型名称'); return; }
-    if (IMAGE_MODEL_OPTIONS.some((o) => o.value === val) || customModels.includes(val)) {
-      toast.error('模型已存在'); return;
-    }
-    const next = [...customModels, val];
-    setCustomModels(next);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    setInputVal('');
-    toast.success(`已添加模型: ${val}`);
-  };
-
-  const removeModel = (model: string) => {
-    const next = customModels.filter((m) => m !== model);
-    setCustomModels(next);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    if (imageModel === model) setImageModel(IMAGE_MODEL_OPTIONS[0].value);
-    toast.success('已移除');
-  };
-
-  const allModels = [
-    ...IMAGE_MODEL_OPTIONS.map((o) => ({ value: o.value, label: o.label, builtin: true })),
-    ...customModels.map((m) => ({ value: m, label: m, builtin: false })),
-  ];
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-semibold text-fg-primary">{t('模型管理', '模型管理')}</h3>
-        <p className="text-sm text-fg-muted mt-1">{t('管理可用的 AI 模型', '管理可用的 AI 模型')}</p>
-      </div>
-      <div className="bg-surface-secondary border border-border rounded-2xl p-5 space-y-4">
-        <h4 className="text-[15px] font-semibold text-fg-primary">{t('图像生成模型', '图像生成模型')}</h4>
-        <div className="space-y-2">
-          {allModels.map((opt) => (
-            <div
-              key={opt.value}
-              className={cn(
-                'flex items-center justify-between px-4 py-3 rounded-xl transition-colors',
-                imageModel === opt.value ? 'bg-primary/15 ring-1 ring-primary' : 'bg-surface-tertiary'
-              )}
-            >
-              <button onClick={() => setImageModel(opt.value)} className="flex-1 text-left">
-                <p className={cn('text-sm font-medium', imageModel === opt.value ? 'text-primary' : 'text-fg-primary')}>{opt.label}</p>
-                {opt.builtin && <p className="text-xs text-fg-muted font-mono mt-0.5">{opt.value}</p>}
-              </button>
-              <div className="flex items-center gap-2">
-                {imageModel === opt.value && (
-                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-primary/15 text-primary">{t('当前', '当前')}</span>
-                )}
-                {!opt.builtin && (
-                  <button onClick={() => removeModel(opt.value)} className="text-fg-muted hover:text-error transition-colors">
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-        <div className="space-y-1.5">
-          <label className="text-xs font-medium text-fg-secondary">{t('添加自定义模型', '添加自定义模型')}</label>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={inputVal}
-              onChange={(e) => setInputVal(e.target.value)}
-              placeholder="输入模型名称，如 gemini-2.5-flash-image..."
-              className="flex-1 bg-surface-tertiary border border-border rounded-[10px] px-3.5 py-2.5 text-[13px] text-fg-primary font-mono placeholder:text-fg-muted outline-none focus:border-primary transition-colors"
-              onKeyDown={(e) => { if (e.key === 'Enter') addModel(); }}
-            />
-            <button
-              onClick={addModel}
-              className="px-3.5 py-2.5 rounded-[10px] bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors shrink-0"
-            >
-              {t('添加', '添加')}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function AboutSection() {
   const { t } = useTranslation();
   const { user, accessInfo, logout } = useAuthStore();
@@ -391,7 +540,6 @@ function AboutSection() {
         <p className="text-sm text-fg-muted mt-1">{t('settingsPage.aboutDesc')}</p>
       </div>
 
-      {/* 账号信息 */}
       {user && (
         <div className="bg-surface-secondary border border-border rounded-2xl p-5 space-y-3">
           <h4 className="text-sm font-semibold text-fg-primary">{t('settingsPage.accountInfo')}</h4>
@@ -426,7 +574,6 @@ function AboutSection() {
               </span>
             </div>
           </div>
-          {/* 续费/订阅按钮 → 跳转独立订阅页 */}
           {isSubscribed ? (
             <div className="mt-2 space-y-1">
               <button
@@ -458,13 +605,12 @@ function AboutSection() {
         </div>
       )}
 
-      {/* 应用信息 */}
       <div className="bg-surface-secondary border border-border rounded-2xl p-5 space-y-4">
         <div className="flex items-center gap-3">
           <img src={logoImg} alt="logo" className="w-12 h-12 rounded-xl" />
           <div>
             <h4 className="text-base font-semibold text-fg-primary">{t('sidebar.appName')}</h4>
-            <p className="text-xs text-fg-muted">v2.7.4</p>
+            <p className="text-xs text-fg-muted">v2.9.7</p>
           </div>
         </div>
         <div className="space-y-2 text-sm text-fg-secondary">
@@ -480,15 +626,14 @@ export function SettingsPage() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('api');
 
   const tabContent: Record<SettingsTab, React.ReactNode> = {
-    api: <ApiConfigSection />,
-    models: <ModelManageSection />,
+    api: <ApiKeyListSection />,
+    models: <ModelListSection />,
     language: <LanguageSection />,
     about: <AboutSection />,
   };
 
   return (
     <div className="flex flex-1 overflow-hidden p-8 gap-8">
-      {/* Left tabs */}
       <div className="w-52 shrink-0 space-y-2">
         <h2 className="text-xl font-bold text-fg-primary mb-4">{t('settingsPage.title')}</h2>
         {tabKeys.map((tab) => {
@@ -510,9 +655,10 @@ export function SettingsPage() {
         })}
       </div>
 
-      {/* Right content */}
-      <div className="flex-1 overflow-y-auto max-w-2xl scrollbar-none" style={{ scrollbarWidth: 'none' }}>
-        {tabContent[activeTab]}
+      <div className="flex-1 overflow-y-auto scrollbar-none" style={{ scrollbarWidth: 'none' }}>
+        <div className="max-w-3xl">
+          {tabContent[activeTab]}
+        </div>
       </div>
     </div>
   );

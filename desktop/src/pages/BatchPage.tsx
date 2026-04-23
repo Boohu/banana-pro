@@ -1,8 +1,10 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { FolderOpen, Play, Pause, Plus, ChevronDown, X, ArrowRight, Loader2, ImagePlus, Image as ImageIcon, Trash2, Folder, CircleCheck, Download, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
-import { IMAGE_MODEL_OPTIONS, CUSTOM_MODEL_VALUE, useConfigStore } from '@/store/configStore';
+import { IMAGE_MODEL_OPTIONS, CUSTOM_MODEL_VALUE, useConfigStore, getModelAspectRatios, getModelResolutions, modelSupportsAutoRatio, resolveGPTImageSize } from '@/store/configStore';
+import { useModelStore } from '@/store/modelStore';
+import { useApiKeyStore } from '@/store/apiKeyStore';
 import { useHistoryStore } from '@/store/historyStore';
 import { processBatch, listBatches, getBatchStatus, deleteBatch, pauseBatch, resumeBatch } from '@/services/generateApi';
 import { getImageUrl } from '@/services/api';
@@ -40,25 +42,29 @@ interface BatchJob {
   backendBatchId?: string;
 }
 
-const createBatchJob = (name: string, defaultModel?: string): BatchJob => ({
-  id: Date.now().toString(),
-  name,
-  files: [],
-  prompt: '',
-  model: defaultModel || IMAGE_MODEL_OPTIONS[0].value,
-  aspectRatio: '1:1',
-  resolution: '2K',
-  quality: 90,
-  concurrency: 3,
-  outputFormat: 'PNG',
-  keepOriginalSize: false,
-  promptOptEnabled: false,
-  autoRetry: false,
-  outputDir: '',
-  outputFolderId: '',
-  namingRule: '原文件名_edited',
-  status: 'pending',
-});
+const createBatchJob = (name: string, defaultModel?: string): BatchJob => {
+  const model = defaultModel || IMAGE_MODEL_OPTIONS[0].value;
+  const isGPT = model.startsWith('gpt-image-');
+  return {
+    id: Date.now().toString(),
+    name,
+    files: [],
+    prompt: '',
+    model,
+    aspectRatio: isGPT ? 'auto' : '1:1',  // gpt 系列默认 auto（跟随参考图）
+    resolution: isGPT ? '1K' : '2K',      // gpt 图生图只支持 1K 档
+    quality: 90,
+    concurrency: 3,
+    outputFormat: 'PNG',
+    keepOriginalSize: false,
+    promptOptEnabled: false,
+    autoRetry: false,
+    outputDir: '',
+    outputFolderId: '',
+    namingRule: '原文件名_edited',
+    status: 'pending',
+  };
+};
 
 // ---- Batch List Sidebar ----
 function BatchListSidebar({ batches, selectedId, onSelect, onAdd, onDelete }: {
@@ -137,15 +143,61 @@ function BatchConfigPanel({ batch, onChange }: { batch: BatchJob; onChange: (upd
   const folders = useHistoryStore((s) => s.folders);
   const loadFolders = useHistoryStore((s) => s.loadFolders);
   useEffect(() => { void loadFolders(); }, [loadFolders]);
-  // 读取自定义模型列表（和设置页共享 localStorage）
-  const [customModels] = useState<string[]>(() => {
-    try { return JSON.parse(localStorage.getItem('banana-custom-models') || '[]'); } catch { return []; }
-  });
-  const builtinValues = new Set(IMAGE_MODEL_OPTIONS.map((o) => o.value as string));
-  const modelOptions: { value: string; label: string }[] = [
-    ...IMAGE_MODEL_OPTIONS.map((o) => ({ value: o.value as string, label: o.label })),
-    ...customModels.filter((m) => !builtinValues.has(m)).map((m) => ({ value: m, label: m })),
-  ];
+
+  // 新架构：从 modelStore 读 image 模型，按绑定的密钥展示
+  const allModels = useModelStore((s) => s.models);
+  const apiKeys = useApiKeyStore((s) => s.keys);
+  const modelOptions: { value: string; label: string }[] = useMemo(() => {
+    const imageModels = allModels.filter((m) => m.purpose === 'image');
+    if (imageModels.length > 0) {
+      return imageModels.map((m) => {
+        const k = apiKeys.find((kk) => kk.id === m.apiKeyId);
+        const label = (m.displayName || m.name) + (k ? ` · ${k.name}` : ' · 密钥缺失');
+        return { value: m.name, label };
+      });
+    }
+    // 兼容老用户：如果 modelStore 还是空，用内置 + 旧 localStorage 自定义
+    const fallbackCustom: string[] = (() => {
+      try { return JSON.parse(localStorage.getItem('banana-custom-models') || '[]'); } catch { return []; }
+    })();
+    const builtinValues = new Set(IMAGE_MODEL_OPTIONS.map((o) => o.value as string));
+    return [
+      ...IMAGE_MODEL_OPTIONS.map((o) => ({ value: o.value as string, label: o.label })),
+      ...fallbackCustom.filter((m: string) => !builtinValues.has(m)).map((m: string) => ({ value: m, label: m })),
+    ];
+  }, [allModels, apiKeys]);
+
+  // 按当前模型动态过滤（批量=图生图模式，hasRef 恒为 true）
+  const aspectRatios = useMemo(() => {
+    const base = getModelAspectRatios(batch.model);
+    if (modelSupportsAutoRatio(batch.model)) {
+      return ['auto', ...base];
+    }
+    return base;
+  }, [batch.model]);
+  const resolutions = useMemo(() => getModelResolutions(batch.model, true), [batch.model]);
+  const sizeHint = useMemo(() => {
+    if (!batch.model.startsWith('gpt-image-')) return null;
+    return resolveGPTImageSize(batch.aspectRatio, batch.resolution, true);
+  }, [batch.model, batch.aspectRatio, batch.resolution]);
+
+  // 模型切换到 gpt-image-*：强制 aspectRatio=auto（跟随参考图）
+  const prevModelRef = useRef(batch.model);
+  useEffect(() => {
+    const prev = prevModelRef.current;
+    prevModelRef.current = batch.model;
+    if (prev !== batch.model && batch.model.startsWith('gpt-image-')) {
+      onChange({ aspectRatio: 'auto', resolution: '1K' });
+    }
+  }, [batch.model, onChange]);
+
+  // 模型切换后规范化非法值（兜底）
+  useEffect(() => {
+    const patch: Partial<BatchJob> = {};
+    if (!aspectRatios.includes(batch.aspectRatio)) patch.aspectRatio = aspectRatios[0];
+    if (!resolutions.includes(batch.resolution)) patch.resolution = resolutions[0];
+    if (Object.keys(patch).length > 0) onChange(patch);
+  }, [aspectRatios, resolutions, batch.aspectRatio, batch.resolution, onChange]);
   const selectStyle = { backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2371717A' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' };
 
   const isTauri = typeof window !== 'undefined' && Boolean((window as any).__TAURI_INTERNALS__);
@@ -198,8 +250,8 @@ function BatchConfigPanel({ batch, onChange }: { batch: BatchJob; onChange: (upd
           className="w-full bg-surface-tertiary border border-border rounded-[10px] px-3 py-2.5 text-[13px] text-fg-primary outline-none appearance-none cursor-pointer focus:border-primary"
           style={selectStyle}
         >
-          {['1:1', '16:9', '9:16', '4:3', '3:2', '2:3', '4:5', '5:4'].map((r) => (
-            <option key={r} value={r}>{r}</option>
+          {aspectRatios.map((r) => (
+            <option key={r} value={r}>{r === 'auto' ? 'auto（跟随参考图）' : r}</option>
           ))}
         </select>
       </div>
@@ -213,10 +265,21 @@ function BatchConfigPanel({ batch, onChange }: { batch: BatchJob; onChange: (upd
           className="w-full bg-surface-tertiary border border-border rounded-[10px] px-3 py-2.5 text-[13px] text-fg-primary font-mono outline-none appearance-none cursor-pointer focus:border-primary"
           style={selectStyle}
         >
-          <option value="1K">1K (1024 × 1024)</option>
-          <option value="2K">2K (2048 × 2048)</option>
-          <option value="4K">4K (4096 × 4096)</option>
+          {resolutions.map((r) => (
+            <option key={r} value={r}>
+              {r === '1K' ? '1K (1024 × 1024)' : r === '2K' ? '2K (2048 × 2048)' : r === '4K' ? '4K (3840 × 2160)' : r}
+            </option>
+          ))}
         </select>
+        {sizeHint && (
+          <div className={cn(
+            'text-[10.5px] leading-snug mt-0.5 font-mono',
+            sizeHint.fallback ? 'text-warning' : 'text-fg-muted'
+          )}>
+            → 实际输出：{sizeHint.size === 'auto' ? 'auto（模型自选）' : sizeHint.size.replace('x', ' × ')}
+            {sizeHint.note && <span className="block text-[10px] opacity-90">{sizeHint.note}</span>}
+          </div>
+        )}
       </div>
 
       {/* Output format */}
@@ -280,12 +343,14 @@ function BatchConfigPanel({ batch, onChange }: { batch: BatchJob; onChange: (upd
             if (val === '__local__') {
               // 桌面端：弹出文件夹选择
               try {
-                const mod = await (Function('return import("@tauri-apps/plugin-dialog")')() as Promise<any>);
-                const selected = await mod.open({ directory: true, multiple: false });
+                const { open } = await import('@tauri-apps/plugin-dialog');
+                const selected = await open({ directory: true, multiple: false, title: '选择输出文件夹' });
                 if (selected && typeof selected === 'string') {
                   onChange({ outputFolderId: '__local__', outputDir: selected });
                 }
-              } catch {}
+              } catch (err) {
+                console.error('[Batch] 打开文件夹选择器失败:', err);
+              }
             } else if (val === '') {
               onChange({ outputFolderId: '', outputDir: '' });
             } else {
@@ -309,10 +374,12 @@ function BatchConfigPanel({ batch, onChange }: { batch: BatchJob; onChange: (upd
           <button
             onClick={async () => {
               try {
-                const mod = await (Function('return import("@tauri-apps/plugin-dialog")')() as Promise<any>);
-                const selected = await mod.open({ directory: true, multiple: false });
+                const { open } = await import('@tauri-apps/plugin-dialog');
+                const selected = await open({ directory: true, multiple: false, title: '选择输出文件夹' });
                 if (selected && typeof selected === 'string') onChange({ outputDir: selected });
-              } catch {}
+              } catch (err) {
+                console.error('[Batch] 打开文件夹选择器失败:', err);
+              }
             }}
             className="p-1 rounded hover:bg-surface-secondary transition-colors shrink-0"
           >

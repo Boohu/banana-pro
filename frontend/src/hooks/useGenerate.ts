@@ -8,6 +8,7 @@ import { setUpdateSource, getUpdateSource, clearUpdateSource } from '../store/up
 import { toast } from '../store/toastStore';
 import { usePromptHistoryStore } from '../store/promptHistoryStore';
 import { useHistoryStore } from '../store/historyStore';
+import { resolveActiveModel, syncActiveModelToBackend } from '../services/activeModel';
 import i18n from '../i18n';
 
 // 流式连接建立超时时间（毫秒）- 超过此时间未建立连接则启动轮询
@@ -317,7 +318,9 @@ export function useGenerate() {
   }, []);
 
   const generate = async () => {
-    if (!config.imageApiKey) {
+    // 解析当前选中的图像模型（先从 modelStore，fallback 到旧扁平 config）
+    const resolved = resolveActiveModel('image');
+    if (!resolved) {
       toast.error(i18n.t('generate.toast.missingApiKey'));
       return;
     }
@@ -325,6 +328,14 @@ export function useGenerate() {
       toast.error(i18n.t('prompt.toast.empty'));
       return;
     }
+
+    // 把活跃模型的 key/base 同步到后端 ProviderConfig
+    const synced = await syncActiveModelToBackend('image');
+    if (!synced) {
+      toast.error(i18n.t('generate.toast.missingApiKey'));
+      return;
+    }
+    const { provider: activeProvider, modelId: activeModelId } = synced;
 
     resetPromptHistory(config.prompt);
     setSubmitting(true);
@@ -342,8 +353,8 @@ export function useGenerate() {
         if (config.refFiles.length > 0) {
           const formData = new FormData();
           formData.append('prompt', config.prompt);
-          formData.append('provider', config.imageProvider);
-          formData.append('model_id', config.imageModel);
+          formData.append('provider', activeProvider);
+          formData.append('model_id', activeModelId);
           formData.append('aspectRatio', config.aspectRatio);
           formData.append('imageSize', config.imageSize);
           formData.append('count', '1');
@@ -356,8 +367,8 @@ export function useGenerate() {
         }
 
         return generateBatch({
-          provider: config.imageProvider,
-          model_id: config.imageModel,
+          provider: activeProvider,
+          model_id: activeModelId,
           params: {
             prompt: config.prompt,
             count: 1,
@@ -496,12 +507,12 @@ export function useGenerate() {
         // --- 场景 A: 图生图 (multipart/form-data) ---
         const formData = new FormData();
         formData.append('prompt', config.prompt);
-        formData.append('provider', config.imageProvider);
-        formData.append('model_id', config.imageModel);
+        formData.append('provider', activeProvider);
+        formData.append('model_id', activeModelId);
         formData.append('aspectRatio', config.aspectRatio);
         formData.append('imageSize', config.imageSize);
         formData.append('count', requestedCount.toString());
-        
+
         // 添加所有参考图片
         config.refFiles.forEach((file) => {
           formData.append('refImages', file);
@@ -511,8 +522,8 @@ export function useGenerate() {
       } else {
         // --- 场景 B: 文本生图 (JSON) ---
         response = await generateBatch({
-          provider: config.imageProvider,
-          model_id: config.imageModel,
+          provider: activeProvider,
+          model_id: activeModelId,
           params: {
             prompt: config.prompt,
             count: requestedCount,

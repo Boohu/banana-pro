@@ -37,15 +37,9 @@ func loadProviderTimeoutMap(ctx context.Context) (map[string]time.Duration, erro
 }
 
 func normalizeProviderForTimeout(providerName string) string {
-	name := strings.TrimSpace(strings.ToLower(providerName))
-	switch {
-	case strings.HasPrefix(name, "gemini"):
-		return "gemini"
-	case strings.HasPrefix(name, "openai"):
-		return "openai"
-	default:
-		return name
-	}
+	// 关键：openai / openai-chat 是两个不同 provider，不能合并
+	// 合并会导致 openai-chat(150s) 覆盖 openai(500s)，任务被 160s 误判超时
+	return strings.TrimSpace(strings.ToLower(providerName))
 }
 
 func taskTimeoutForProvider(providerName string, timeoutMap map[string]time.Duration) time.Duration {

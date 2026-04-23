@@ -11,8 +11,11 @@ import (
 	"image-gen-service/internal/model"
 	"io"
 	"log"
+	"mime/multipart"
 	"net/http"
+	"net/textproto"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -89,6 +92,13 @@ func (p *OpenAIProvider) Generate(ctx context.Context, params map[string]interfa
 	if modelID == "" {
 		return nil, fmt.Errorf("缺少 model_id 参数")
 	}
+
+	// gpt-image-* 走专用 images 端点（/v1/images/generations | /v1/images/edits）
+	if isGPTImageModel(modelID) {
+		log.Printf("[OpenAI] 路由到 images API: model=%s", modelID)
+		return p.generateViaImagesAPI(ctx, params, modelID)
+	}
+	log.Printf("[OpenAI] 路由到 chat/completions: model=%s (未命中 gpt-image-*)", modelID)
 
 	reqBody, refCount, promptPreview, err := p.buildChatRequestBody(modelID, params)
 	if err != nil {
@@ -634,4 +644,322 @@ func toInt(v interface{}) (int, bool) {
 	default:
 		return 0, false
 	}
+}
+
+// ============ gpt-image-* 专用分支（images/generations + images/edits）============
+
+// isGPTImageModel 判断模型是否走 images 端点
+func isGPTImageModel(modelID string) bool {
+	m := strings.ToLower(strings.TrimSpace(modelID))
+	return strings.HasPrefix(m, "gpt-image-")
+}
+
+// generateViaImagesAPI 分流入口：根据是否有参考图选择 /images/generations 或 /images/edits
+func (p *OpenAIProvider) generateViaImagesAPI(ctx context.Context, params map[string]interface{}, modelID string) (*ProviderResult, error) {
+	prompt, _ := params["prompt"].(string)
+	if prompt == "" {
+		return nil, fmt.Errorf("prompt 不能为空")
+	}
+	log.Printf("[OpenAI-Images] 准备发送请求: model=%s prompt_len=%d api_base=%s", modelID, len(prompt), p.apiBase)
+
+	count := 1
+	if n, ok := toInt(params["count"]); ok && n > 0 {
+		count = n
+	}
+
+	refs, err := extractRefImageBytes(params["reference_images"])
+	if err != nil {
+		return nil, err
+	}
+	hasRef := len(refs) > 0
+
+	size := resolveGPTImageSize(params, hasRef)
+	quality := firstString(params, "quality", "imageQuality")
+	format := firstString(params, "format", "imageFormat", "output_format")
+	log.Printf("[OpenAI-Images] 参数解析: aspectRatio=%v imageSize=%v hasRef=%v → 发送 size=%q quality=%q format=%q",
+		params["aspectRatio"], params["imageSize"], hasRef, size, quality, format)
+
+	diagnostic.Logf(params, "request_prepare",
+		"provider=%s model=%s endpoint=%s count=%d size=%s quality=%s format=%s ref_count=%d prompt_hash=%s prompt_preview=%q",
+		p.Name(),
+		modelID,
+		map[bool]string{true: "/v1/images/edits", false: "/v1/images/generations"}[hasRef],
+		count,
+		size,
+		quality,
+		format,
+		len(refs),
+		diagnostic.PromptHash(prompt),
+		diagnostic.Preview(prompt, 160),
+	)
+
+	var respBytes []byte
+	var headers http.Header
+	if hasRef {
+		respBytes, headers, err = p.doImagesEdits(ctx, params, modelID, prompt, refs, count, size, quality)
+	} else {
+		respBytes, headers, err = p.doImagesGenerations(ctx, params, modelID, prompt, count, size, quality, format)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	images, summary, err := p.extractImages(ctx, respBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	requestID := extractRequestIDFromHeaders(headers)
+	diagnostic.Logf(params, "response_summary",
+		"provider=%s model=%s data_count=%d choice_count=%d image_count=%d text_preview=%q request_id=%s",
+		p.Name(),
+		modelID,
+		summary.DataCount,
+		summary.ChoiceCount,
+		len(images),
+		summary.TextPreview,
+		requestID,
+	)
+
+	return &ProviderResult{
+		Images: images,
+		Metadata: map[string]interface{}{
+			"provider":   "openai",
+			"model":      modelID,
+			"type":       "image",
+			"endpoint":   map[bool]string{true: "images/edits", false: "images/generations"}[hasRef],
+			"request_id": requestID,
+			"oneapi_request": strings.TrimSpace(headers.Get("X-Oneapi-Request-Id")),
+		},
+	}, nil
+}
+
+// doImagesGenerations 文生图：POST /v1/images/generations （JSON body）
+func (p *OpenAIProvider) doImagesGenerations(ctx context.Context, params map[string]interface{}, modelID, prompt string, count int, size, quality, format string) ([]byte, http.Header, error) {
+	body := map[string]interface{}{
+		"model":  modelID,
+		"prompt": prompt,
+		"n":      count,
+	}
+	if size != "" {
+		body["size"] = size
+	}
+	if quality != "" {
+		body["quality"] = quality
+	}
+	if format != "" {
+		body["format"] = format
+	}
+
+	payloadBytes, err := json.Marshal(body)
+	if err != nil {
+		return nil, nil, fmt.Errorf("序列化 images/generations 请求失败: %w", err)
+	}
+
+	url := strings.TrimRight(strings.TrimSpace(p.apiBase), "/") + "/images/generations"
+	return p.doImagesRequest(ctx, params, url, "application/json", payloadBytes)
+}
+
+// doImagesEdits 图生图：POST /v1/images/edits （multipart/form-data，多张图都用 name=image）
+func (p *OpenAIProvider) doImagesEdits(ctx context.Context, params map[string]interface{}, modelID, prompt string, refs [][]byte, count int, size, quality string) ([]byte, http.Header, error) {
+	var buf bytes.Buffer
+	mw := multipart.NewWriter(&buf)
+
+	for i, ref := range refs {
+		mimeType := http.DetectContentType(ref)
+		ext := ".png"
+		if strings.Contains(mimeType, "jpeg") {
+			ext = ".jpg"
+		} else if strings.Contains(mimeType, "webp") {
+			ext = ".webp"
+		}
+		h := textproto.MIMEHeader{}
+		h.Set("Content-Disposition", fmt.Sprintf(`form-data; name="image"; filename="ref%d%s"`, i+1, ext))
+		h.Set("Content-Type", mimeType)
+		part, err := mw.CreatePart(h)
+		if err != nil {
+			return nil, nil, fmt.Errorf("创建 multipart 文件失败: %w", err)
+		}
+		if _, err := part.Write(ref); err != nil {
+			return nil, nil, fmt.Errorf("写入 multipart 文件失败: %w", err)
+		}
+	}
+	_ = mw.WriteField("prompt", prompt)
+	_ = mw.WriteField("model", modelID)
+	_ = mw.WriteField("n", strconv.Itoa(count))
+	if size != "" {
+		_ = mw.WriteField("size", size)
+	}
+	if quality != "" {
+		_ = mw.WriteField("quality", quality)
+	}
+	if err := mw.Close(); err != nil {
+		return nil, nil, fmt.Errorf("关闭 multipart 失败: %w", err)
+	}
+
+	url := strings.TrimRight(strings.TrimSpace(p.apiBase), "/") + "/images/edits"
+	return p.doImagesRequest(ctx, params, url, mw.FormDataContentType(), buf.Bytes())
+}
+
+// doImagesRequest images 端点通用发送
+// 关键：不做任何重试（即使连接层错误也不重试），避免云雾已收到请求但回程连接断开时重复扣费
+func (p *OpenAIProvider) doImagesRequest(ctx context.Context, params map[string]interface{}, url, contentType string, payload []byte) ([]byte, http.Header, error) {
+	log.Printf("[OpenAI-Images] POST %s content_type=%s payload=%d bytes (no retry)", url, contentType, len(payload))
+	diagnostic.Logf(params, "request_payload",
+		"url=%s content_type=%s payload_size=%d",
+		diagnostic.RedactSensitive(url),
+		contentType,
+		len(payload),
+	)
+
+	req, buildErr := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(payload))
+	if buildErr != nil {
+		return nil, nil, fmt.Errorf("构建 images 请求失败: %w", buildErr)
+	}
+	req.Header.Set("Content-Type", contentType)
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Authorization", "Bearer "+strings.TrimSpace(p.config.APIKey))
+	req.Header.Set("Connection", "close")
+	if strings.TrimSpace(p.userAgent) != "" {
+		req.Header.Set("User-Agent", p.userAgent)
+	}
+
+	startedAt := time.Now()
+	resp, err := p.httpClient.Do(req)
+	elapsed := time.Since(startedAt)
+	if err != nil {
+		return nil, nil, fmt.Errorf("doRequest: error sending request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, resp.Header.Clone(), fmt.Errorf("读取 images 响应失败: %w", err)
+	}
+
+	requestID := extractRequestIDFromHeaders(resp.Header)
+	diagnostic.Logf(params, "response_headers",
+		"status=%s elapsed=%s request_id=%s headers=%q",
+		resp.Status, elapsed, requestID,
+		diagnostic.Preview(strings.Join(headerLines(resp.Header), " | "), 1000),
+	)
+	diagnostic.Logf(params, "response_body",
+		"status=%s elapsed=%s request_id=%s body=%q",
+		resp.Status, elapsed, requestID,
+		diagnostic.RedactSensitive(string(respBody)),
+	)
+
+	log.Printf("[OpenAI-Images] 响应: status=%s elapsed=%s size=%d request_id=%s", resp.Status, elapsed, len(respBody), requestID)
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		bodyPreview := diagnostic.Preview(parseOpenAIError(respBody), 1200)
+		if requestID == "" {
+			requestID = diagnostic.ExtractRequestID(string(respBody))
+		}
+		return nil, resp.Header.Clone(), fmt.Errorf("Images HTTP %d request_id=%s body=%s", resp.StatusCode, requestID, bodyPreview)
+	}
+	if len(respBody) == 0 {
+		return nil, resp.Header.Clone(), fmt.Errorf("接口未返回内容")
+	}
+	return respBody, resp.Header.Clone(), nil
+}
+
+// resolveGPTImageSize 把前端的 aspectRatio + imageSize 转成 gpt-image-2 的 size 字符串
+// isEdit=true 时只保留 images/edits 支持的 4 档（1:1 / 3:2 / 2:3 / auto）
+func resolveGPTImageSize(params map[string]interface{}, isEdit bool) string {
+	if explicit, _ := params["size"].(string); explicit != "" {
+		return explicit
+	}
+	ar := firstString(params, "aspectRatio", "aspect_ratio")
+	sizeLvl := strings.ToLower(firstString(params, "imageSize", "resolution_level", "image_size"))
+
+	if sizeLvl == "auto" || ar == "auto" {
+		return "auto"
+	}
+
+	// images/edits 只支持 1K 三档 + auto
+	if isEdit {
+		switch ar {
+		case "3:2", "16:9":
+			return "1536x1024"
+		case "2:3", "9:16":
+			return "1024x1536"
+		case "1:1":
+			return "1024x1024"
+		default:
+			return "auto"
+		}
+	}
+
+	// images/generations 支持 1K / 2K / 4K 三档
+	switch sizeLvl {
+	case "4k":
+		switch ar {
+		case "3:2", "16:9":
+			return "3840x2160"
+		case "2:3", "9:16":
+			return "2160x3840"
+		case "1:1":
+			return "2048x2048" // 没有 4K 方图，回落到 2K
+		default:
+			return "3840x2160"
+		}
+	case "2k":
+		switch ar {
+		case "3:2", "16:9":
+			return "2048x1152"
+		case "2:3", "9:16":
+			return "1024x1536" // 没有 2K 竖图，回落到 1K
+		case "1:1":
+			return "2048x2048"
+		default:
+			return "2048x2048"
+		}
+	default: // 1K or 空
+		switch ar {
+		case "3:2", "16:9":
+			return "1536x1024"
+		case "2:3", "9:16":
+			return "1024x1536"
+		case "1:1":
+			return "1024x1024"
+		default:
+			return "1024x1024"
+		}
+	}
+}
+
+// extractRefImageBytes 把 params["reference_images"] 解码成 []byte 数组
+func extractRefImageBytes(raw interface{}) ([][]byte, error) {
+	refImgs, ok := raw.([]interface{})
+	if !ok || len(refImgs) == 0 {
+		return nil, nil
+	}
+	var out [][]byte
+	for idx, ref := range refImgs {
+		switch v := ref.(type) {
+		case string:
+			data := v
+			if strings.Contains(data, ",") {
+				parts := strings.Split(data, ",")
+				data = parts[len(parts)-1]
+			}
+			decoded, err := base64.StdEncoding.DecodeString(data)
+			if err != nil {
+				return nil, fmt.Errorf("解码第 %d 张参考图失败: %w", idx, err)
+			}
+			out = append(out, decoded)
+		case []byte:
+			out = append(out, v)
+		}
+	}
+	return out, nil
+}
+
+func firstString(params map[string]interface{}, keys ...string) string {
+	for _, k := range keys {
+		if s, _ := params[k].(string); strings.TrimSpace(s) != "" {
+			return strings.TrimSpace(s)
+		}
+	}
+	return ""
 }
