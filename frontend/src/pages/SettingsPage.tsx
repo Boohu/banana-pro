@@ -536,33 +536,27 @@ function AboutSection() {
     });
   };
 
-  const handleCheckUpdate = async () => {
+  const handleCheckUpdate = () => {
     if (!isTauri) return;
     setCheckingUpdate(true);
     setUpdateStatus('');
-    try {
-      // @ts-ignore Tauri 运行时解析
-      const { check } = await import(/* @vite-ignore */ '@tauri-apps/plugin-updater');
-      const update = await check();
-      if (update) {
-        setUpdateStatus(`发现新版本 v${update.version}`);
-        const yes = confirm(`发现新版本 v${update.version}\n\n${update.body || ''}\n\n是否立即更新？`);
-        if (yes) {
-          setUpdateStatus('下载中...');
-          await update.downloadAndInstall();
-          // @ts-ignore Tauri 运行时解析
-          const { relaunch } = await import(/* @vite-ignore */ '@tauri-apps/plugin-process');
-          await relaunch();
-        }
-      } else {
-        setUpdateStatus('已是最新版本');
-      }
-    } catch (err) {
-      console.error('[Update]', err);
-      setUpdateStatus('检查失败（dev 模式不支持自动更新）');
-    } finally {
-      setCheckingUpdate(false);
-    }
+    // 交给 App.tsx 统一处理：若有新版本会弹出自定义弹窗（和启动时自动检查一致）
+    window.dispatchEvent(new CustomEvent('check-update:manual', {
+      detail: {
+        onResult: (r: { available: boolean; version?: string }) => {
+          setCheckingUpdate(false);
+          if (r.available) {
+            setUpdateStatus(`发现新版本 v${r.version}`);
+          } else {
+            setUpdateStatus('已是最新版本');
+          }
+        },
+        onError: (msg: string) => {
+          setCheckingUpdate(false);
+          setUpdateStatus('检查失败：' + (msg || '未知错误'));
+        },
+      },
+    }));
   };
 
   return (
@@ -642,7 +636,7 @@ function AboutSection() {
           <img src={logoImg} alt="logo" className="w-12 h-12 rounded-xl" />
           <div>
             <h4 className="text-base font-semibold text-fg-primary">{t('sidebar.appName')}</h4>
-            <p className="text-xs text-fg-muted">v{typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '2.9.9'}</p>
+            <p className="text-xs text-fg-muted">v{typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '2.9.10'}</p>
           </div>
         </div>
         <div className="space-y-2 text-sm text-fg-secondary">

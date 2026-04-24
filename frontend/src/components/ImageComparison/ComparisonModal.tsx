@@ -78,9 +78,30 @@ function ImageSlider({ leftSrc, rightSrc, leftLabel, rightLabel }: { leftSrc: st
   );
 }
 
-function RefImagesSection() {
+function RefImagesSection({ image }: { image?: GeneratedImage }) {
   const { t } = useTranslation();
   const refFiles = useConfigStore((s) => s.refFiles);
+  // 优先用任务自带的原图（历史记录场景 + 新生成的图生图任务）
+  const taskOriginalUrl = (image as any)?.originalImageUrl ||
+    ((image as any)?.originalImagePath ? getImageUrl((image as any).originalImagePath) : '');
+
+  if (taskOriginalUrl) {
+    return (
+      <>
+        <div className="h-px bg-border my-4" />
+        <div className="space-y-2">
+          <h4 className="text-sm font-semibold text-fg-primary">{t('comparison.refImages')}（1 张）</h4>
+          <div className="flex gap-2">
+            <div className="w-16 h-16 rounded-lg overflow-hidden bg-surface-tertiary shrink-0">
+              <img src={taskOriginalUrl} alt="" className="w-full h-full object-cover" />
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // fallback：当前配置面板的参考图（仅新任务还没提交时可能有用）
   if (refFiles.length === 0) return null;
   return (
     <>
@@ -151,8 +172,6 @@ export function ComparisonModal({ image, onClose, originalImageUrl, onPrev, onNe
       try {
         // @ts-ignore Tauri 运行时解析
         const { save } = await import(/* @vite-ignore */ '@tauri-apps/plugin-dialog');
-        // @ts-ignore
-        const { invoke } = await import(/* @vite-ignore */ '@tauri-apps/api/core');
         const lastDir = localStorage.getItem('banana-last-save-dir') || '';
         const defaultPath = lastDir ? `${lastDir}/${defaultName}` : defaultName;
         const destPath = await save({
@@ -161,8 +180,26 @@ export function ComparisonModal({ image, onClose, originalImageUrl, onPrev, onNe
           title: '保存图片',
         });
         if (!destPath) return; // 用户取消
-        await invoke('download_file_to_path', { url: imageUrl, destPath });
-        // 记录上次目录
+
+        // 根据 url 协议分流：
+        // - http/https → invoke download_file_to_path (Rust reqwest)
+        // - asset:// 或其他本地协议 → 前端 fetch blob → Tauri fs writeFile
+        const isHttp = /^https?:\/\//i.test(imageUrl);
+        if (isHttp) {
+          // @ts-ignore
+          const { invoke } = await import(/* @vite-ignore */ '@tauri-apps/api/core');
+          await invoke('download_file_to_path', { url: imageUrl, destPath });
+        } else {
+          // asset:// / data: / blob: 统一走 fetch + fs
+          const res = await fetch(imageUrl);
+          if (!res.ok) throw new Error(`fetch ${res.status}`);
+          const bytes = new Uint8Array(await (await res.blob()).arrayBuffer());
+          // @ts-ignore
+          const { writeFile } = await import(/* @vite-ignore */ '@tauri-apps/plugin-fs');
+          await writeFile(destPath as string, bytes);
+        }
+
+        // 记录上次目录（兼容 / 和 \ 分隔符）
         const dir = String(destPath).replace(/\/[^/]+$/, '').replace(/\\[^\\]+$/, '');
         if (dir) localStorage.setItem('banana-last-save-dir', dir);
         toast.success('已保存到 ' + destPath);
@@ -314,7 +351,7 @@ export function ComparisonModal({ image, onClose, originalImageUrl, onPrev, onNe
           </div>
 
           {/* Reference images */}
-          <RefImagesSection />
+          <RefImagesSection image={image} />
 
           {/* Prompt */}
           {image.prompt && (

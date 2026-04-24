@@ -73,6 +73,24 @@ function App() {
     return () => clearTimeout(timer);
   }, []);
 
+  // 手动检查更新：SettingsPage 按钮通过 CustomEvent 触发，结果走自定义弹窗（和启动时一致）
+  useEffect(() => {
+    const handler = async (e: Event) => {
+      const detail = (e as CustomEvent).detail || {};
+      try {
+        const result = await checkForUpdate();
+        if (result.available && result.doUpdate) {
+          setUpdateInfo({ version: result.version!, notes: result.notes!, doUpdate: result.doUpdate });
+        }
+        detail.onResult?.({ available: result.available, version: result.version });
+      } catch (err) {
+        detail.onError?.(err instanceof Error ? err.message : String(err));
+      }
+    };
+    window.addEventListener('check-update:manual', handler);
+    return () => window.removeEventListener('check-update:manual', handler);
+  }, []);
+
   useEffect(() => {
     if (!language) return;
     if (i18n.language !== language) {

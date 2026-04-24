@@ -501,19 +501,20 @@ jobs:
             [ -f "$f" ] && DARWIN_ARM_NAME="$(basename "$f")" && break
           done
           for f in artifacts/*aarch64*.app.tar.gz.sig; do
-            [ -f "$f" ] && DARWIN_ARM_SIG="$(base64 -w0 "$f")" && break
+            # .sig 文件内容本身就是 base64 文本（minisign 格式），直接 cat，不做二次编码
+            [ -f "$f" ] && DARWIN_ARM_SIG="$(cat "$f")" && break
           done
           for f in artifacts/*universal*.app.tar.gz; do
             [ -f "$f" ] && DARWIN_UNI_NAME="$(basename "$f")" && break
           done
           for f in artifacts/*universal*.app.tar.gz.sig; do
-            [ -f "$f" ] && DARWIN_UNI_SIG="$(base64 -w0 "$f")" && break
+            [ -f "$f" ] && DARWIN_UNI_SIG="$(cat "$f")" && break
           done
           for f in artifacts/*x64-setup*.exe; do
             [ -f "$f" ] && WIN_NAME="$(basename "$f")" && break
           done
           for f in artifacts/*x64-setup*.exe.sig; do
-            [ -f "$f" ] && WIN_SIG="$(base64 -w0 "$f")" && break
+            [ -f "$f" ] && WIN_SIG="$(cat "$f")" && break
           done
 
           # === 5. 登录 admin 获取 JWT token ===

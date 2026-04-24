@@ -99,11 +99,19 @@ func RedactSensitive(text string) string {
 }
 
 func ExtractRequestID(text string) string {
-	matches := requestIDPattern.FindStringSubmatch(text)
-	if len(matches) < 2 {
-		return ""
+	// 优先匹配 JSON 格式 `"request_id":"xxx"`（云雾等聚合平台的响应 body 常见）
+	if matches := requestIDPatternJSON.FindStringSubmatch(text); len(matches) >= 2 {
+		if id := strings.TrimSpace(matches[1]); id != "" {
+			return id
+		}
 	}
-	return strings.TrimSpace(matches[1])
+	// Fallback：key=val 形态（我们自己生成的错误消息或部分响应 header）
+	if matches := requestIDPatternKV.FindStringSubmatch(text); len(matches) >= 2 {
+		if id := strings.TrimSpace(matches[1]); id != "" {
+			return id
+		}
+	}
+	return ""
 }
 
 func toBool(value interface{}) bool {

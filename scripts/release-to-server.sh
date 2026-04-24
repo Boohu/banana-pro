@@ -40,15 +40,70 @@ TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
 echo "=== 1/5 下载 GitHub Release v${VERSION} 资产 ==="
-gh release download "$TAG" --repo "$REPO" --dir "$TMP" \
-  --pattern "*.app.tar.gz" \
-  --pattern "*.app.tar.gz.sig" \
-  --pattern "*_x64-setup.exe" \
-  --pattern "*_x64-setup.exe.sig" \
-  --pattern "*.dmg" \
-  --pattern "latest.json" \
-  || { echo "❌ GitHub 下载失败"; exit 1; }
-ls -lh "$TMP"
+
+# 构造鉴权 header：优先使用 GITHUB_TOKEN / GH_TOKEN env，否则尝试 gh CLI token
+AUTH_HEADER=()
+if [[ -n "${GITHUB_TOKEN:-}" ]]; then
+  AUTH_HEADER=(-H "Authorization: Bearer ${GITHUB_TOKEN}")
+  echo "  使用 GITHUB_TOKEN 鉴权"
+elif [[ -n "${GH_TOKEN:-}" ]]; then
+  AUTH_HEADER=(-H "Authorization: Bearer ${GH_TOKEN}")
+  echo "  使用 GH_TOKEN 鉴权"
+elif command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
+  GH_TOKEN_CACHED="$(gh auth token 2>/dev/null || true)"
+  if [[ -n "$GH_TOKEN_CACHED" ]]; then
+    AUTH_HEADER=(-H "Authorization: Bearer ${GH_TOKEN_CACHED}")
+    echo "  使用 gh CLI 登录态鉴权"
+  fi
+fi
+if [[ ${#AUTH_HEADER[@]} -eq 0 ]]; then
+  echo "  ⚠️  未提供 GitHub 鉴权（GITHUB_TOKEN/GH_TOKEN/gh auth），私有仓库可能下载失败"
+fi
+
+REL_JSON_PATH="$TMP/_release.json"
+curl -sSfL "${AUTH_HEADER[@]}" -H "Accept: application/vnd.github+json" \
+  -o "$REL_JSON_PATH" "https://api.github.com/repos/${REPO}/releases/tags/${TAG}" || {
+  echo "❌ 无法获取 release 元数据：$REPO $TAG（检查是否私有仓库且未提供 token）" >&2
+  exit 1
+}
+if ! python3 -c "import json; json.load(open('$REL_JSON_PATH'))" >/dev/null 2>&1; then
+  echo "❌ release 元数据非 JSON"
+  cat "$REL_JSON_PATH" | head -20
+  exit 1
+fi
+
+# 解析 assets → 写到 tsv 文件
+ASSETS_TSV="$TMP/_assets.tsv"
+python3 <<PY > "$ASSETS_TSV"
+import json
+d = json.load(open('$REL_JSON_PATH'))
+exts = ('.app.tar.gz', '.app.tar.gz.sig', '_x64-setup.exe', '_x64-setup.exe.sig', '.dmg')
+for a in d.get('assets', []):
+    n = a.get('name','')
+    if any(n.endswith(e) for e in exts) or n == 'latest.json':
+        print(f"{n}\t{a['browser_download_url']}")
+PY
+
+if [[ ! -s "$ASSETS_TSV" ]]; then
+  echo "❌ 未在 Release 中找到任何可用资产"
+  exit 1
+fi
+
+while IFS=$'\t' read -r aname aurl; do
+  [[ -z "$aname" ]] && continue
+  echo "  下载 $aname ..."
+  # 私有仓库的 release assets 需要发到 api.github.com/repos/.../releases/assets/<id> 端点
+  # 并带 Accept: application/octet-stream，才能真正拿到文件
+  # browser_download_url 在私有仓库对普通 token 可能返回 302 → S3 但 S3 需要 Referer，这里直接兼容两种写法
+  if ! curl -sSfL "${AUTH_HEADER[@]}" -H "Accept: application/octet-stream" \
+       -o "$TMP/$aname" "$aurl"; then
+    echo "❌ 下载失败: $aname"
+    exit 1
+  fi
+done < "$ASSETS_TSV"
+rm -f "$ASSETS_TSV" "$REL_JSON_PATH".tmp
+
+ls -lh "$TMP" | grep -v "^total\|_release.json"
 
 # 验证核心文件是否齐全
 required_patterns=("aarch64*.app.tar.gz" "aarch64*.app.tar.gz.sig" "universal*.app.tar.gz" "universal*.app.tar.gz.sig" "*_x64-setup.exe" "*_x64-setup.exe.sig")
@@ -81,11 +136,12 @@ fi
 echo "✓ 登录成功"
 
 echo ""
-echo "=== 4/5 读取 .sig 内容并 base64 编码 ==="
+echo "=== 4/5 读取 .sig 内容 ==="
+# .sig 文件内容本身就是 base64 文本（minisign 格式），直接 cat，不做二次 base64 编码
 sig_b64() {
   local f="$1"
   if [[ -f "$f" ]]; then
-    base64 -i "$f" | tr -d '\n'
+    cat "$f"
   else
     echo ""
   fi
@@ -111,7 +167,7 @@ echo "  windows-x64: ${WIN_NAME:-(缺失)}  sig=${#WIN_SIG}字符"
 
 echo ""
 echo "=== 5/5 从 Release 提取 notes 并调用 admin API 注册版本 ==="
-NOTES="$(gh release view "$TAG" --repo "$REPO" --json body --jq '.body' | head -200)"
+NOTES="$(echo "$REL_JSON" | python3 -c "import json,sys; print((json.load(sys.stdin).get('body') or '')[:8000])")"
 
 PAYLOAD="$(python3 <<PY
 import json, os

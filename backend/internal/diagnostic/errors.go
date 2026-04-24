@@ -8,7 +8,11 @@ import (
 )
 
 var (
-	requestIDPattern   = regexp.MustCompile(`(?i)(?:request[_\s-]?id|x-api-request-id|x-oneapi-request-id)\s*[:=]\s*([A-Za-z0-9._:-]+)`)
+	// 两个独立 pattern：优先匹配 JSON 的 "request_id":"xxx"，fallback 再匹配 key=val 形态
+	// key=val 形态用 `=<非空白>` 防止 `request_id= body=xxx` 误把 "body" 当作 RequestID
+	requestIDPatternJSON = regexp.MustCompile(`(?i)"(?:request[_-]?id|x-api-request-id|x-oneapi-request-id)"\s*:\s*"([^"]+)"`)
+	requestIDPatternKV   = regexp.MustCompile(`(?i)(?:request[_\s-]?id|x-api-request-id|x-oneapi-request-id)\s*=([A-Za-z0-9._:-]+)`)
+	requestIDPattern     = requestIDPatternKV // 保留向后兼容，实际函数使用上面两个分开查
 	httpStatusPatterns = []*regexp.Regexp{
 		regexp.MustCompile(`(?i)\b(?:[a-z0-9._/-]+\s+)?http\s+(\d{3})\b`),
 		regexp.MustCompile(`(?i)\bstatus(?:\s+code)?\s*[:=]?\s*(\d{3})\b`),
