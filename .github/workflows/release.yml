@@ -525,10 +525,12 @@ jobs:
             exit 1
           fi
 
+          # 注意：env var 必须放在 python3 **之前**才是环境变量，放后面会被当作参数
+          LOGIN_PAYLOAD="$(U="$ADMIN_USERNAME" P="$ADMIN_PASSWORD" \
+            python3 -c "import json,os; print(json.dumps({'username':os.environ['U'],'password':os.environ['P']}))")"
           LOGIN_RESP="$(curl -sS -X POST "https://${SERVER}/api/admin/login" \
             -H "Content-Type: application/json" \
-            -d "$(python3 -c "import json,os; print(json.dumps({'username':os.environ['U'],'password':os.environ['P']}))" \
-                  U="$ADMIN_USERNAME" P="$ADMIN_PASSWORD")")"
+            -d "$LOGIN_PAYLOAD")"
           TOKEN="$(echo "$LOGIN_RESP" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('data',{}).get('token',''))")"
           if [ -z "$TOKEN" ]; then
             echo "❌ admin 登录失败: $LOGIN_RESP"
@@ -538,27 +540,28 @@ jobs:
 
           # === 6. 注册版本到 auth-server ===
           NOTES="$(gh release view "$TAG" --repo "$REPO" --json body --jq '.body' | head -200)"
-          PAYLOAD="$(python3 <<PY
-          import json, os
-          base = os.environ["BASE"]
-          print(json.dumps({
-            "app_id": "jdyai",
-            "version": os.environ["V"],
-            "notes": os.environ["NOTES"],
-            "darwin_aarch64_url": f"{base}/{os.environ['A_NAME']}" if os.environ.get('A_NAME') else "",
-            "darwin_aarch64_sig": os.environ.get("A_SIG", ""),
-            "darwin_x86_64_url": f"{base}/{os.environ['U_NAME']}" if os.environ.get('U_NAME') else "",
-            "darwin_x86_64_sig": os.environ.get("U_SIG", ""),
-            "windows_x86_64_url": f"{base}/{os.environ['W_NAME']}" if os.environ.get('W_NAME') else "",
-            "windows_x86_64_sig": os.environ.get("W_SIG", ""),
-          }, ensure_ascii=False))
-          PY
-          )"
 
+          # 注意：先 export，再调用 python3；子进程才能继承这些 env
           export V="$VERSION" NOTES BASE="$BASE_URL" \
                  A_NAME="$DARWIN_ARM_NAME" A_SIG="$DARWIN_ARM_SIG" \
                  U_NAME="$DARWIN_UNI_NAME" U_SIG="$DARWIN_UNI_SIG" \
                  W_NAME="$WIN_NAME" W_SIG="$WIN_SIG"
+
+          PAYLOAD="$(python3 -c "
+          import json, os
+          base = os.environ['BASE']
+          print(json.dumps({
+            'app_id': 'jdyai',
+            'version': os.environ['V'],
+            'notes': os.environ['NOTES'],
+            'darwin_aarch64_url': f\"{base}/{os.environ['A_NAME']}\" if os.environ.get('A_NAME') else '',
+            'darwin_aarch64_sig': os.environ.get('A_SIG', ''),
+            'darwin_x86_64_url': f\"{base}/{os.environ['U_NAME']}\" if os.environ.get('U_NAME') else '',
+            'darwin_x86_64_sig': os.environ.get('U_SIG', ''),
+            'windows_x86_64_url': f\"{base}/{os.environ['W_NAME']}\" if os.environ.get('W_NAME') else '',
+            'windows_x86_64_sig': os.environ.get('W_SIG', ''),
+          }, ensure_ascii=False))
+          ")"
 
           REG_RESP="$(curl -sS -X POST "https://${SERVER}/api/admin/versions" \
             -H "Authorization: Bearer $TOKEN" \
