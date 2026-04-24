@@ -1001,6 +1001,14 @@ func ImageToPromptHandler(c *gin.Context) {
 	// 替换占位符 {{LANGUAGE_INSTRUCTION}} 为实际的语言要求
 	systemPrompt = strings.Replace(systemPrompt, "{{LANGUAGE_INSTRUCTION}}", outputLangInstruction, 1)
 
+	// 6.1 风格预设：在 system prompt 末尾追加风格偏好（可选）
+	style := strings.TrimSpace(c.PostForm("style"))
+	customStyle := strings.TrimSpace(c.PostForm("custom_style"))
+	if styleInstruction := getImageToPromptStyleInstruction(style, customStyle); styleInstruction != "" {
+		log.Printf("[API] 图片逆向提示词风格指令: %s\n", style)
+		systemPrompt = systemPrompt + "\n\n" + styleInstruction
+	}
+
 	// 7. 调用 AI 模型分析图片
 	var result string
 	if providerName == "gemini-chat" {
@@ -1047,6 +1055,33 @@ func truncateString(s string, maxLen int) string {
 		return s
 	}
 	return s[:maxLen] + "..."
+}
+
+// getImageToPromptStyleInstruction 根据风格预设返回附加在 system prompt 末尾的风格指令
+// style: general/realistic/anime/cinematic/midjourney/flux/custom
+// customStyle: 当 style=custom 时使用的自定义文案
+func getImageToPromptStyleInstruction(style, customStyle string) string {
+	s := strings.ToLower(strings.TrimSpace(style))
+	if s == "" || s == "general" {
+		return ""
+	}
+	if s == "custom" {
+		if customStyle == "" {
+			return ""
+		}
+		return "额外的风格偏好要求：\n" + customStyle
+	}
+	styleMap := map[string]string{
+		"realistic":  "风格偏好：写实摄影风格。请在提示词中强调真实感、自然光线、镜头参数（焦段、光圈、ISO）、景深、色彩还原、高分辨率摄影质感，避免绘画或卡通风格的用词。",
+		"anime":      "风格偏好：二次元/动漫插画风格。请在提示词中强调动漫、日系插画、赛璐璐上色、线条清晰、鲜艳色彩、人物角色设计，避免使用写实摄影的术语。",
+		"cinematic":  "风格偏好：电影感。请在提示词中强调电影级构图、戏剧化光影、景深、色调分级（如 teal & orange）、镜头语言（如广角、特写、跟镜头）、氛围感、胶片颗粒等电影术语。",
+		"midjourney": "风格偏好：Midjourney 风格提示词。请使用 Midjourney 常见的短语结构（用逗号分隔的关键词短语，从主体 → 环境 → 风格 → 光线 → 画质），尾部可包含 --ar / --style / --stylize 等参数建议，但只作为文本建议不是必须。",
+		"flux":       "风格偏好：Flux / Nano Banana 风格提示词。请使用自然语言长句、高度拟真、细腻的材质和光线描写，避免堆砌标签式关键词，句式流畅完整。",
+	}
+	if v, ok := styleMap[s]; ok {
+		return v
+	}
+	return ""
 }
 
 // getImageToPromptLanguageInstruction 根据用户语言返回逆向提示词的输出语言指令

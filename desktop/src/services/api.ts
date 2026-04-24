@@ -300,6 +300,22 @@ api.interceptors.response.use(
       }
     }
 
+    // 尝试从后端响应中解包 message，让上层 toast 能拿到真正的错误原因
+    const respData = error?.response?.data;
+    if (respData) {
+      let msg = '';
+      if (typeof respData === 'string') {
+        msg = respData;
+      } else if (typeof respData === 'object') {
+        msg = (respData as any).message || (respData as any).error || '';
+      }
+      if (msg) {
+        const wrapped = new Error(msg);
+        (wrapped as any).status = error?.response?.status;
+        (wrapped as any).original = error;
+        return Promise.reject(wrapped);
+      }
+    }
     return Promise.reject(error);
   }
 );

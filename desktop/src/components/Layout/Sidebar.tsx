@@ -1,4 +1,4 @@
-import { Image, Layers, FolderOpen, LayoutTemplate, Settings } from 'lucide-react';
+import { Image, Layers, Sparkles, FolderOpen, LayoutTemplate, Settings } from 'lucide-react';
 import logoImg from '@/assets/logo.png';
 import { cn } from '@/lib/utils';
 import { useNavigationStore, type Page } from '@/store/navigationStore';
@@ -13,6 +13,7 @@ interface NavItem {
 const mainNavItems: NavItem[] = [
   { id: 'generate', icon: Image, labelKey: 'sidebar.generate' },
   { id: 'batch', icon: Layers, labelKey: 'sidebar.batch' },
+  { id: 'reverse-prompt', icon: Sparkles, labelKey: 'sidebar.reversePrompt' },
   { id: 'history', icon: FolderOpen, labelKey: 'sidebar.history' },
   { id: 'templates', icon: LayoutTemplate, labelKey: 'sidebar.templates' },
 ];
@@ -22,9 +23,7 @@ export function Sidebar() {
   const { t } = useTranslation();
 
   return (
-    <aside className="flex flex-col w-60 h-full bg-surface-secondary px-4 pt-10 pb-5 gap-4 shrink-0 relative">
-      {/* Drag region for Tauri overlay titlebar */}
-      <div data-tauri-drag-region className="absolute top-0 left-0 w-60 h-8" />
+    <aside className="flex flex-col w-60 h-full bg-surface-secondary px-4 py-5 gap-4 shrink-0">
       {/* Logo */}
       <div className="flex items-center gap-2.5 px-1">
         <img src={logoImg} alt="logo" className="w-8 h-8 rounded-lg" />

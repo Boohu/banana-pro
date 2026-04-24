@@ -80,40 +80,22 @@ function ImageSlider({ leftSrc, rightSrc, leftLabel, rightLabel }: { leftSrc: st
 
 function RefImagesSection({ image }: { image?: GeneratedImage }) {
   const { t } = useTranslation();
-  const refFiles = useConfigStore((s) => s.refFiles);
-  // 优先用任务自带的原图（历史记录场景 + 新生成的图生图任务）
+  // 当查看一个具体任务时，只看该任务自带的参考图；没有就什么都不显示
+  // 不要 fallback 到 configStore.refFiles（那是下一次生成的参考图，和当前查看的任务无关）
   const taskOriginalUrl = (image as any)?.originalImageUrl ||
     ((image as any)?.originalImagePath ? getImageUrl((image as any).originalImagePath) : '');
 
-  if (taskOriginalUrl) {
-    return (
-      <>
-        <div className="h-px bg-border my-4" />
-        <div className="space-y-2">
-          <h4 className="text-sm font-semibold text-fg-primary">{t('comparison.refImages')}（1 张）</h4>
-          <div className="flex gap-2">
-            <div className="w-16 h-16 rounded-lg overflow-hidden bg-surface-tertiary shrink-0">
-              <img src={taskOriginalUrl} alt="" className="w-full h-full object-cover" />
-            </div>
-          </div>
-        </div>
-      </>
-    );
-  }
+  if (!taskOriginalUrl) return null;
 
-  // fallback：当前配置面板的参考图（仅新任务还没提交时可能有用）
-  if (refFiles.length === 0) return null;
   return (
     <>
       <div className="h-px bg-border my-4" />
       <div className="space-y-2">
-        <h4 className="text-sm font-semibold text-fg-primary">{t('comparison.refImages')}（{refFiles.length} 张）</h4>
+        <h4 className="text-sm font-semibold text-fg-primary">{t('comparison.refImages')}（1 张）</h4>
         <div className="flex gap-2">
-          {refFiles.map((file, i) => (
-            <div key={i} className="w-16 h-16 rounded-lg overflow-hidden bg-surface-tertiary shrink-0">
-              <img src={URL.createObjectURL(file)} alt="" className="w-full h-full object-cover" />
-            </div>
-          ))}
+          <div className="w-16 h-16 rounded-lg overflow-hidden bg-surface-tertiary shrink-0">
+            <img src={taskOriginalUrl} alt="" className="w-full h-full object-cover" />
+          </div>
         </div>
       </div>
     </>
@@ -122,31 +104,15 @@ function RefImagesSection({ image }: { image?: GeneratedImage }) {
 
 export function ComparisonModal({ image, onClose, originalImageUrl, onPrev, onNext, onRegenerate, onUseAsRef }: ComparisonModalProps) {
   const { t } = useTranslation();
-  const refFiles = useConfigStore((s) => s.refFiles);
-  // 原图来源优先级：外部 prop > 任务自带（image.originalImageUrl） > 当前配置面板的参考图 > 无
+  // 原图来源：外部 prop > 任务自带（image.originalImageUrl/Path） > 无
+  // 不再 fallback 到 configStore.refFiles（那属于下次生成的配置，和当前查看的任务无关）
   const taskOriginalUrl = (image as any).originalImageUrl || ((image as any).originalImagePath ? getImageUrl((image as any).originalImagePath) : '');
   const effectiveOriginalUrl = originalImageUrl || taskOriginalUrl || '';
-  const hasOriginal = Boolean(effectiveOriginalUrl) || refFiles.length > 0;
+  const hasOriginal = Boolean(effectiveOriginalUrl);
   const [viewMode, setViewMode] = useState<ViewMode>(hasOriginal ? 'compare' : 'result');
 
   const imageUrl = image.url || getImageUrl(image.filePath);
-  // 对比原图
-  const [refObjectUrl, setRefObjectUrl] = useState<string | null>(null);
-  React.useEffect(() => {
-    // 如果任务自带或外部传入 URL，直接用，不需要 objectUrl
-    if (effectiveOriginalUrl) {
-      setRefObjectUrl(null);
-      return;
-    }
-    // fallback：当前配置面板的参考图（仅当任务没有自己的原图时）
-    if (refFiles.length > 0) {
-      const url = URL.createObjectURL(refFiles[0]);
-      setRefObjectUrl(url);
-      return () => URL.revokeObjectURL(url);
-    }
-    setRefObjectUrl(null);
-  }, [refFiles, effectiveOriginalUrl]);
-  const originalUrl = effectiveOriginalUrl || refObjectUrl || imageUrl;
+  const originalUrl = effectiveOriginalUrl || imageUrl;
 
   // 键盘快捷键：左右切换
   React.useEffect(() => {

@@ -11,6 +11,16 @@ export interface OptimizePromptRequest {
   response_format?: string;
 }
 
+// 图片逆向提示词风格预设
+export type ReversePromptStyle =
+  | 'general'
+  | 'realistic'
+  | 'anime'
+  | 'cinematic'
+  | 'midjourney'
+  | 'flux'
+  | 'custom';
+
 // 图片逆向提示词请求参数
 export interface ImageToPromptRequest {
   provider?: string;
@@ -21,6 +31,10 @@ export interface ImageToPromptRequest {
   imagePath?: string;
   // 输出语言（跟随用户界面语言）
   language?: string;
+  // 风格预设（可选）
+  style?: ReversePromptStyle;
+  // 自定义风格文本（当 style=custom 时生效）
+  customStyle?: string;
 }
 
 const extractPrompt = (value: any): string => {
@@ -65,6 +79,12 @@ export const imageToPrompt = async (payload: ImageToPromptRequest): Promise<Opti
     if (payload.language) {
       formData.append('language', payload.language);
     }
+    if (payload.style) {
+      formData.append('style', payload.style);
+    }
+    if (payload.customStyle) {
+      formData.append('custom_style', payload.customStyle);
+    }
     const res = await api.post<any>('/prompts/image-to-prompt', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
@@ -85,6 +105,12 @@ export const imageToPrompt = async (payload: ImageToPromptRequest): Promise<Opti
     formData.append('image', payload.imageFile);
     if (payload.language) {
       formData.append('language', payload.language);
+    }
+    if (payload.style) {
+      formData.append('style', payload.style);
+    }
+    if (payload.customStyle) {
+      formData.append('custom_style', payload.customStyle);
     }
     const res = await api.post<any>('/prompts/image-to-prompt', formData, {
       headers: {

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-export type Page = 'generate' | 'batch' | 'history' | 'templates' | 'settings' | 'subscription';
+export type Page = 'generate' | 'batch' | 'reverse-prompt' | 'history' | 'templates' | 'settings' | 'subscription';
 
 interface NavigationState {
   currentPage: Page;
