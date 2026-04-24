@@ -835,6 +835,15 @@ pub fn run() {
             let log_state = LogState::init(&app.handle());
             app.manage(log_state.clone());
 
+            // macOS Overlay 标题栏会把 title 画在红绿灯旁边，和暗色背景冲突；
+            // Windows 任务栏需要 title 显示应用名，所以只在 macOS 启动时清空。
+            #[cfg(target_os = "macos")]
+            {
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.set_title("");
+                }
+            }
+
             let sidecar_state = Arc::new(Mutex::new(None));
             app.manage(SidecarState(sidecar_state.clone()));
             spawn_sidecar(&app.handle(), port_state_for_setup.clone())

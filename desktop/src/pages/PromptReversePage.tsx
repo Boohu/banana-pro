@@ -73,6 +73,7 @@ export function PromptReversePage() {
   const addRecord = usePromptReverseStore((s) => s.addRecord);
   const removeRecord = usePromptReverseStore((s) => s.removeRecord);
   const clearHistory = usePromptReverseStore((s) => s.clearHistory);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   // 设置文件 + 预览
   const handleFile = useCallback((f: File | null) => {
@@ -471,9 +472,7 @@ export function PromptReversePage() {
           </h3>
           {history.length > 0 && (
             <button
-              onClick={() => {
-                if (confirm(t('reversePrompt.confirmClear'))) clearHistory();
-              }}
+              onClick={() => setShowClearConfirm(true)}
               className="text-xs text-fg-muted hover:text-rose-400 flex items-center gap-1 transition-colors"
             >
               <Trash2 className="w-3.5 h-3.5" />
@@ -500,6 +499,43 @@ export function PromptReversePage() {
           </div>
         )}
       </div>
+
+      {/* 清空历史确认弹窗（项目暗色风格） */}
+      {showClearConfirm && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+          onClick={() => setShowClearConfirm(false)}
+        >
+          <div
+            className="bg-surface-secondary border border-border rounded-xl shadow-2xl w-[360px] p-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-base font-semibold text-fg-primary mb-2">
+              {t('reversePrompt.historyClear')}
+            </h3>
+            <p className="text-sm text-fg-secondary mb-5">
+              {t('reversePrompt.confirmClear')}
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setShowClearConfirm(false)}
+                className="px-4 py-2 rounded-lg bg-surface-tertiary border border-border text-sm text-fg-secondary hover:text-fg-primary transition-colors"
+              >
+                {t('common.cancel', '取消')}
+              </button>
+              <button
+                onClick={() => {
+                  clearHistory();
+                  setShowClearConfirm(false);
+                }}
+                className="px-4 py-2 rounded-lg bg-rose-500 text-white text-sm font-medium hover:bg-rose-600 transition-colors"
+              >
+                {t('reversePrompt.historyClear')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

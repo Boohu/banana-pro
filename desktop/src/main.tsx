@@ -40,6 +40,22 @@ const mountApp = () => {
   })();
 };
 
+// 尽可能早地清空 macOS 标题：tauri.conf.json 里 title 为「筋斗云AI」（Windows 任务栏需要），
+// 但 macOS Overlay 模式下会把这几个字直接画在标题栏上和暗色背景冲突。
+// 放在 bootstrap 之外、立即执行，避免被 initI18n 的 await 拖延几百 ms。
+(async () => {
+  try {
+    if (typeof window === 'undefined') return;
+    if (!(window as any).__TAURI_INTERNALS__) return;
+    if (!/Mac/i.test(navigator.userAgent)) return;
+    // @ts-ignore Tauri 运行时解析
+    const { getCurrentWindow } = await import(/* @vite-ignore */ '@tauri-apps/api/window');
+    await getCurrentWindow().setTitle('');
+  } catch (err) {
+    console.warn('[main] setTitle skip:', err);
+  }
+})();
+
 const bootstrap = async () => {
   initDiagnosticLogger();
   const language = await initI18n();
@@ -50,20 +66,6 @@ const bootstrap = async () => {
     setLanguageResolved(language);
   } else if (storedLanguage === 'system' && !languageResolved) {
     setLanguageResolved(language);
-  }
-
-  // macOS 的 overlay 标题栏保留红绿灯但清空标题文字
-  // Windows 任务栏需要 title 显示应用名，所以只在 macOS 启动后清空
-  try {
-    const isTauri = Boolean((window as any).__TAURI_INTERNALS__);
-    const isMac = typeof navigator !== 'undefined' && /Mac/i.test(navigator.platform || '');
-    if (isTauri && isMac) {
-      // @ts-ignore Tauri 运行时解析
-      const { getCurrentWindow } = await import(/* @vite-ignore */ '@tauri-apps/api/window');
-      await getCurrentWindow().setTitle('');
-    }
-  } catch (err) {
-    console.warn('[main] setTitle skip:', err);
   }
 
   mountApp();
