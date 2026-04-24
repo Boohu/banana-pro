@@ -636,7 +636,7 @@ function AboutSection() {
           <img src={logoImg} alt="logo" className="w-12 h-12 rounded-xl" />
           <div>
             <h4 className="text-base font-semibold text-fg-primary">{t('sidebar.appName')}</h4>
-            <p className="text-xs text-fg-muted">v{typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '2.9.10'}</p>
+            <p className="text-xs text-fg-muted">v{typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '2.9.11'}</p>
           </div>
         </div>
         <div className="space-y-2 text-sm text-fg-secondary">

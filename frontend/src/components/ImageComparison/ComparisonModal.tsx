@@ -181,16 +181,20 @@ export function ComparisonModal({ image, onClose, originalImageUrl, onPrev, onNe
         });
         if (!destPath) return; // 用户取消
 
-        // 根据 url 协议分流：
-        // - http/https → invoke download_file_to_path (Rust reqwest)
-        // - asset:// 或其他本地协议 → 前端 fetch blob → Tauri fs writeFile
-        const isHttp = /^https?:\/\//i.test(imageUrl);
-        if (isHttp) {
+        // 根据 url 分流：
+        // - 公网 http(s) URL → invoke download_file_to_path (Rust reqwest 更稳)
+        // - 本地资源（asset://, http://asset.localhost, http://tauri.localhost, blob:, data: 等）
+        //   → 前端 fetch blob → Tauri fs writeFile
+        //   注意：macOS 的 Tauri 用 asset://localhost/...，Windows 的 WebView2 用 http://asset.localhost/...
+        const isLocalAsset =
+          /^(asset:|tauri:|blob:|data:)/i.test(imageUrl) ||
+          /^https?:\/\/(asset|tauri)\.localhost(\/|$|:)/i.test(imageUrl);
+        const isRemoteHttp = !isLocalAsset && /^https?:\/\//i.test(imageUrl);
+        if (isRemoteHttp) {
           // @ts-ignore
           const { invoke } = await import(/* @vite-ignore */ '@tauri-apps/api/core');
           await invoke('download_file_to_path', { url: imageUrl, destPath });
         } else {
-          // asset:// / data: / blob: 统一走 fetch + fs
           const res = await fetch(imageUrl);
           if (!res.ok) throw new Error(`fetch ${res.status}`);
           const bytes = new Uint8Array(await (await res.blob()).arrayBuffer());
