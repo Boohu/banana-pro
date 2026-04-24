@@ -61,7 +61,7 @@ if [[ ${#AUTH_HEADER[@]} -eq 0 ]]; then
 fi
 
 REL_JSON_PATH="$TMP/_release.json"
-curl -sSfL "${AUTH_HEADER[@]}" -H "Accept: application/vnd.github+json" \
+curl -sSfL ${AUTH_HEADER[@]+"${AUTH_HEADER[@]}"} -H "Accept: application/vnd.github+json" \
   -o "$REL_JSON_PATH" "https://api.github.com/repos/${REPO}/releases/tags/${TAG}" || {
   echo "❌ 无法获取 release 元数据：$REPO $TAG（检查是否私有仓库且未提供 token）" >&2
   exit 1
@@ -95,7 +95,7 @@ while IFS=$'\t' read -r aname aurl; do
   # 私有仓库的 release assets 需要发到 api.github.com/repos/.../releases/assets/<id> 端点
   # 并带 Accept: application/octet-stream，才能真正拿到文件
   # browser_download_url 在私有仓库对普通 token 可能返回 302 → S3 但 S3 需要 Referer，这里直接兼容两种写法
-  if ! curl -sSfL "${AUTH_HEADER[@]}" -H "Accept: application/octet-stream" \
+  if ! curl -sSfL ${AUTH_HEADER[@]+"${AUTH_HEADER[@]}"} -H "Accept: application/octet-stream" \
        -o "$TMP/$aname" "$aurl"; then
     echo "❌ 下载失败: $aname"
     exit 1
@@ -122,11 +122,12 @@ echo "✓ 上传完成"
 
 echo ""
 echo "=== 3/5 登录 admin 获取 token ==="
+LOGIN_PAYLOAD="$(U="$ADMIN_USERNAME" P="$ADMIN_PASSWORD" \
+  python3 -c "import json,os; print(json.dumps({'username':os.environ['U'],'password':os.environ['P']}))")"
 LOGIN_RESP="$(
   curl -sS -X POST "https://${SERVER}/api/admin/login" \
     -H "Content-Type: application/json" \
-    -d "$(python3 -c "import json,sys,os; print(json.dumps({'username':os.environ['U'],'password':os.environ['P']}))" \
-           U="$ADMIN_USERNAME" P="$ADMIN_PASSWORD")"
+    -d "$LOGIN_PAYLOAD"
 )"
 TOKEN="$(echo "$LOGIN_RESP" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('data',{}).get('token',''))")"
 if [[ -z "$TOKEN" ]]; then
@@ -167,7 +168,12 @@ echo "  windows-x64: ${WIN_NAME:-(缺失)}  sig=${#WIN_SIG}字符"
 
 echo ""
 echo "=== 5/5 从 Release 提取 notes 并调用 admin API 注册版本 ==="
-NOTES="$(echo "$REL_JSON" | python3 -c "import json,sys; print((json.load(sys.stdin).get('body') or '')[:8000])")"
+NOTES="$(python3 -c "import json; print((json.load(open('$REL_JSON_PATH')).get('body') or '')[:8000])")"
+
+export V="$VERSION" NOTES BASE="$BASE_URL" \
+       A_NAME="$DARWIN_ARM_NAME" A_SIG="$DARWIN_ARM_SIG" \
+       U_NAME="$DARWIN_UNI_NAME" U_SIG="$DARWIN_UNI_SIG" \
+       W_NAME="$WIN_NAME" W_SIG="$WIN_SIG"
 
 PAYLOAD="$(python3 <<PY
 import json, os
@@ -184,11 +190,6 @@ print(json.dumps({
 }, ensure_ascii=False))
 PY
 )"
-
-export V="$VERSION" NOTES BASE="$BASE_URL" \
-       A_NAME="$DARWIN_ARM_NAME" A_SIG="$DARWIN_ARM_SIG" \
-       U_NAME="$DARWIN_UNI_NAME" U_SIG="$DARWIN_UNI_SIG" \
-       W_NAME="$WIN_NAME" W_SIG="$WIN_SIG"
 
 REG_RESP="$(
   curl -sS -X POST "https://${SERVER}/api/admin/versions" \
