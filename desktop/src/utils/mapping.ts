@@ -30,8 +30,13 @@ export const mapBackendTaskToFrontend = (task: BackendTask): GenerationTask => {
     originalImagePath: task.original_image_path || '',
     originalImageUrl: task.original_image_path ? getFullUrl(task.original_image_path) : '',
     // 注入任务开始/完成时间，用于 ImageCard 显示耗时
+    // taskCompletedAt 优先 task.updated_at；终态任务（completed/failed/partial）后端没给 updated_at 时，
+    // 用拿到响应这一刻 fallback（前端到响应这一刻 ≈ 任务真实结束时刻 ± 网络延迟）
     taskStartedAt: task.created_at,
-    taskCompletedAt: task.updated_at || ''
+    taskCompletedAt: task.updated_at
+      || (task.status === 'completed' || task.status === 'failed' || task.status === 'partial'
+          ? new Date().toISOString()
+          : ''),
   };
 
   return {

@@ -382,12 +382,22 @@ export function useGenerate() {
         } as any);
       };
 
-      const pollTaskUntilFinished = async (singleTaskId: string) => {
+      const pollTaskUntilFinished = async (singleTaskId: string, maxWaitMs = 10 * 60 * 1000) => {
         let retry = 0;
+        const start = Date.now();
+        let lastTask: any = null;
         while (true) {
+          // 总超时保护：避免上游 hang 住时前端无限轮询
+          if (Date.now() - start > maxWaitMs) {
+            if (lastTask) {
+              return { ...lastTask, status: 'failed', errorMessage: lastTask.errorMessage || '生成超时（前端兜底）' };
+            }
+            throw new Error('poll timeout');
+          }
           try {
             const taskData = await getTaskStatus(singleTaskId);
             retry = 0;
+            lastTask = taskData;
             if (taskData.status === 'completed' || taskData.status === 'failed' || taskData.status === 'partial') {
               return taskData;
             }
@@ -456,6 +466,11 @@ export function useGenerate() {
           return;
         }
 
+        // 多张任务：创建阶段完成立即释放 submit 锁，让用户能继续发新任务
+        // 第二阶段 polling 在后台进行，不阻塞「开始生成」按钮
+        setSubmitting(false);
+        setIsInternalSubmitting(false);
+
         let successCount = 0;
         const finalResults = await Promise.allSettled(
           createdTasks.map(async (task) => {
@@ -469,8 +484,28 @@ export function useGenerate() {
               storeRef.current.updateProgressBatch(successCount, images);
             }
 
-            if (finalTask.status === 'failed' && finalTask.errorMessage && !firstError) {
-              firstError = finalTask.errorMessage;
+            // 同步单任务的失败状态到 generateStore（让"生成结果"区跟历史记录同步）
+            if (finalTask.status === 'failed') {
+              if (finalTask.errorMessage && !firstError) {
+                firstError = finalTask.errorMessage;
+              }
+              // 失败任务也要给一个占位 image，让卡片能渲染失败状态
+              if (!finalTask.images || finalTask.images.length === 0) {
+                storeRef.current.updateProgress(successCount, {
+                  id: singleTaskId,
+                  taskId: singleTaskId,
+                  filePath: '',
+                  thumbnailPath: '',
+                  fileSize: 0,
+                  width: 0,
+                  height: 0,
+                  mimeType: '',
+                  createdAt: finalTask.createdAt || new Date().toISOString(),
+                  status: 'failed',
+                  prompt: finalTask.prompt || config.prompt,
+                  model: finalTask.model || activeModelId,
+                } as any);
+              }
             }
           })
         );
