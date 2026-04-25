@@ -22,6 +22,11 @@ interface HistoryState {
   folders: Folder[];
   foldersLoading: boolean;
 
+  // 多选状态（不持久化，每次进入历史页是干净的）
+  multiSelectMode: boolean;
+  selectedImageIds: Set<string>;
+  lastSelectedImageId: string | null;
+
   loadHistory: (reset?: boolean, options?: { silent?: boolean }) => Promise<void>;
   loadMore: () => Promise<void>;
   setSearchKeyword: (keyword: string) => void;
@@ -36,6 +41,16 @@ interface HistoryState {
   createFolder: (name: string) => Promise<void>;
   moveImageToFolder: (imageId: string, folderId: string) => Promise<void>;
   handleImageMoved: (imageId: string, taskId: string) => void;
+
+  // 多选 actions
+  setMultiSelectMode: (mode: boolean) => void;
+  toggleSelectImage: (id: string) => void;
+  selectImageRange: (fromId: string, toId: string, orderedIds: string[]) => void;
+  selectAllImages: (orderedIds: string[]) => void;
+  clearImageSelection: () => void;
+  addToImageSelection: (ids: string[]) => void;
+  removeFromImageSelection: (ids: string[]) => void;
+  setSelectedImageIds: (ids: Iterable<string>) => void;
 }
 
 
@@ -116,6 +131,10 @@ export const useHistoryStore = create<HistoryState>()(
   viewMode: 'timeline',
   folders: [],
   foldersLoading: false,
+
+  multiSelectMode: false,
+  selectedImageIds: new Set<string>(),
+  lastSelectedImageId: null,
 
   loadHistory: async (reset = false, options) => {
     // 请求序号：防止慢请求覆盖快请求（搜索/翻页/重置时常见）
@@ -422,6 +441,67 @@ export const useHistoryStore = create<HistoryState>()(
       };
     });
   },
+
+  setMultiSelectMode: (mode) => set((state) => ({
+    multiSelectMode: mode,
+    // 关闭多选时清空选择
+    selectedImageIds: mode ? state.selectedImageIds : new Set<string>(),
+    lastSelectedImageId: mode ? state.lastSelectedImageId : null,
+  })),
+
+  toggleSelectImage: (id) => set((state) => {
+    const next = new Set(state.selectedImageIds);
+    if (next.has(id)) {
+      next.delete(id);
+    } else {
+      next.add(id);
+    }
+    return { selectedImageIds: next, lastSelectedImageId: id };
+  }),
+
+  selectImageRange: (fromId, toId, orderedIds) => set((state) => {
+    const fromIdx = orderedIds.indexOf(fromId);
+    const toIdx = orderedIds.indexOf(toId);
+    if (fromIdx < 0 || toIdx < 0) {
+      // 落地为单选
+      const next = new Set(state.selectedImageIds);
+      next.add(toId);
+      return { selectedImageIds: next, lastSelectedImageId: toId };
+    }
+    const [start, end] = fromIdx <= toIdx ? [fromIdx, toIdx] : [toIdx, fromIdx];
+    const next = new Set(state.selectedImageIds);
+    for (let i = start; i <= end; i += 1) {
+      next.add(orderedIds[i]);
+    }
+    return { selectedImageIds: next, lastSelectedImageId: toId };
+  }),
+
+  selectAllImages: (orderedIds) => set({
+    selectedImageIds: new Set(orderedIds),
+  }),
+
+  clearImageSelection: () => set({
+    selectedImageIds: new Set<string>(),
+    lastSelectedImageId: null,
+  }),
+
+  addToImageSelection: (ids) => set((state) => {
+    if (ids.length === 0) return state;
+    const next = new Set(state.selectedImageIds);
+    ids.forEach((id) => next.add(id));
+    return { selectedImageIds: next };
+  }),
+
+  removeFromImageSelection: (ids) => set((state) => {
+    if (ids.length === 0) return state;
+    const next = new Set(state.selectedImageIds);
+    ids.forEach((id) => next.delete(id));
+    return { selectedImageIds: next };
+  }),
+
+  setSelectedImageIds: (ids) => set({
+    selectedImageIds: new Set(ids),
+  }),
 
     }),
     {

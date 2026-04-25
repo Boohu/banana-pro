@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { CheckSquare, Square, Download, Trash2, Loader2 } from 'lucide-react';
+import { CheckSquare, Square, MinusSquare, Download, Trash2, Loader2 } from 'lucide-react';
 import { useGenerateStore } from '../../store/generateStore';
 import { Button } from '../common/Button';
 import { exportImages } from '../../services/historyApi';
@@ -78,22 +78,58 @@ export function BatchActions() {
               return;
           }
 
-          // 清理之前的 ObjectURL
+          const defaultName = `images-${Date.now()}.zip`;
+          const isTauri = typeof window !== 'undefined' && Boolean((window as any).__TAURI_INTERNALS__);
+
+          if (isTauri) {
+              // 桌面端：Tauri WebView 不支持 <a download>，必须走 dialog.save + fs.writeFile
+              try {
+                  // @ts-ignore Tauri 运行时解析
+                  const { save } = await import(/* @vite-ignore */ '@tauri-apps/plugin-dialog');
+                  const lastDir = localStorage.getItem('banana-last-export-dir') || '';
+                  const defaultPath = lastDir ? `${lastDir}/${defaultName}` : defaultName;
+                  const destPath = await save({
+                      defaultPath,
+                      filters: [{ name: 'Zip', extensions: ['zip'] }],
+                      title: '导出图片',
+                  });
+                  if (!destPath) return; // 用户取消
+
+                  const bytes = new Uint8Array(await blob.arrayBuffer());
+                  // @ts-ignore Tauri 运行时解析
+                  const { writeFile } = await import(/* @vite-ignore */ '@tauri-apps/plugin-fs');
+                  await writeFile(destPath as string, bytes);
+
+                  // 记录上次导出目录
+                  const dir = String(destPath).replace(/\/[^/]+$/, '').replace(/\\[^\\]+$/, '');
+                  if (dir) localStorage.setItem('banana-last-export-dir', dir);
+
+                  if (partial) {
+                      toast.info(t('generate.batch.exportPartial') + ` 已保存到 ${destPath}`);
+                  } else {
+                      toast.success(`已导出 ${selectedIds.size} 张到 ${destPath}`);
+                  }
+              } catch (err) {
+                  console.error('[BatchActions] Tauri 导出失败:', err);
+                  toast.error('导出失败：' + (err instanceof Error ? err.message : String(err)));
+              }
+              return;
+          }
+
+          // Web 端：浏览器下载到默认下载目录
           if (objectUrlRef.current) {
               window.URL.revokeObjectURL(objectUrlRef.current);
           }
-
           const url = window.URL.createObjectURL(blob);
-          objectUrlRef.current = url;  // 保存 URL 引用
+          objectUrlRef.current = url;
 
           const a = document.createElement('a');
           a.href = url;
-          a.download = `images-${Date.now()}.zip`;
+          a.download = defaultName;
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
 
-          // 添加成功提示
           if (partial) {
               toast.info(t('generate.batch.exportPartial'));
           } else {
@@ -126,14 +162,18 @@ export function BatchActions() {
   return (
     <div className="bg-surface-secondary border-t border-border p-4 flex items-center justify-between">
       <div className="flex items-center gap-2">
-        <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={allSelected ? clearSelection : selectAll}
+        <Button
+            variant="ghost"
+            size="sm"
+            onClick={hasSelection ? clearSelection : selectAll}
             className="text-fg-secondary"
         >
-          {allSelected ? <CheckSquare className="w-4 h-4 mr-2" /> : <Square className="w-4 h-4 mr-2" />}
-          {allSelected ? t('generate.batch.clearSelection') : t('generate.batch.selectAll')}
+          {allSelected
+            ? <CheckSquare className="w-4 h-4 mr-2" />
+            : hasSelection
+              ? <MinusSquare className="w-4 h-4 mr-2" />
+              : <Square className="w-4 h-4 mr-2" />}
+          {hasSelection ? t('generate.batch.clearSelection') : t('generate.batch.selectAll')}
         </Button>
         <span className="text-sm text-fg-muted ml-2">
             {t('generate.batch.selectedCount', { count: selectedIds.size })}

@@ -1,9 +1,24 @@
 // Auto-generated from awesome-nano-banana-pro-prompts
-// 129 community prompts
+// 129 community prompts + 330 GPT-Image2 prompts (gpt2Templates.json)
 
-export const communityTemplateChannels = ["全部", "3D渲染", "个人头像", "产品营销", "像素艺术", "创意生成", "动漫", "品牌设计", "复古怀旧", "建筑设计", "插画", "摄影", "教育培训", "时尚", "极简主义", "水彩", "海报设计", "游戏素材", "漫画故事", "社交媒体", "美食", "赛博朋克", "风景自然"];
+import gpt2TemplatesRaw from './gpt2Templates.json';
 
-export const communityTemplates = [
+export const communityTemplateChannels = [
+  "全部",
+  // GPT-2 一套（GPT-Image2 工业级 13 个细分 + 总入口）
+  "GPT-2",
+  "UI与界面", "图表与信息可视化", "海报与排版", "商品与电商",
+  "品牌与标志", "建筑与空间", "摄影与写实", "插画与艺术",
+  "人物与角色", "场景与叙事", "历史与古风题材", "文档与出版物",
+  "其他应用场景",
+  // nano-banana 社区一套（保留原命名）
+  "3D渲染", "个人头像", "产品营销", "像素艺术", "创意生成", "动漫",
+  "品牌设计", "复古怀旧", "建筑设计", "插画", "摄影", "教育培训",
+  "时尚", "极简主义", "水彩", "海报设计", "游戏素材", "漫画故事",
+  "社交媒体", "美食", "赛博朋克", "风景自然",
+];
+
+const nanoBananaTemplates = [
   {
     "id": "community-0001",
     "title": "带肖像和中英文定制的宽引言卡",
@@ -3592,4 +3607,10 @@ export const communityTemplates = [
       "note": ""
     }
   }
+];
+
+// 合并 GPT-Image2 工业级（330 条） + nano-banana 社区（129 条）
+export const communityTemplates = [
+  ...(gpt2TemplatesRaw as typeof nanoBananaTemplates),
+  ...nanoBananaTemplates,
 ];

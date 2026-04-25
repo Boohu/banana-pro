@@ -25,6 +25,31 @@ export const ImageCard = React.memo(function ImageCard({
   const [elapsed, setElapsed] = useState('0.0');
   const rafRef = useRef<number | null>(null);
   const lastUpdateRef = useRef(0);
+  // 标记 timer 是否真的从 pending 阶段跑过；
+  // 没跑过就说明这张图是直接以 success/failed 状态加载的（比如历史回填），timer 不可靠
+  const timerStartedRef = useRef(false);
+
+  // 优先从 image 自带的任务开始/完成时间算耗时（最准确，跨刷新有效）
+  const computedElapsed = useMemo(() => {
+    const start = (image as any).taskStartedAt;
+    const end = (image as any).taskCompletedAt;
+    if (!start || !end) return null;
+    const startMs = Date.parse(start);
+    const endMs = Date.parse(end);
+    if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs < startMs) return null;
+    return ((endMs - startMs) / 1000).toFixed(1);
+  }, [image]);
+
+  // 显示用 elapsed：计算值 > timer 跑过的最后值 > '-'
+  const displayElapsed = computedElapsed !== null
+    ? `${computedElapsed}s`
+    : timerStartedRef.current
+      ? `${elapsed}s`
+      : isFailed
+        ? '-'
+        : isPending
+          ? `${elapsed}s`
+          : '-';
 
   useEffect(() => {
     return () => {
@@ -47,6 +72,7 @@ export const ImageCard = React.memo(function ImageCard({
     const startMsRaw = Date.parse(image.createdAt || '');
     const startMs = Number.isFinite(startMsRaw) ? startMsRaw : Date.now();
     lastUpdateRef.current = 0;
+    timerStartedRef.current = true;
 
     const tick = () => {
       const now = Date.now();
@@ -190,7 +216,7 @@ export const ImageCard = React.memo(function ImageCard({
               </div>
               <div className="flex items-center gap-1.5 px-2 py-0.5 bg-primary/15/50 rounded-full border border-blue-200/50">
                 <span className="text-[10px] font-bold font-mono text-primary tabular-nums">
-                  {elapsed}s
+                  {displayElapsed}
                 </span>
               </div>
             </div>
@@ -261,13 +287,16 @@ export const ImageCard = React.memo(function ImageCard({
 
       {/* 信息区域 - 保持与历史区一致的样式 */}
       <div className="p-2 sm:p-3 flex flex-col gap-1.5 sm:gap-2 flex-shrink-0 bg-surface-secondary">
-        <p className="text-[10px] sm:text-xs text-fg-primary line-clamp-2 font-medium leading-relaxed h-8 sm:h-9" title={image.prompt}>
+        <p
+          className="text-[10px] sm:text-xs text-fg-primary line-clamp-2 font-medium leading-snug h-[2.75em]"
+          title={image.prompt || t('generate.card.emptyPrompt')}
+        >
           {image.prompt || t('generate.card.emptyPrompt')}
         </p>
 
         <div className="flex items-center justify-between text-[8px] sm:text-[9px] text-fg-muted pt-1 border-t border-gray-50 mt-auto">
           <div className="flex items-center gap-1.5">
-            <span className="font-mono">{elapsed}s</span>
+            <span className="font-mono">{displayElapsed}</span>
             <span className="text-gray-300">|</span>
             <span className="truncate max-w-[60px]">{image.model || 'Gemini'}</span>
           </div>

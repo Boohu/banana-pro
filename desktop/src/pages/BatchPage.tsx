@@ -10,6 +10,7 @@ import { processBatch, listBatches, getBatchStatus, deleteBatch, pauseBatch, res
 import { getImageUrl } from '@/services/api';
 import { BASE_URL } from '@/services/api';
 import { ComparisonModal } from '@/components/ImageComparison/ComparisonModal';
+import { toast } from '@/store/toastStore';
 
 interface BatchFile {
   file: File;
@@ -886,16 +887,44 @@ export function BatchPage() {
                   {item.status === 'completed' && item.resultUrl && (
                     <button
                       onClick={async () => {
+                        const defaultName = item.file.name.replace(/\.[^.]+$/, '_edited$&');
+                        const isTauri = typeof window !== 'undefined' && Boolean((window as any).__TAURI_INTERNALS__);
                         try {
                           const res = await fetch(item.resultUrl!);
                           const blob = await res.blob();
+
+                          if (isTauri) {
+                            // @ts-ignore Tauri 运行时解析
+                            const { save } = await import(/* @vite-ignore */ '@tauri-apps/plugin-dialog');
+                            const lastDir = localStorage.getItem('banana-last-save-dir') || '';
+                            const defaultPath = lastDir ? `${lastDir}/${defaultName}` : defaultName;
+                            const ext = (defaultName.match(/\.\w+$/)?.[0] || '.png').replace('.', '');
+                            const destPath = await save({
+                              defaultPath,
+                              filters: [{ name: 'Image', extensions: [ext] }],
+                              title: '保存图片',
+                            });
+                            if (!destPath) return;
+                            const bytes = new Uint8Array(await blob.arrayBuffer());
+                            // @ts-ignore Tauri 运行时解析
+                            const { writeFile } = await import(/* @vite-ignore */ '@tauri-apps/plugin-fs');
+                            await writeFile(destPath as string, bytes);
+                            const dir = String(destPath).replace(/\/[^/]+$/, '').replace(/\\[^\\]+$/, '');
+                            if (dir) localStorage.setItem('banana-last-save-dir', dir);
+                            toast.success('已保存到 ' + destPath);
+                            return;
+                          }
+
                           const url = URL.createObjectURL(blob);
                           const a = document.createElement('a');
                           a.href = url;
-                          a.download = item.file.name.replace(/\.[^.]+$/, '_edited$&');
+                          a.download = defaultName;
                           a.click();
                           URL.revokeObjectURL(url);
-                        } catch {}
+                        } catch (err) {
+                          console.error('[BatchPage] 保存失败:', err);
+                          toast.error('保存失败：' + (err instanceof Error ? err.message : String(err)));
+                        }
                       }}
                       className="text-fg-muted hover:text-success transition-colors shrink-0"
                     >
@@ -983,20 +1012,55 @@ export function BatchPage() {
             {completedCount > 0 && (
               <button
                 onClick={async () => {
-                  // 逐个下载已完成的图片（fetch blob 避免跨域打开）
-                  for (const f of selectedBatch.files) {
-                    if (f.status === 'completed' && f.resultUrl) {
-                      try {
-                        const res = await fetch(f.resultUrl);
-                        const blob = await res.blob();
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = f.file.name.replace(/\.[^.]+$/, '_edited$&');
-                        a.click();
-                        URL.revokeObjectURL(url);
-                      } catch {}
+                  const isTauri = typeof window !== 'undefined' && Boolean((window as any).__TAURI_INTERNALS__);
+                  const completedFiles = selectedBatch.files.filter((f) => f.status === 'completed' && f.resultUrl);
+                  if (completedFiles.length === 0) return;
+
+                  if (isTauri) {
+                    // 桌面端：让用户选保存目录，所有文件批量写入
+                    try {
+                      // @ts-ignore Tauri 运行时解析
+                      const { open } = await import(/* @vite-ignore */ '@tauri-apps/plugin-dialog');
+                      const lastDir = localStorage.getItem('banana-last-save-dir') || undefined;
+                      const dir = await open({ directory: true, defaultPath: lastDir, title: '选择保存目录' });
+                      if (!dir) return;
+                      // @ts-ignore Tauri 运行时解析
+                      const { writeFile } = await import(/* @vite-ignore */ '@tauri-apps/plugin-fs');
+                      let saved = 0;
+                      for (const f of completedFiles) {
+                        try {
+                          const res = await fetch(f.resultUrl!);
+                          const blob = await res.blob();
+                          const name = f.file.name.replace(/\.[^.]+$/, '_edited$&');
+                          const target = `${dir}/${name}`;
+                          const bytes = new Uint8Array(await blob.arrayBuffer());
+                          await writeFile(target, bytes);
+                          saved += 1;
+                        } catch (err) {
+                          console.warn('[BatchPage] 单文件下载失败:', f.file.name, err);
+                        }
+                      }
+                      localStorage.setItem('banana-last-save-dir', String(dir));
+                      toast.success(`已保存 ${saved} 张到 ${dir}`);
+                    } catch (err) {
+                      console.error('[BatchPage] 批量保存失败:', err);
+                      toast.error('批量保存失败：' + (err instanceof Error ? err.message : String(err)));
                     }
+                    return;
+                  }
+
+                  // Web 端：逐个触发浏览器下载
+                  for (const f of completedFiles) {
+                    try {
+                      const res = await fetch(f.resultUrl!);
+                      const blob = await res.blob();
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = f.file.name.replace(/\.[^.]+$/, '_edited$&');
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    } catch {}
                   }
                 }}
                 className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-success/15 text-success text-xs font-semibold hover:bg-success/25 transition-colors"

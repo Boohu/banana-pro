@@ -26,6 +26,9 @@ export interface GeneratedImage {
   // 参考图路径（图生图任务专用），用于对比图
   originalImagePath?: string;
   originalImageUrl?: string;
+  // 该图所属任务的开始/完成时间（前端注入），用于卡片显示耗时
+  taskStartedAt?: string;
+  taskCompletedAt?: string;
 }
 
 // 图片选项配置

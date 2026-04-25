@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useImperativeHandle, useMemo, useState, forwardRef } from 'react';
+import React, { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState, forwardRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AutoSizer } from 'react-virtualized-auto-sizer';
 import { Grid, type CellComponentProps, type GridImperativeAPI } from 'react-window';
@@ -11,6 +11,8 @@ import { getFolders, getFolderImages, Folder } from '../../services/folderApi';
 import { getImageUrl } from '../../services/api';
 import { toast } from '../../store/toastStore';
 import { mapBackendHistoryResponse } from '../../utils/mapping';
+import { useHistoryStore } from '../../store/historyStore';
+import { useDragBoxSelect } from './useDragBoxSelect';
 
 interface FolderWithCount extends Folder {
   imageCount: number;
@@ -85,8 +87,15 @@ export interface AlbumViewRef {
   refresh: () => void;
 }
 
-export const AlbumView = forwardRef<AlbumViewRef, {}>(function AlbumView(_props, ref) {
+interface AlbumViewProps {
+  orderedIds?: string[];
+}
+
+export const AlbumView = forwardRef<AlbumViewRef, AlbumViewProps>(function AlbumView({ orderedIds }, ref) {
   const { t } = useTranslation();
+  const multiSelectMode = useHistoryStore((s) => s.multiSelectMode);
+  const dragWrapperRef = useRef<HTMLDivElement>(null);
+  const dragScrollRef = useRef<HTMLDivElement>(null);
 
   const [folders, setFolders] = useState<FolderWithCount[]>([]);
   const [foldersLoading, setFoldersLoading] = useState(false);
@@ -281,8 +290,9 @@ export const AlbumView = forwardRef<AlbumViewRef, {}>(function AlbumView(_props,
     columnCount,
     itemWidth,
     itemHeight,
-    gap
-  }: CellComponentProps<{ images: FlattenedImage[]; columnCount: number; itemWidth: number; itemHeight: number; gap: number }>) => {
+    gap,
+    orderedIds: cellOrderedIds,
+  }: CellComponentProps<{ images: FlattenedImage[]; columnCount: number; itemWidth: number; itemHeight: number; gap: number; orderedIds?: string[] }>) => {
     const index = rowIndex * columnCount + columnIndex;
     const cellStyle: React.CSSProperties = {
       ...style,
@@ -304,7 +314,7 @@ export const AlbumView = forwardRef<AlbumViewRef, {}>(function AlbumView(_props,
     return (
       <div {...ariaAttributes} style={cellStyle}>
         <div style={{ width: itemWidth, height: itemHeight }}>
-          <ImageCard image={image} onClick={setSelectedImage} />
+          <ImageCard image={image} onClick={setSelectedImage} orderedIds={cellOrderedIds} />
         </div>
       </div>
     );
@@ -314,6 +324,20 @@ export const AlbumView = forwardRef<AlbumViewRef, {}>(function AlbumView(_props,
     if (!selectedFolder) return '';
     return `${selectedFolder.name} (${folderImagesTotal})`;
   }, [folderImagesTotal, selectedFolder]);
+
+  // 当前 folder 视图内可选的有序图片 id（仅成功的）— 拖选 hit-test 用
+  const folderOrderedIds = useMemo(() => {
+    return folderImages.filter((img) => img.url).map((img) => img.id);
+  }, [folderImages]);
+
+  // album folder 视图也启用拖选；如果是 timeline，外层 orderedIds 由 HistoryPage 传入；
+  // 这里的 album folder 视图用自己的 folderOrderedIds
+  const dragSelect = useDragBoxSelect({
+    enabled: multiSelectMode && Boolean(selectedFolder),
+    orderedIds: folderOrderedIds,
+    containerRef: dragWrapperRef,
+    scrollContainerRef: dragScrollRef,
+  });
 
   if (!selectedFolder) {
     if (foldersLoading && folders.length === 0) {
@@ -430,9 +454,11 @@ export const AlbumView = forwardRef<AlbumViewRef, {}>(function AlbumView(_props,
 
               return (
                 <div
-                  style={{ padding }}
-                  className="h-full"
+                  ref={dragWrapperRef}
+                  style={{ padding, position: 'relative' }}
+                  className={`h-full ${multiSelectMode ? 'select-none' : ''}`}
                   onContextMenu={(event) => { event.preventDefault(); }}
+                  onMouseDown={dragSelect.onMouseDown}
                 >
                   <Grid
                     gridRef={imageGridRef}
@@ -446,7 +472,8 @@ export const AlbumView = forwardRef<AlbumViewRef, {}>(function AlbumView(_props,
                       columnCount,
                       itemWidth: columnWidth,
                       itemHeight,
-                      gap
+                      gap,
+                      orderedIds: folderOrderedIds,
                     }}
                     overscanCount={2}
                     style={{ height: innerHeight, width: innerWidth }}
@@ -456,6 +483,18 @@ export const AlbumView = forwardRef<AlbumViewRef, {}>(function AlbumView(_props,
                       }
                     }}
                   />
+                  {/* 拖选选框 */}
+                  {dragSelect.dragRect && (
+                    <div
+                      className="absolute pointer-events-none border-2 border-primary bg-primary/15 rounded-sm"
+                      style={{
+                        left: dragSelect.dragRect.x,
+                        top: dragSelect.dragRect.y,
+                        width: dragSelect.dragRect.w,
+                        height: dragSelect.dragRect.h,
+                      }}
+                    />
+                  )}
                 </div>
               );
             }}

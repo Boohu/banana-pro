@@ -28,7 +28,10 @@ export const mapBackendTaskToFrontend = (task: BackendTask): GenerationTask => {
     thumbnailUrl: getFullUrl(task.thumbnail_path || task.local_path || task.thumbnail_url || task.image_url),
     // 参考图（对比图用）
     originalImagePath: task.original_image_path || '',
-    originalImageUrl: task.original_image_path ? getFullUrl(task.original_image_path) : ''
+    originalImageUrl: task.original_image_path ? getFullUrl(task.original_image_path) : '',
+    // 注入任务开始/完成时间，用于 ImageCard 显示耗时
+    taskStartedAt: task.created_at,
+    taskCompletedAt: task.updated_at || ''
   };
 
   return {

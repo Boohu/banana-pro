@@ -132,7 +132,7 @@ export function TemplatesPage() {
   const [allItems, setAllItems] = useState<TemplateItem[]>([]);
 
   useEffect(() => {
-    // 走 /api/templates（和登录接口完全一样的路径，确保 CORS 通过）
+    // 走 /api/templates（远程 auth.3ux.cn，CORS 已放行）
     templatesApi.get('/templates')
       .then(res => {
         const data = res.data;
@@ -161,6 +161,31 @@ export function TemplatesPage() {
     });
   }, [selectedCategory, searchQuery, allItems]);
 
+  // 顶级 channel 横条按"两套提示词方向"分组：
+  // GPT-2 系（GPT-Image2 工业级提示词的 13 个细分）vs nano-banana 社区一套
+  // 选中 GPT-2 系任意分类 → 只显示 GPT-2 系细分；选中其他 → 只显示 nano 系细分
+  const GPT2_GROUP = useMemo(() => new Set([
+    'GPT-2', 'UI与界面', '图表与信息可视化', '海报与排版', '商品与电商',
+    '品牌与标志', '建筑与空间', '摄影与写实', '插画与艺术',
+    '人物与角色', '场景与叙事', '历史与古风题材', '文档与出版物', '其他应用场景',
+  ]), []);
+
+  const visibleCategories = useMemo(() => {
+    if (categories.length <= 1) return categories;
+    const inGpt2 = GPT2_GROUP.has(selectedCategory);
+    const head: string[] = [];
+    const gpt2Subs: string[] = [];
+    const nanoSubs: string[] = [];
+    for (const c of categories) {
+      if (c === '全部') head.push(c);
+      else if (c === 'GPT-2') head.push(c);
+      else if (GPT2_GROUP.has(c)) gpt2Subs.push(c);
+      else nanoSubs.push(c);
+    }
+    // 始终显示「全部」+「GPT-2」两个总入口；细分根据当前选中组动态切换
+    return [...head, ...(inGpt2 ? gpt2Subs : nanoSubs)];
+  }, [categories, selectedCategory, GPT2_GROUP]);
+
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       {/* 搜索栏和分类标签置顶 */}
@@ -182,7 +207,7 @@ export function TemplatesPage() {
 
         {/* Category row */}
         <div className="flex flex-wrap items-center gap-2">
-          {categories.map((cat) => (
+          {visibleCategories.map((cat) => (
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Sparkles, Wand2, X, Plus, Loader2, AlertCircle, ImagePlus, ChevronDown, Info, Grid3X3, List, ChevronUp, FileJson } from 'lucide-react';
+import { Sparkles, Wand2, X, Plus, Loader2, AlertCircle, ImagePlus, ChevronDown, Info, Grid3X3, List, ChevronUp, FileJson, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useConfigStore, getModelAspectRatios, getModelResolutions, modelSupportsAutoRatio, resolveGPTImageSize } from '@/store/configStore';
 import { useModelStore } from '@/store/modelStore';
@@ -14,6 +14,8 @@ import { ComparisonModal } from '@/components/ImageComparison/ComparisonModal';
 import { BatchActions } from '@/components/GenerateArea/BatchActions';
 import { TaskQueuePanel } from '@/components/TaskQueue/TaskQueuePanel';
 import { optimizePrompt } from '@/services/promptApi';
+import { resolveActiveModel, syncActiveModelToBackend } from '@/services/activeModel';
+import { getImageUrl } from '@/services/api';
 import { toast } from '@/store/toastStore';
 import type { GeneratedImage } from '@/types';
 
@@ -47,9 +49,9 @@ function LeftConfigPanel() {
     selectedImageModelId: s.selectedImageModelId,
     setSelectedImageModelId: s.setSelectedImageModelId,
   })));
-  const chatProvider = useConfigStore((s) => s.chatProvider);
+  // 订阅 chat 选择 + legacy 字段，让 chatReady 计算保持响应式
+  const selectedChatModelId = useConfigStore((s) => s.selectedChatModelId);
   const chatApiKey = useConfigStore((s) => s.chatApiKey);
-  const chatModel = useConfigStore((s) => s.chatModel);
   const allModels = useModelStore((s) => s.models);
   const apiKeys = useApiKeyStore((s) => s.keys);
   const imageModels = useMemo(() => allModels.filter((m) => m.purpose === 'image'), [allModels]);
@@ -72,6 +74,10 @@ function LeftConfigPanel() {
   }, [activeModel, apiKeys]);
   // 是否已配置可用的密钥：新架构优先，旧 imageApiKey 作为 fallback
   const isImageReady = Boolean((activeModel && activeKey?.apiKey) || imageApiKey);
+
+  // chat（提示词优化）是否就绪：新架构 selectedChatModelId 优先，旧扁平字段 fallback
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const isChatReady = useMemo(() => Boolean(resolveActiveModel('chat')), [selectedChatModelId, chatApiKey, allModels, apiKeys]);
 
   // 当前模型名（用于过滤 aspect/resolution 选项）
   const activeModelName = activeModel?.name || imageModel;
@@ -120,14 +126,27 @@ function LeftConfigPanel() {
   const runOptimize = async (mode: 'normal' | 'json') => {
     const raw = prompt.trim();
     if (!raw) { toast.error('请先输入提示词'); return; }
-    if (!chatApiKey.trim() || !chatModel.trim()) { toast.error('请先在设置中配置提示词优化 API'); return; }
     if (isOptimizing) return;
+
+    // 优先用「模型管理」里 chat purpose 的活跃模型；没有则 fallback 到旧的扁平字段
+    const resolved = resolveActiveModel('chat');
+    if (!resolved) {
+      toast.error('请先在设置中配置提示词优化（chat）模型');
+      return;
+    }
+
     setIsOptimizing(true);
     setOptimizingMode(mode);
     try {
+      // 把当前活跃模型的 base/key/timeout 同步到后端 ProviderConfig
+      const synced = await syncActiveModelToBackend('chat');
+      if (!synced) {
+        toast.error('提示词优化模型同步失败');
+        return;
+      }
       const res = await optimizePrompt({
-        provider: chatProvider,
-        model: chatModel.trim(),
+        provider: synced.provider,
+        model: synced.modelId,
         prompt: raw,
         response_format: mode === 'json' ? 'json' : undefined,
       });
@@ -374,7 +393,7 @@ function LeftConfigPanel() {
             {t('config.apiKeyHint', '请先在设置中配置 API Key')}
           </div>
         )}
-        {!chatApiKey && isImageReady && (
+        {!isChatReady && isImageReady && (
           <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-primary/10 border border-primary/20 text-xs text-primary">
             <Sparkles className="w-3.5 h-3.5 shrink-0" />
             {t('配置提示词优化 API 可使用优化功能', '配置提示词优化 API 可使用 ✨ 优化功能')}
@@ -451,13 +470,15 @@ export function GeneratePage() {
   const [previewImage, setPreviewImage] = useState<GeneratedImage | null>(null);
   const [queueExpanded, setQueueExpanded] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const { error, dismissError, status, images, isSubmitting } = useGenerateStore(
+  const { error, dismissError, status, images, isSubmitting, selectedIds, toggleSelect } = useGenerateStore(
     useShallow((s) => ({
       error: s.error,
       dismissError: s.dismissError,
       status: s.status,
       images: s.images,
       isSubmitting: s.isSubmitting,
+      selectedIds: s.selectedIds,
+      toggleSelect: s.toggleSelect,
     }))
   );
 
@@ -556,40 +577,67 @@ export function GeneratePage() {
         )}
         {!isEmpty && viewMode === 'list' && (
           <div className="flex-1 min-h-0 overflow-y-auto px-6 py-2 space-y-2 scrollbar-thin">
-            {images.map((img) => (
-              <button
-                key={img.id}
-                onClick={() => setPreviewImage(img)}
-                className="w-full flex items-center gap-4 p-3 rounded-xl bg-surface-secondary hover:ring-1 hover:ring-primary/30 transition-all text-left"
-              >
-                <div className="w-24 h-24 rounded-lg bg-surface-tertiary overflow-hidden shrink-0">
-                  {img.thumbnailUrl || img.url ? (
-                    <img src={img.thumbnailUrl || img.url} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Loader2 className="w-5 h-5 text-primary animate-spin" />
+            {images.map((img) => {
+              const isFailed = img.status === 'failed';
+              const isSuccess = Boolean(img.url) && !isFailed;
+              const isProcessing = !isFailed && !isSuccess;
+              const isSelected = selectedIds.has(img.id);
+              return (
+                <div
+                  key={img.id}
+                  onClick={() => setPreviewImage(img)}
+                  className={cn(
+                    'w-full flex items-center gap-4 p-3 rounded-xl bg-surface-secondary transition-all cursor-pointer',
+                    isSelected ? 'ring-2 ring-primary' : 'hover:ring-1 hover:ring-primary/30',
+                  )}
+                >
+                  {/* 选择 checkbox（仅成功的可选；点击不触发预览） */}
+                  {isSuccess && (
+                    <div
+                      onClick={(e) => { e.stopPropagation(); toggleSelect(img.id); }}
+                      className={cn(
+                        'w-5 h-5 rounded border-2 shrink-0 flex items-center justify-center transition-colors',
+                        isSelected ? 'bg-primary border-primary' : 'bg-surface-primary border-border hover:border-primary/60',
+                      )}
+                    >
+                      {isSelected && <Check className="w-3.5 h-3.5 text-primary-foreground" />}
                     </div>
                   )}
-                </div>
-                <div className="flex-1 min-w-0 space-y-1.5">
-                  <p className="text-sm font-medium text-fg-primary truncate">{img.prompt || 'Untitled'}</p>
-                  <div className="flex items-center gap-3 text-xs text-fg-muted">
-                    {img.width > 0 && <span className="font-mono">{img.width}×{img.height}</span>}
-                    {img.fileSize > 0 && <span>{(img.fileSize / 1024 / 1024).toFixed(1)} MB</span>}
-                    {img.createdAt && <span>{new Date(img.createdAt).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}</span>}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {img.url ? (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-success/15 text-success">完成</span>
-                    ) : img.status === 'failed' ? (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-error/15 text-error">失败</span>
+                  {!isSuccess && <div className="w-5 shrink-0" />}
+
+                  <div className="w-24 h-24 rounded-lg bg-surface-tertiary overflow-hidden shrink-0 relative">
+                    {isFailed ? (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <AlertCircle className="w-7 h-7 text-error" />
+                      </div>
+                    ) : img.thumbnailUrl || img.url ? (
+                      <img src={img.thumbnailUrl || img.url} alt="" className="w-full h-full object-cover" />
                     ) : (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/15 text-primary">生成中</span>
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Loader2 className="w-5 h-5 text-primary animate-spin" />
+                      </div>
                     )}
                   </div>
+                  <div className="flex-1 min-w-0 space-y-1.5">
+                    <p className="text-sm font-medium text-fg-primary truncate" title={img.prompt}>{img.prompt || 'Untitled'}</p>
+                    <div className="flex items-center gap-3 text-xs text-fg-muted">
+                      {img.width > 0 && <span className="font-mono">{img.width}×{img.height}</span>}
+                      {img.fileSize > 0 && <span>{(img.fileSize / 1024 / 1024).toFixed(1)} MB</span>}
+                      {img.createdAt && <span>{new Date(img.createdAt).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}</span>}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {isSuccess ? (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-success/15 text-success">完成</span>
+                      ) : isFailed ? (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-error/15 text-error">失败</span>
+                      ) : (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/15 text-primary">生成中</span>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </button>
-            ))}
+              );
+            })}
           </div>
         )}
 
@@ -603,7 +651,47 @@ export function GeneratePage() {
         <ComparisonModal
           image={previewImage}
           onClose={() => setPreviewImage(null)}
-          onRegenerate={() => { generate(); }}
+          onRegenerate={async () => {
+            // 用原任务的配置重新生成：把 prompt/model/aspect/size/参考图 回填到 configStore
+            try {
+              const img = previewImage;
+              let opts: { aspectRatio?: string; imageSize?: string } = {};
+              if (img.options) {
+                if (typeof img.options === 'string') {
+                  try { opts = JSON.parse(img.options); } catch {}
+                } else {
+                  opts = img.options as any;
+                }
+              }
+              const cfg = useConfigStore.getState();
+              if (img.prompt) cfg.setPrompt(img.prompt);
+              if (opts.aspectRatio) cfg.setAspectRatio(opts.aspectRatio);
+              if (opts.imageSize) cfg.setImageSize(opts.imageSize);
+              if (img.model) {
+                cfg.setImageModel(img.model);
+                const m = useModelStore.getState().getByName(img.model, 'image');
+                if (m) cfg.setSelectedImageModelId(m.id);
+              }
+              // 参考图：先清空，再把原任务的原图拉下来转 File
+              cfg.clearRefFiles();
+              const refUrl = img.originalImageUrl || (img.originalImagePath ? getImageUrl(img.originalImagePath) : '');
+              if (refUrl) {
+                try {
+                  const res = await fetch(refUrl);
+                  const blob = await res.blob();
+                  const ext = (blob.type.split('/')[1] || 'png').replace(/[^a-z0-9]/gi, '');
+                  const file = new File([blob], `ref-${img.id}.${ext}`, { type: blob.type });
+                  cfg.addRefFiles([file]);
+                } catch (err) {
+                  console.warn('[Regenerate] 拉取原图失败', err);
+                }
+              }
+              await generate();
+            } catch (err) {
+              console.error('[Regenerate] 失败:', err);
+              toast.error('重新生成失败：' + (err instanceof Error ? err.message : String(err)));
+            }
+          }}
         />
       )}
     </div>

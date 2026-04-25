@@ -3,6 +3,7 @@ import { FileJson, Loader2, MessageSquare, Redo2, Sparkles, Undo2 } from 'lucide
 import { useConfigStore } from '../../store/configStore';
 import { usePromptHistoryStore } from '../../store/promptHistoryStore';
 import { optimizePrompt } from '../../services/promptApi';
+import { resolveActiveModel, syncActiveModelToBackend } from '../../services/activeModel';
 import { toast } from '../../store/toastStore';
 import { useGenerateStore } from '../../store/generateStore';
 import { useTranslation } from 'react-i18next';
@@ -94,27 +95,14 @@ export function PromptInput() {
       toast.error(t('prompt.toast.empty'));
       return;
     }
-    const chatBase = chatApiBaseUrl.trim();
-    const chatKey = chatApiKey.trim();
-    const chatModelValue = chatModel.trim();
-    if (!chatBase || !chatKey || !chatModelValue) {
+    if (isOptimizing) return;
+
+    // 优先用「模型管理」里 chat purpose 的活跃模型；fallback 到旧扁平字段
+    const resolved = resolveActiveModel('chat');
+    if (!resolved) {
       toast.error(t('prompt.toast.chatConfig'));
       return;
     }
-    if (chatSyncedConfig) {
-      const currentSignature = chatSignature(chatBase, chatKey, chatModelValue, chatTimeoutSeconds);
-      const syncedSignature = chatSignature(
-        chatSyncedConfig.apiBaseUrl,
-        chatSyncedConfig.apiKey,
-        chatSyncedConfig.model,
-        chatSyncedConfig.timeoutSeconds
-      );
-      if (currentSignature !== syncedSignature) {
-        toast.error(t('prompt.toast.chatConfigChanged'));
-        return;
-      }
-    }
-    if (isOptimizing) return;
 
     if (debounceRef.current) {
       clearTimeout(debounceRef.current);
@@ -123,9 +111,14 @@ export function PromptInput() {
     setIsOptimizing(true);
     setOptimizingMode(mode);
     try {
+      const synced = await syncActiveModelToBackend('chat');
+      if (!synced) {
+        toast.error(t('prompt.toast.chatConfig'));
+        return;
+      }
       const res = await optimizePrompt({
-        provider: chatProvider,
-        model: chatModelValue,
+        provider: synced.provider,
+        model: synced.modelId,
         prompt: raw,
         response_format: mode === 'json' ? 'json' : undefined,
       });

@@ -318,6 +318,10 @@ export function useGenerate() {
   }, []);
 
   const generate = async () => {
+    // 总是从 store 拿最新值，避免被外层闭包 shadow 老的 snapshot
+    // （比如「重新生成」会先 setState 写入参考图/提示词再调 generate，依赖外层 React 还没 re-render 的 config 会丢更新）
+    // eslint-disable-next-line @typescript-eslint/no-shadow
+    const config = useConfigStore.getState();
     // 解析当前选中的图像模型（先从 modelStore，fallback 到旧扁平 config）
     const resolved = resolveActiveModel('image');
     if (!resolved) {

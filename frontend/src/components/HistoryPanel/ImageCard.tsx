@@ -1,6 +1,6 @@
 import React, { useCallback, useRef, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Trash2, GripVertical, Move } from 'lucide-react';
+import { Trash2, GripVertical, Move, Check } from 'lucide-react';
 import { FlattenedImage } from './HistoryList';
 import { formatDateTime } from '../../utils/date';
 import { toast } from '../../store/toastStore';
@@ -10,15 +10,24 @@ import { MoveImageDialog } from './MoveImageDialog';
 interface ImageCardProps {
     image: FlattenedImage;
     onClick: (image: FlattenedImage) => void;
+    // 多选时父级传入当前可见图片的有序 id 列表，用于 shift 区间选
+    orderedIds?: string[];
 }
 
 // 使用 React.memo 防止不必要的重渲染
-export const ImageCard = React.memo(function ImageCard({ image, onClick }: ImageCardProps) {
+export const ImageCard = React.memo(function ImageCard({ image, onClick, orderedIds }: ImageCardProps) {
     const { t } = useTranslation();
     const [isDeleting, setIsDeleting] = React.useState(false);
     const [showConfirm, setShowConfirm] = React.useState(false);
     const [isMoveDialogOpen, setIsMoveDialogOpen] = useState(false);
     const [contextMenu, setContextMenu] = useState<{ x: number; y: number; visible: boolean }>({ x: 0, y: 0, visible: false });
+
+    // 多选模式
+    const multiSelectMode = useHistoryStore((s) => s.multiSelectMode);
+    const isSelected = useHistoryStore((s) => s.selectedImageIds.has(image.id));
+    const lastSelectedImageId = useHistoryStore((s) => s.lastSelectedImageId);
+    const toggleSelectImage = useHistoryStore((s) => s.toggleSelectImage);
+    const selectImageRange = useHistoryStore((s) => s.selectImageRange);
     const confirmTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
     const imgRef = React.useRef<HTMLImageElement>(null);
     const hasNotifiedCopyRef = React.useRef(false); // 标记是否已提示过复制
@@ -81,11 +90,20 @@ export const ImageCard = React.memo(function ImageCard({ image, onClick }: Image
         };
     }, []);
 
-    const handleClick = useCallback(() => {
+    const handleClick = useCallback((e?: React.MouseEvent) => {
         // 弹窗打开时不触发预览
         if (isMoveDialogOpen || showConfirm || contextMenu.visible) return;
+        // 多选模式：点击切换选择，Shift 点击做区间选
+        if (multiSelectMode) {
+            if (e?.shiftKey && lastSelectedImageId && orderedIds && orderedIds.length > 0) {
+                selectImageRange(lastSelectedImageId, image.id, orderedIds);
+            } else {
+                toggleSelectImage(image.id);
+            }
+            return;
+        }
         onClick(image);
-    }, [image.id, onClick, isMoveDialogOpen, showConfirm, contextMenu.visible]);
+    }, [image, image.id, onClick, isMoveDialogOpen, showConfirm, contextMenu.visible, multiSelectMode, lastSelectedImageId, orderedIds, selectImageRange, toggleSelectImage]);
 
     const handleCancelConfirm = useCallback((e: React.MouseEvent) => {
         e.stopPropagation();
@@ -192,23 +210,50 @@ export const ImageCard = React.memo(function ImageCard({ image, onClick }: Image
 
     return (
         <div
-            className="bg-surface-secondary rounded-xl overflow-hidden border border-border shadow-sm hover:shadow-md cursor-pointer group relative flex flex-col h-full"
+            data-image-id={image.id}
+            className={`bg-surface-secondary rounded-xl overflow-hidden border shadow-sm hover:shadow-md cursor-pointer group relative flex flex-col h-full ${
+                isSelected
+                    ? 'border-primary ring-2 ring-primary'
+                    : 'border-border'
+            }`}
             style={{ contentVisibility: 'auto', containIntrinsicSize: '240px 320px' }}
-            onClick={handleClick}
-            draggable
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-            onContextMenu={handleContextMenu}
+            onClick={(e) => handleClick(e)}
+            draggable={!multiSelectMode}
+            onDragStart={multiSelectMode ? undefined : handleDragStart}
+            onDragEnd={multiSelectMode ? undefined : handleDragEnd}
+            onContextMenu={multiSelectMode ? undefined : handleContextMenu}
         >
-            {/* 拖拽指示器 - 左上角 */}
-            <div className="absolute top-2 left-12 z-10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                <div className="bg-black/20 backdrop-blur-sm rounded-lg p-1.5">
-                    <GripVertical className="w-3 h-3 sm:w-4 sm:h-4 text-fg-secondary" />
+            {/* 多选 checkbox - 多选模式持续显示，覆盖在左上角 */}
+            {multiSelectMode && (
+                <div
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        if (e.shiftKey && lastSelectedImageId && orderedIds && orderedIds.length > 0) {
+                            selectImageRange(lastSelectedImageId, image.id, orderedIds);
+                        } else {
+                            toggleSelectImage(image.id);
+                        }
+                    }}
+                    className={`absolute top-2 left-2 z-30 w-6 h-6 rounded-md border-2 flex items-center justify-center cursor-pointer transition-colors ${
+                        isSelected
+                            ? 'bg-primary border-primary'
+                            : 'bg-surface-primary/80 border-white/70 hover:border-primary'
+                    }`}
+                >
+                    {isSelected && <Check className="w-4 h-4 text-primary-foreground" />}
                 </div>
-            </div>
+            )}
+            {/* 拖拽指示器 - 左上角（多选模式下隐藏） */}
+            {!multiSelectMode && (
+                <div className="absolute top-2 left-12 z-10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                    <div className="bg-black/20 backdrop-blur-sm rounded-lg p-1.5">
+                        <GripVertical className="w-3 h-3 sm:w-4 sm:h-4 text-fg-secondary" />
+                    </div>
+                </div>
+            )}
 
-            {/* 移动按钮 - 左上角 */}
-            {!showConfirm && (
+            {/* 移动按钮 - 左上角（多选模式下隐藏） */}
+            {!multiSelectMode && !showConfirm && (
                 <div
                     className={`
                         absolute top-2 left-2 z-20
@@ -233,9 +278,9 @@ export const ImageCard = React.memo(function ImageCard({ image, onClick }: Image
                 </div>
             )}
 
-            {/* 删除按钮 - 纯 CSS hover，不依赖 JavaScript */}
+            {/* 删除按钮 - 纯 CSS hover，不依赖 JavaScript（多选模式下隐藏） */}
             {/* 正常状态：CSS 控制显隐 */}
-            {!showConfirm && (
+            {!multiSelectMode && !showConfirm && (
                 <div
                     className={`
                         absolute top-2 right-2 z-20

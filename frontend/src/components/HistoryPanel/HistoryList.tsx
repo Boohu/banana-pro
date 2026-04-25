@@ -1,4 +1,4 @@
-import React, { useCallback, useLayoutEffect, useMemo } from 'react';
+import React, { useCallback, useLayoutEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AutoSizer } from 'react-virtualized-auto-sizer';
 import { Grid, type CellComponentProps, type GridImperativeAPI } from 'react-window';
@@ -10,6 +10,7 @@ import { ImagePreview } from '../GenerateArea/ImagePreview';
 import { ComparisonModal } from '../ImageComparison/ComparisonModal';
 import { ImageCard } from './ImageCard';
 import { FailedTaskCard } from './FailedTaskCard';
+import { useDragBoxSelect } from './useDragBoxSelect';
 
 // 扩展 Image 类型以包含展示信息
 export interface FlattenedImage extends GeneratedImage {
@@ -74,10 +75,18 @@ const isEmptyTask = (task: GenerationTask): boolean => {
 
 interface HistoryListProps {
   padding?: number;
+  orderedIds?: string[];
 }
 
-export function HistoryList({ padding: paddingProp }: HistoryListProps = {}) {
+export function HistoryList({ padding: paddingProp, orderedIds = [] }: HistoryListProps = {}) {
   const { t } = useTranslation();
+  const multiSelectMode = useHistoryStore((s) => s.multiSelectMode);
+  const dragWrapperRef = useRef<HTMLDivElement>(null);
+  const dragSelect = useDragBoxSelect({
+    enabled: multiSelectMode,
+    orderedIds,
+    containerRef: dragWrapperRef,
+  });
   const { items, loading, hasMore, loadMore } = useHistoryStore(
     useShallow((s) => ({
       items: s.items,
@@ -195,6 +204,7 @@ export function HistoryList({ padding: paddingProp }: HistoryListProps = {}) {
     itemWidth: number;
     itemHeight: number;
     gap: number;
+    orderedIds?: string[];
   };
 
   const Cell = useCallback(
@@ -207,7 +217,8 @@ export function HistoryList({ padding: paddingProp }: HistoryListProps = {}) {
       columnCount,
       itemWidth,
       itemHeight,
-      gap
+      gap,
+      orderedIds: cellOrderedIds,
     }: CellComponentProps<CellData>) => {
       const index = rowIndex * columnCount + columnIndex;
       const cellStyle: React.CSSProperties = {
@@ -227,7 +238,7 @@ export function HistoryList({ padding: paddingProp }: HistoryListProps = {}) {
         <div {...ariaAttributes} style={cellStyle}>
           <div style={{ width: itemWidth, height: itemHeight }}>
             {isImageItem(item) ? (
-              <ImageCard image={item} onClick={handleImageClick} />
+              <ImageCard image={item} onClick={handleImageClick} orderedIds={cellOrderedIds} />
             ) : (
               <FailedTaskCard task={item} onClick={handleEmptyTaskClick} />
             )}
@@ -286,14 +297,17 @@ export function HistoryList({ padding: paddingProp }: HistoryListProps = {}) {
                 columnCount,
                 itemWidth: columnWidth,
                 itemHeight,
-                gap
+                gap,
+                orderedIds,
               };
 
               return (
                 <div
-                  style={{ padding }}
-                  className="h-full overflow-x-hidden"
+                  ref={dragWrapperRef}
+                  style={{ padding, position: 'relative' }}
+                  className={`h-full overflow-x-hidden ${multiSelectMode ? 'select-none' : ''}`}
                   onContextMenu={(event) => event.preventDefault()}
+                  onMouseDown={dragSelect.onMouseDown}
                 >
                   <Grid
                     gridRef={gridRef}
@@ -312,6 +326,18 @@ export function HistoryList({ padding: paddingProp }: HistoryListProps = {}) {
                       }
                     }}
                   />
+                  {/* 拖选选框 */}
+                  {dragSelect.dragRect && (
+                    <div
+                      className="absolute pointer-events-none border-2 border-primary bg-primary/15 rounded-sm"
+                      style={{
+                        left: dragSelect.dragRect.x,
+                        top: dragSelect.dragRect.y,
+                        width: dragSelect.dragRect.w,
+                        height: dragSelect.dragRect.h,
+                      }}
+                    />
+                  )}
                 </div>
               );
             }}
