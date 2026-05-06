@@ -20,6 +20,7 @@ import (
 	"image-gen-service/internal/model"
 	"image-gen-service/internal/platform"
 	"image-gen-service/internal/provider"
+	"image-gen-service/internal/rembg"
 	"image-gen-service/internal/storage"
 	"image-gen-service/internal/templates"
 	"image-gen-service/internal/worker"
@@ -194,6 +195,22 @@ func main() {
 		Timeout:   time.Duration(config.GlobalConfig.Templates.FetchTimeoutSeconds) * time.Second,
 	})
 
+	// 3.6 初始化抠图模块（ONNX Runtime + 模型管理）
+	// 模型存放在工作目录的 models/ 下；用户从「设置 → 模型管理」导入
+	// ONNX Runtime 动态库：dev 优先看 sidecar 二进制同目录；找不到时不阻塞启动
+	exePath, _ := os.Executable()
+	sidecarBinDir := ""
+	if exePath != "" {
+		sidecarBinDir = filepath.Dir(exePath)
+	}
+	if err := rembg.Init(rembg.Options{
+		ModelsDir:          filepath.Join(workDir, "models"),
+		SidecarBinDir:      sidecarBinDir,
+		FallbackOrtLibPath: os.Getenv("REMBG_ORT_LIB"),
+	}); err != nil {
+		log.Printf("[main] rembg 初始化警告（抠图功能可能不可用）: %v", err)
+	}
+
 	// 4. 初始化 Worker 池 (2C2G 服务器，推荐 6 个 worker)
 	worker.InitPool(6, 100)
 	worker.Pool.Start()
@@ -278,6 +295,11 @@ func main() {
 		v1.POST("/providers/config", api.UpdateProviderConfigHandler)
 		v1.POST("/prompts/optimize", api.OptimizePromptHandler)
 		v1.POST("/prompts/image-to-prompt", api.ImageToPromptHandler)
+		// 抠图（用户自行导入 ONNX 模型）
+		v1.GET("/rembg/models", api.ListRembgModelsHandler)
+		v1.POST("/rembg/import", api.ImportRembgModelHandler)
+		v1.DELETE("/rembg/models/:id", api.DeleteRembgModelHandler)
+		v1.POST("/rembg/remove", api.RemoveBackgroundHandler)
 		v1.POST("/tasks/generate", api.GenerateHandler)
 		v1.POST("/tasks/generate-with-images", api.GenerateWithImagesHandler)
 		v1.GET("/tasks/:task_id", api.GetTaskHandler)

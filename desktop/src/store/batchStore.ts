@@ -22,9 +22,13 @@ export interface BatchJobState {
   model: string;
   aspectRatio: string;
   resolution: string;
-  quality: number;
+  outputCompression: number; // 0-100，仅 webp/jpeg 输出生效；旧字段名 quality
   concurrency: number;
   outputFormat: 'PNG' | 'JPG' | 'WebP';
+  // OpenAI gpt-image-* 系列专属
+  imageQuality: 'low' | 'medium' | 'high' | 'auto';
+  imageBackground: 'transparent' | 'opaque' | 'auto';
+  gptImageSize: string; // 8 项预设之一（auto/1024x1024/.../2160x3840）
   keepOriginalSize: boolean;
   promptOptEnabled: boolean;
   autoRetry: boolean;
@@ -57,9 +61,12 @@ const createDefaultJob = (name: string, model?: string): BatchJobState => ({
   model: model || IMAGE_MODEL_OPTIONS[0].value,
   aspectRatio: '1:1',
   resolution: '2K',
-  quality: 90,
+  outputCompression: 100,
   concurrency: 3,
   outputFormat: 'PNG',
+  imageQuality: 'auto',
+  imageBackground: 'auto',
+  gptImageSize: 'auto',
   keepOriginalSize: true,
   promptOptEnabled: true,
   autoRetry: false,
@@ -149,7 +156,8 @@ export const useBatchStore = create<BatchStore>()(
       };
     },
     {
-      name: 'batch-store-v1',
+      // v2: 字段重构 — quality:number → outputCompression:number，新增 imageQuality / imageBackground
+      name: 'batch-store-v2',
       storage: createJSONStorage(() => localStorage),
     }
   )

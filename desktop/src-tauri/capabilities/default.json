@@ -8,6 +8,7 @@
     "core:window:allow-start-dragging",
     "process:default",
     "opener:default",
+    "opener:allow-open-url",
     "dialog:default",
     "notification:default",
     "fs:default",

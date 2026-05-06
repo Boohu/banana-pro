@@ -367,7 +367,23 @@
         "21_9": "21:9 (울트라 와이드)"
       }
     },
-    "apiKeyHint": "먼저 오른쪽 상단 설정에서 이미지 API 키를 구성해 주세요"
+    "apiKeyHint": "먼저 오른쪽 상단 설정에서 이미지 API 키를 구성해 주세요",
+    "imageQuality": "화질",
+    "imageQualityOptions": {
+      "auto": "자동",
+      "low": "낮음",
+      "medium": "보통",
+      "high": "높음"
+    },
+    "imageBackground": "배경",
+    "imageBackgroundOptions": {
+      "auto": "자동",
+      "opaque": "불투명",
+      "transparent": "투명"
+    },
+    "outputFormat": "출력 형식",
+    "outputCompression": "압축 레벨",
+    "count": "생성 개수"
   },
   "errors": {
     "fileReadEmpty": "파일 읽기 결과가 비어 있습니다",
@@ -643,6 +659,7 @@
     "generate": "AI 생성",
     "batch": "일괄 처리",
     "reversePrompt": "프롬프트 역추출",
+    "rembgTool": "배경 제거",
     "history": "생성 기록",
     "templates": "영감",
     "settings": "설정"
@@ -709,6 +726,20 @@
     "resolution": "해상도",
     "outputFormat": "출력 형식",
     "quality": "품질",
+    "outputCompression": "압축 레벨",
+    "imageQuality": "화질",
+    "imageQualityOptions": {
+      "auto": "자동",
+      "low": "낮음",
+      "medium": "보통",
+      "high": "높음"
+    },
+    "imageBackground": "배경",
+    "imageBackgroundOptions": {
+      "auto": "자동",
+      "opaque": "불투명",
+      "transparent": "투명"
+    },
     "concurrency": "동시 처리 수",
     "outputTo": "출력 위치",
     "outputDefault": "기본 (월별 폴더)",
@@ -782,6 +813,7 @@
     "apiConfigDesc": "AI 모델의 API 키와 엔드포인트 구성",
     "modelManage": "모델 관리",
     "modelManageDesc": "사용 가능한 AI 모델 관리",
+    "rembgModels": "배경 제거 모델",
     "appearance": "언어 및 외관",
     "about": "정보",
     "aboutTitle": "정보",

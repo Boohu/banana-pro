@@ -679,6 +679,70 @@ fn greet(name: &str) -> String {
     format!("Hello, {}! You've been greeted from Rust!", name)
 }
 
+// 平台对应的 ONNX Runtime 动态库文件名
+fn ort_lib_name() -> &'static str {
+    if cfg!(target_os = "macos") {
+        "libonnxruntime.1.22.0.dylib"
+    } else if cfg!(target_os = "windows") {
+        "onnxruntime.dll"
+    } else {
+        "libonnxruntime.so.1.22.0"
+    }
+}
+
+// 查找 ONNX Runtime 动态库的绝对路径
+// dev 模式：CARGO_MANIFEST_DIR/bin/onnxruntime/<libname> 或 cwd-relative
+// prod 模式：resource_dir + onnxruntime/<libname>（需 tauri.conf.json 配 resources）
+fn resolve_ort_lib_path(app_handle: &tauri::AppHandle) -> Option<PathBuf> {
+    let libname = ort_lib_name();
+
+    // 1) Tauri resource_dir（打包后）
+    //    bundle.resources 配 "bin/onnxruntime/*" 会保留相对路径，dylib 落在 Resources/bin/onnxruntime/
+    if let Ok(res_dir) = app_handle.path().resource_dir() {
+        let candidates = [
+            res_dir.join("bin").join("onnxruntime").join(libname),
+            res_dir.join("onnxruntime").join(libname),
+            res_dir.join(libname),
+            // macOS 应用包：sidecar 在 Contents/MacOS，resource_dir 是 Contents/Resources
+            res_dir.join("..").join("MacOS").join("onnxruntime").join(libname),
+        ];
+        for p in candidates {
+            if p.exists() {
+                if let Ok(abs) = std::fs::canonicalize(&p) {
+                    return Some(abs);
+                }
+                return Some(p);
+            }
+        }
+    }
+
+    // 2) dev 模式：相对于项目根的 src-tauri/bin/onnxruntime/<libname>
+    //    sidecar 的 cwd 一般是 src-tauri 目录或 desktop 目录
+    let cwd_candidates = [
+        "bin/onnxruntime",
+        "src-tauri/bin/onnxruntime",
+        "desktop/src-tauri/bin/onnxruntime",
+    ];
+    for rel in cwd_candidates {
+        let p = PathBuf::from(rel).join(libname);
+        if p.exists() {
+            if let Ok(abs) = std::fs::canonicalize(&p) {
+                return Some(abs);
+            }
+        }
+    }
+
+    // 3) 用 CARGO_MANIFEST_DIR（编译期常量）— 仅 dev/debug 有效
+    if let Some(manifest_dir) = option_env!("CARGO_MANIFEST_DIR") {
+        let p = PathBuf::from(manifest_dir).join("bin").join("onnxruntime").join(libname);
+        if p.exists() {
+            return Some(p);
+        }
+    }
+
+    None
+}
+
 fn kill_sidecar(app_handle: &tauri::AppHandle) {
     let sidecar_state = app_handle.state::<SidecarState>();
     let log_state = app_handle.state::<LogState>();
@@ -697,13 +761,21 @@ fn spawn_sidecar(
 ) -> Result<(), String> {
     let log_state = app_handle.state::<LogState>().inner().clone();
     let shell = app_handle.shell();
-    let sidecar_command = shell
+    let mut sidecar_command = shell
         .sidecar("server")
         .map_err(|err| format!("create sidecar command failed: {}", err))?
         .env("TAURI_PLATFORM", "macos")
         .env("TAURI_FAMILY", "unix")
         .env("GODEBUG", "http2debug=2")
         .env("GIN_MODE", "release");
+
+    // 把 ONNX Runtime 动态库的绝对路径透传给 sidecar，sidecar 自己 dev/prod 找不同位置太脆弱
+    if let Some(ort_lib) = resolve_ort_lib_path(app_handle) {
+        log_state.log_app("INFO", &format!("ORT lib resolved: {:?}", ort_lib));
+        sidecar_command = sidecar_command.env("REMBG_ORT_LIB", ort_lib);
+    } else {
+        log_state.log_app("WARN", "ORT lib not found in any candidate path; rembg unavailable");
+    }
 
     log_state.log_app("INFO", "Attempting to spawn sidecar...");
     let (mut rx, child) = sidecar_command

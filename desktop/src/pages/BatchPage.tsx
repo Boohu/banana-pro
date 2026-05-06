@@ -2,7 +2,7 @@ import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { FolderOpen, Play, Pause, Plus, ChevronDown, X, ArrowRight, Loader2, ImagePlus, Image as ImageIcon, Trash2, Folder, CircleCheck, Download, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
-import { IMAGE_MODEL_OPTIONS, CUSTOM_MODEL_VALUE, useConfigStore, getModelAspectRatios, getModelResolutions, modelSupportsAutoRatio, resolveGPTImageSize } from '@/store/configStore';
+import { IMAGE_MODEL_OPTIONS, CUSTOM_MODEL_VALUE, useConfigStore, getModelAspectRatios, getModelResolutions, modelSupportsAutoRatio, GPT_IMAGE_SIZE_OPTIONS_EDIT } from '@/store/configStore';
 import { useModelStore } from '@/store/modelStore';
 import { useApiKeyStore } from '@/store/apiKeyStore';
 import { useHistoryStore } from '@/store/historyStore';
@@ -30,9 +30,13 @@ interface BatchJob {
   model: string;
   aspectRatio: string;
   resolution: string;
-  quality: number;
+  outputCompression: number; // 0-100，仅 jpeg/webp 生效（旧字段名 quality）
   concurrency: number;
   outputFormat: 'PNG' | 'JPG' | 'WebP';
+  // OpenAI gpt-image-* 系列专属
+  imageQuality: 'low' | 'medium' | 'high' | 'auto';
+  imageBackground: 'transparent' | 'opaque' | 'auto';
+  gptImageSize: string; // 云雾 8 项预设之一
   keepOriginalSize: boolean;
   promptOptEnabled: boolean;
   autoRetry: boolean;
@@ -54,9 +58,12 @@ const createBatchJob = (name: string, defaultModel?: string): BatchJob => {
     model,
     aspectRatio: isGPT ? 'auto' : '1:1',  // gpt 系列默认 auto（跟随参考图）
     resolution: isGPT ? '1K' : '2K',      // gpt 图生图只支持 1K 档
-    quality: 90,
+    outputCompression: 100,
     concurrency: 3,
     outputFormat: 'PNG',
+    imageQuality: 'auto',
+    imageBackground: 'auto',
+    gptImageSize: 'auto',
     keepOriginalSize: false,
     promptOptEnabled: false,
     autoRetry: false,
@@ -177,10 +184,6 @@ function BatchConfigPanel({ batch, onChange }: { batch: BatchJob; onChange: (upd
     return base;
   }, [batch.model]);
   const resolutions = useMemo(() => getModelResolutions(batch.model, true), [batch.model]);
-  const sizeHint = useMemo(() => {
-    if (!batch.model.startsWith('gpt-image-')) return null;
-    return resolveGPTImageSize(batch.aspectRatio, batch.resolution, true);
-  }, [batch.model, batch.aspectRatio, batch.resolution]);
 
   // 模型切换到 gpt-image-*：强制 aspectRatio=auto（跟随参考图）
   const prevModelRef = useRef(batch.model);
@@ -199,6 +202,13 @@ function BatchConfigPanel({ batch, onChange }: { batch: BatchJob; onChange: (upd
     if (!resolutions.includes(batch.resolution)) patch.resolution = resolutions[0];
     if (Object.keys(patch).length > 0) onChange(patch);
   }, [aspectRatios, resolutions, batch.aspectRatio, batch.resolution, onChange]);
+
+  // 选择透明背景时自动切到 PNG（JPG 不支持透明）
+  useEffect(() => {
+    if (batch.imageBackground === 'transparent' && batch.outputFormat === 'JPG') {
+      onChange({ outputFormat: 'PNG' });
+    }
+  }, [batch.imageBackground, batch.outputFormat, onChange]);
   const selectStyle = { backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2371717A' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' };
 
   const isTauri = typeof window !== 'undefined' && Boolean((window as any).__TAURI_INTERNALS__);
@@ -242,46 +252,56 @@ function BatchConfigPanel({ batch, onChange }: { batch: BatchJob; onChange: (upd
         </select>
       </div>
 
-      {/* Aspect Ratio */}
-      <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-medium text-fg-secondary">{t('batch.aspectRatio')}</label>
-        <select
-          value={batch.aspectRatio}
-          onChange={(e) => onChange({ aspectRatio: e.target.value })}
-          className="w-full bg-surface-tertiary border border-border rounded-[10px] px-3 py-2.5 text-[13px] text-fg-primary outline-none appearance-none cursor-pointer focus:border-primary"
-          style={selectStyle}
-        >
-          {aspectRatios.map((r) => (
-            <option key={r} value={r}>{r === 'auto' ? 'auto（跟随参考图）' : r}</option>
-          ))}
-        </select>
-      </div>
-
-      {/* Resolution */}
-      <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-medium text-fg-secondary">{t('batch.resolution')}</label>
-        <select
-          value={batch.resolution}
-          onChange={(e) => onChange({ resolution: e.target.value })}
-          className="w-full bg-surface-tertiary border border-border rounded-[10px] px-3 py-2.5 text-[13px] text-fg-primary font-mono outline-none appearance-none cursor-pointer focus:border-primary"
-          style={selectStyle}
-        >
-          {resolutions.map((r) => (
-            <option key={r} value={r}>
-              {r === '1K' ? '1K (1024 × 1024)' : r === '2K' ? '2K (2048 × 2048)' : r === '4K' ? '4K (3840 × 2160)' : r}
-            </option>
-          ))}
-        </select>
-        {sizeHint && (
-          <div className={cn(
-            'text-[10.5px] leading-snug mt-0.5 font-mono',
-            sizeHint.fallback ? 'text-warning' : 'text-fg-muted'
-          )}>
-            → 实际输出：{sizeHint.size === 'auto' ? 'auto（模型自选）' : sizeHint.size.replace('x', ' × ')}
-            {sizeHint.note && <span className="block text-[10px] opacity-90">{sizeHint.note}</span>}
+      {/* gpt-image-* 系列：尺寸预设（云雾 8 项 size 字面量） */}
+      {batch.model.startsWith('gpt-image-') ? (
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-medium text-fg-secondary">{t('batch.size', '尺寸')}</label>
+          <select
+            value={batch.gptImageSize}
+            onChange={(e) => onChange({ gptImageSize: e.target.value })}
+            className="w-full bg-surface-tertiary border border-border rounded-[10px] px-3 py-2.5 text-[13px] text-fg-primary outline-none appearance-none cursor-pointer focus:border-primary"
+            style={selectStyle}
+          >
+            {/* 批量模式 = 图生图，固定使用 EDIT 子集 */}
+            {GPT_IMAGE_SIZE_OPTIONS_EDIT.map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+          <span className="text-[10px] text-fg-muted">图生图模式仅支持 1K 三档 + auto</span>
+        </div>
+      ) : (
+        <>
+          {/* 非 gpt-image-* 模型：保留原有 aspectRatio + resolution */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-fg-secondary">{t('batch.aspectRatio')}</label>
+            <select
+              value={batch.aspectRatio}
+              onChange={(e) => onChange({ aspectRatio: e.target.value })}
+              className="w-full bg-surface-tertiary border border-border rounded-[10px] px-3 py-2.5 text-[13px] text-fg-primary outline-none appearance-none cursor-pointer focus:border-primary"
+              style={selectStyle}
+            >
+              {aspectRatios.map((r) => (
+                <option key={r} value={r}>{r === 'auto' ? 'auto（跟随参考图）' : r}</option>
+              ))}
+            </select>
           </div>
-        )}
-      </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-fg-secondary">{t('batch.resolution')}</label>
+            <select
+              value={batch.resolution}
+              onChange={(e) => onChange({ resolution: e.target.value })}
+              className="w-full bg-surface-tertiary border border-border rounded-[10px] px-3 py-2.5 text-[13px] text-fg-primary font-mono outline-none appearance-none cursor-pointer focus:border-primary"
+              style={selectStyle}
+            >
+              {resolutions.map((r) => (
+                <option key={r} value={r}>
+                  {r === '1K' ? '1K (1024 × 1024)' : r === '2K' ? '2K (2048 × 2048)' : r === '4K' ? '4K (3840 × 2160)' : r}
+                </option>
+              ))}
+            </select>
+          </div>
+        </>
+      )}
 
       {/* Output format */}
       <div className="flex flex-col gap-1.5">
@@ -302,18 +322,53 @@ function BatchConfigPanel({ batch, onChange }: { batch: BatchJob; onChange: (upd
         </div>
       </div>
 
-      {/* Quality */}
-      <div className="flex flex-col gap-1.5">
-        <div className="flex items-center justify-between">
-          <label className="text-xs font-medium text-fg-secondary">{t('batch.quality')}</label>
-          <span className="text-xs font-semibold text-primary font-mono">{batch.quality}%</span>
+      {/* GPT image 系列：画质 + 背景 一行两列 */}
+      {batch.model.startsWith('gpt-image-') && (
+        <div className="grid grid-cols-2 gap-2">
+          <div className="flex flex-col gap-1.5 min-w-0">
+            <label className="text-xs font-medium text-fg-secondary">{t('batch.imageQuality', '画质')}</label>
+            <select
+              value={batch.imageQuality}
+              onChange={(e) => onChange({ imageQuality: e.target.value as BatchJob['imageQuality'] })}
+              className="w-full bg-surface-tertiary border border-border rounded-[10px] px-3 py-2.5 text-[13px] text-fg-primary outline-none appearance-none cursor-pointer focus:border-primary"
+              style={selectStyle}
+            >
+              {(['auto', 'low', 'medium', 'high'] as const).map((q) => (
+                <option key={q} value={q}>{t(`batch.imageQualityOptions.${q}`, q)}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex flex-col gap-1.5 min-w-0">
+            <label className="text-xs font-medium text-fg-secondary">{t('batch.imageBackground', '背景')}</label>
+            <select
+              value={batch.imageBackground}
+              onChange={(e) => onChange({ imageBackground: e.target.value as BatchJob['imageBackground'] })}
+              className="w-full bg-surface-tertiary border border-border rounded-[10px] px-3 py-2.5 text-[13px] text-fg-primary outline-none appearance-none cursor-pointer focus:border-primary"
+              style={selectStyle}
+            >
+              {(['auto', 'opaque', 'transparent'] as const).map((b) => (
+                <option key={b} value={b}>{t(`batch.imageBackgroundOptions.${b}`, b)}</option>
+              ))}
+            </select>
+          </div>
         </div>
-        <input
-          type="range" min={10} max={100} value={batch.quality}
-          onChange={(e) => onChange({ quality: Number(e.target.value) })}
-          className="w-full h-[5px] rounded-full bg-surface-tertiary appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary"
-        />
-      </div>
+      )}
+      {batch.model.startsWith('gpt-image-') && batch.imageBackground === 'transparent' && batch.outputFormat === 'JPG' && (
+        <span className="text-[10px] text-warning -mt-1">透明背景需输出 PNG 或 WebP</span>
+      )}
+
+      {/* 输出压缩（仅 JPG/WebP 生效）— 单行紧凑布局 */}
+      {(batch.outputFormat === 'JPG' || batch.outputFormat === 'WebP') && (
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-medium text-fg-secondary shrink-0">{t('batch.outputCompression', '输出压缩')}</span>
+          <input
+            type="range" min={10} max={100} value={batch.outputCompression}
+            onChange={(e) => onChange({ outputCompression: Number(e.target.value) })}
+            className="flex-1 h-[5px] rounded-full bg-surface-tertiary appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary"
+          />
+          <span className="text-xs font-semibold text-primary font-mono w-9 text-right">{batch.outputCompression}%</span>
+        </div>
+      )}
 
       {/* Concurrency */}
       <div className="flex flex-col gap-1.5">
@@ -475,7 +530,11 @@ export function BatchPage() {
             aspectRatio: snapshot.aspectRatio || '1:1',
             resolution: snapshot.imageSize || '2K',
             outputFormat: (snapshot.output_format || 'PNG') as BatchJob['outputFormat'],
-            quality: typeof snapshot.quality === 'number' ? snapshot.quality : 90,
+            outputCompression: typeof snapshot.output_compression === 'number'
+              ? snapshot.output_compression
+              : (typeof snapshot.quality === 'number' ? snapshot.quality : 100), // 兼容旧 snapshot 字段名
+            imageQuality: (snapshot.image_quality as BatchJob['imageQuality']) || 'auto',
+            imageBackground: (snapshot.image_background as BatchJob['imageBackground']) || 'auto',
             concurrency: typeof snapshot.concurrency === 'number' ? snapshot.concurrency : 3,
             namingRule: snapshot.naming_rule || '原文件名_edited',
             keepOriginalSize: snapshot.keep_original_size === true,
@@ -556,7 +615,12 @@ export function BatchPage() {
     formData.append('aspectRatio', selectedBatch.aspectRatio);
     formData.append('imageSize', selectedBatch.resolution);
     formData.append('outputFormat', selectedBatch.outputFormat);
-    formData.append('quality', String(selectedBatch.quality));
+    formData.append('outputCompression', String(selectedBatch.outputCompression));
+    formData.append('imageQuality', selectedBatch.imageQuality);
+    formData.append('imageBackground', selectedBatch.imageBackground);
+    if (selectedBatch.model.startsWith('gpt-image-')) {
+      formData.append('size', selectedBatch.gptImageSize);
+    }
     formData.append('concurrency', '1');
     formData.append('namingRule', selectedBatch.namingRule);
     formData.append('keepOriginalSize', String(selectedBatch.keepOriginalSize));
@@ -651,7 +715,12 @@ export function BatchPage() {
     formData.append('aspectRatio', selectedBatch.aspectRatio);
     formData.append('imageSize', selectedBatch.resolution);
     formData.append('outputFormat', selectedBatch.outputFormat);
-    formData.append('quality', String(selectedBatch.quality));
+    formData.append('outputCompression', String(selectedBatch.outputCompression));
+    formData.append('imageQuality', selectedBatch.imageQuality);
+    formData.append('imageBackground', selectedBatch.imageBackground);
+    if (selectedBatch.model.startsWith('gpt-image-')) {
+      formData.append('size', selectedBatch.gptImageSize);
+    }
     formData.append('concurrency', String(selectedBatch.concurrency));
     formData.append('namingRule', selectedBatch.namingRule);
     formData.append('keepOriginalSize', String(selectedBatch.keepOriginalSize));
@@ -1082,12 +1151,21 @@ export function BatchPage() {
           image={{
             id: previewFile.taskId || '',
             taskId: previewFile.taskId || '',
-            filePath: '',
+            filePath: previewFile.resultUrl || '',
             thumbnailPath: '',
             fileSize: 0,
             width: 0,
             height: 0,
-            mimeType: '',
+            // 从 url 后缀推断（jpg/png/webp）
+            mimeType: (() => {
+              const m = /\.([a-z0-9]+)(?:\?|$)/i.exec(previewFile.resultUrl || '');
+              if (!m) return 'image/png';
+              const ext = m[1].toLowerCase();
+              if (ext === 'jpg' || ext === 'jpeg') return 'image/jpeg';
+              if (ext === 'webp') return 'image/webp';
+              if (ext === 'gif') return 'image/gif';
+              return 'image/png';
+            })(),
             createdAt: '',
             url: previewFile.resultUrl,
             prompt: selectedBatch.prompt,

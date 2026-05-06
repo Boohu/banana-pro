@@ -578,6 +578,12 @@ func GenerateWithImagesHandler(c *gin.Context) {
 		"resolution_level": req.ImageSize,
 		"count":            req.Count,
 		"reference_images": refImageBytes, // 传递 interface 列表，方便 Provider 类型断言
+		// OpenAI gpt-image-* 系列专属（其他 provider 会忽略）
+		"imageQuality":       req.ImageQuality,
+		"imageBackground":    req.ImageBackground,
+		"output_format":      req.OutputFormat,
+		"output_compression": req.OutputCompression,
+		"size":               req.Size, // 显式 size 字面量优先于 aspectRatio + imageSize 推导
 	}
 	diagnostic.AttachVerboseFlag(taskParams, req.Verbose)
 	promptOptimizeMode := promptopt.NormalizeMode(req.PromptOptimizeMode)

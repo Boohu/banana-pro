@@ -367,7 +367,23 @@
         "21_9": "21:9（超ワイド）"
       }
     },
-    "apiKeyHint": "先に右上の設定で画像 API キーを設定してください"
+    "apiKeyHint": "先に右上の設定で画像 API キーを設定してください",
+    "imageQuality": "画質",
+    "imageQualityOptions": {
+      "auto": "自動",
+      "low": "低",
+      "medium": "中",
+      "high": "高"
+    },
+    "imageBackground": "背景",
+    "imageBackgroundOptions": {
+      "auto": "自動",
+      "opaque": "不透明",
+      "transparent": "透明"
+    },
+    "outputFormat": "出力形式",
+    "outputCompression": "圧縮率",
+    "count": "生成数"
   },
   "errors": {
     "fileReadEmpty": "ファイル読み込み結果が空です",
@@ -643,6 +659,7 @@
     "generate": "AI 生成",
     "batch": "バッチ処理",
     "reversePrompt": "プロンプト逆生成",
+    "rembgTool": "背景透過",
     "history": "生成履歴",
     "templates": "インスピレーション",
     "settings": "設定"
@@ -709,6 +726,20 @@
     "resolution": "解像度",
     "outputFormat": "出力形式",
     "quality": "画質",
+    "outputCompression": "圧縮率",
+    "imageQuality": "画質",
+    "imageQualityOptions": {
+      "auto": "自動",
+      "low": "低",
+      "medium": "中",
+      "high": "高"
+    },
+    "imageBackground": "背景",
+    "imageBackgroundOptions": {
+      "auto": "自動",
+      "opaque": "不透明",
+      "transparent": "透明"
+    },
     "concurrency": "同時処理数",
     "outputTo": "出力先",
     "outputDefault": "デフォルト（月別フォルダ）",
@@ -782,6 +813,7 @@
     "apiConfigDesc": "AIモデルのAPIキーとエンドポイントを設定",
     "modelManage": "モデル管理",
     "modelManageDesc": "利用可能なAIモデルを管理",
+    "rembgModels": "背景透過モデル",
     "appearance": "言語と外観",
     "about": "について",
     "aboutTitle": "について",

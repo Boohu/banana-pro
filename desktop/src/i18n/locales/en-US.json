@@ -367,7 +367,23 @@
         "21_9": "21:9 (Ultra-wide)"
       }
     },
-    "apiKeyHint": "Please configure the image API key in the top-right settings first"
+    "apiKeyHint": "Please configure the image API key in the top-right settings first",
+    "imageQuality": "Quality",
+    "imageQualityOptions": {
+      "auto": "Auto",
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High"
+    },
+    "imageBackground": "Background",
+    "imageBackgroundOptions": {
+      "auto": "Auto",
+      "opaque": "Opaque",
+      "transparent": "Transparent"
+    },
+    "outputFormat": "Output Format",
+    "outputCompression": "Compression",
+    "count": "Count"
   },
   "errors": {
     "fileReadEmpty": "File read returned empty",
@@ -637,6 +653,7 @@
     "generate": "AI Generate",
     "batch": "Batch Process",
     "reversePrompt": "Reverse Prompt",
+    "rembgTool": "Background Remove",
     "history": "History",
     "templates": "Inspiration",
     "settings": "Settings"
@@ -703,6 +720,20 @@
     "resolution": "Resolution",
     "outputFormat": "Output Format",
     "quality": "Quality",
+    "outputCompression": "Compression",
+    "imageQuality": "Quality",
+    "imageQualityOptions": {
+      "auto": "Auto",
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High"
+    },
+    "imageBackground": "Background",
+    "imageBackgroundOptions": {
+      "auto": "Auto",
+      "opaque": "Opaque",
+      "transparent": "Transparent"
+    },
     "concurrency": "Concurrency",
     "outputTo": "Output To",
     "outputDefault": "Default (Monthly Folder)",
@@ -776,6 +807,7 @@
     "apiConfigDesc": "Configure API keys and endpoints for AI models",
     "modelManage": "Model Management",
     "modelManageDesc": "Manage available AI models",
+    "rembgModels": "Background Models",
     "appearance": "Language & Appearance",
     "about": "About",
     "aboutTitle": "About",

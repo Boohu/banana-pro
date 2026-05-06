@@ -33,6 +33,12 @@ type MultipartRequest struct {
 	RefImages              []MultipartFile
 	RefPaths               []string
 	BatchID                string
+	// OpenAI gpt-image-* 系列专属（其他模型 provider 会忽略）
+	ImageQuality      string // low/medium/high/auto
+	ImageBackground   string // transparent/opaque/auto
+	OutputFormat      string // png/jpeg/webp
+	OutputCompression int    // 0-100
+	Size              string // OpenAI/云雾的 size 字面量，如 1024x1024 / auto / 2048x2048
 }
 
 // ParseGenerateRequestFromMultipart 使用 formstream 解析图生图请求
@@ -145,6 +151,48 @@ func ParseGenerateRequestFromMultipart(c *gin.Context) (*MultipartRequest, error
 		req.RefPaths = append(req.RefPaths, string(data))
 		return nil
 	})
+	p.Parser.Register("imageQuality", func(reader io.Reader, header formstream.Header) error {
+		data, err := io.ReadAll(reader)
+		if err != nil {
+			return err
+		}
+		req.ImageQuality = string(data)
+		return nil
+	})
+	p.Parser.Register("imageBackground", func(reader io.Reader, header formstream.Header) error {
+		data, err := io.ReadAll(reader)
+		if err != nil {
+			return err
+		}
+		req.ImageBackground = string(data)
+		return nil
+	})
+	p.Parser.Register("output_format", func(reader io.Reader, header formstream.Header) error {
+		data, err := io.ReadAll(reader)
+		if err != nil {
+			return err
+		}
+		req.OutputFormat = string(data)
+		return nil
+	})
+	p.Parser.Register("output_compression", func(reader io.Reader, header formstream.Header) error {
+		data, err := io.ReadAll(reader)
+		if err != nil {
+			return err
+		}
+		if n, err := strconv.Atoi(strings.TrimSpace(string(data))); err == nil {
+			req.OutputCompression = n
+		}
+		return nil
+	})
+	p.Parser.Register("size", func(reader io.Reader, header formstream.Header) error {
+		data, err := io.ReadAll(reader)
+		if err != nil {
+			return err
+		}
+		req.Size = strings.TrimSpace(string(data))
+		return nil
+	})
 
 	// 注册文件处理器 (匹配前端的 refImages)
 	p.Parser.Register("refImages", func(reader io.Reader, header formstream.Header) error {
@@ -194,6 +242,15 @@ func parseWithStandardLibrary(c *gin.Context) (*MultipartRequest, error) {
 	req.PromptOptimizeProvider = c.PostForm("prompt_optimize_provider")
 	req.PromptOptimizeModel = c.PostForm("prompt_optimize_model")
 	req.BatchID = c.PostForm("batch_id")
+	req.ImageQuality = c.PostForm("imageQuality")
+	req.ImageBackground = c.PostForm("imageBackground")
+	req.OutputFormat = c.PostForm("output_format")
+	req.Size = strings.TrimSpace(c.PostForm("size"))
+	if compStr := c.PostForm("output_compression"); compStr != "" {
+		if n, err := strconv.Atoi(strings.TrimSpace(compStr)); err == nil {
+			req.OutputCompression = n
+		}
+	}
 
 	form, err := c.MultipartForm()
 	if err == nil && form.File != nil {

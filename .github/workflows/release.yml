@@ -164,6 +164,42 @@ jobs:
             fi
           fi
 
+      - name: 准备 ONNX Runtime 动态库（抠图功能依赖，按平台下载并放到 bin/onnxruntime/）
+        shell: bash
+        run: |
+          set -e
+          mkdir -p desktop/src-tauri/bin/onnxruntime
+          ORT_VERSION="1.22.0"
+          BASE="https://github.com/microsoft/onnxruntime/releases/download/v${ORT_VERSION}"
+          if [ "${{ matrix.platform }}" = "windows-latest" ]; then
+            # Windows x64：下载并解压 onnxruntime.dll
+            curl -L --retry 3 -o ort.zip "${BASE}/onnxruntime-win-x64-${ORT_VERSION}.zip"
+            unzip -q ort.zip
+            cp "onnxruntime-win-x64-${ORT_VERSION}/lib/onnxruntime.dll" desktop/src-tauri/bin/onnxruntime/
+            rm -rf ort.zip "onnxruntime-win-x64-${ORT_VERSION}"
+          elif [ "${{ matrix.name }}" = "macOS (Universal)" ]; then
+            # macOS Universal：lipo 合并 arm64 + x86_64 两份 dylib 成 fat binary
+            curl -L --retry 3 -o ort-arm64.tgz "${BASE}/onnxruntime-osx-arm64-${ORT_VERSION}.tgz"
+            curl -L --retry 3 -o ort-x64.tgz "${BASE}/onnxruntime-osx-x86_64-${ORT_VERSION}.tgz"
+            tar -xzf ort-arm64.tgz
+            tar -xzf ort-x64.tgz
+            lipo -create \
+              "onnxruntime-osx-arm64-${ORT_VERSION}/lib/libonnxruntime.${ORT_VERSION}.dylib" \
+              "onnxruntime-osx-x86_64-${ORT_VERSION}/lib/libonnxruntime.${ORT_VERSION}.dylib" \
+              -output "desktop/src-tauri/bin/onnxruntime/libonnxruntime.${ORT_VERSION}.dylib"
+            chmod +x "desktop/src-tauri/bin/onnxruntime/libonnxruntime.${ORT_VERSION}.dylib"
+            rm -rf ort-arm64.tgz ort-x64.tgz "onnxruntime-osx-arm64-${ORT_VERSION}" "onnxruntime-osx-x86_64-${ORT_VERSION}"
+          else
+            # macOS Apple Silicon：原生 arm64 dylib
+            curl -L --retry 3 -o ort.tgz "${BASE}/onnxruntime-osx-arm64-${ORT_VERSION}.tgz"
+            tar -xzf ort.tgz
+            cp "onnxruntime-osx-arm64-${ORT_VERSION}/lib/libonnxruntime.${ORT_VERSION}.dylib" desktop/src-tauri/bin/onnxruntime/
+            chmod +x "desktop/src-tauri/bin/onnxruntime/libonnxruntime.${ORT_VERSION}.dylib"
+            rm -rf ort.tgz "onnxruntime-osx-arm64-${ORT_VERSION}"
+          fi
+          echo "=== ONNX Runtime 已就位 ==="
+          ls -la desktop/src-tauri/bin/onnxruntime/
+
       - name: 安装前端依赖
         run: npm install
         working-directory: ./desktop

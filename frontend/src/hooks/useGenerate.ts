@@ -353,6 +353,16 @@ export function useGenerate() {
 
       const requestedCount = Math.max(1, Number(config.count) || 1);
 
+      // gpt-image-* 系列：用 gptImageSize（OpenAI/云雾的 size 字面量）覆盖 imageSize 抽象
+      const isGPTImage = activeModelId.startsWith('gpt-image-');
+      const gptSize = isGPTImage ? (config.gptImageSize || 'auto') : '';
+      // 规范化（防御老 persist 里的 undefined 字面量；同时强制 transparent ↔ png）
+      const safeQuality = config.imageQuality || 'auto';
+      const safeBackground = config.imageBackground || 'auto';
+      let safeOutputFormat = config.imageOutputFormat || 'png';
+      if (safeBackground === 'transparent' && safeOutputFormat === 'jpeg') safeOutputFormat = 'png';
+      const safeOutputCompression = typeof config.imageOutputCompression === 'number' ? config.imageOutputCompression : 100;
+
       const submitSingleGenerate = async () => {
         if (config.refFiles.length > 0) {
           const formData = new FormData();
@@ -362,6 +372,12 @@ export function useGenerate() {
           formData.append('aspectRatio', config.aspectRatio);
           formData.append('imageSize', config.imageSize);
           formData.append('count', '1');
+          // OpenAI gpt-image-* 专属参数（其他模型 backend 会忽略）
+          formData.append('imageQuality', safeQuality);
+          formData.append('imageBackground', safeBackground);
+          formData.append('output_format', safeOutputFormat);
+          formData.append('output_compression', String(safeOutputCompression));
+          if (gptSize) formData.append('size', gptSize);
 
           config.refFiles.forEach((file) => {
             formData.append('refImages', file);
@@ -378,6 +394,11 @@ export function useGenerate() {
             count: 1,
             aspectRatio: config.aspectRatio,
             imageSize: config.imageSize,
+            imageQuality: safeQuality,
+            imageBackground: safeBackground,
+            output_format: safeOutputFormat,
+            output_compression: safeOutputCompression,
+            ...(gptSize ? { size: gptSize } : {}),
           }
         } as any);
       };
@@ -542,6 +563,15 @@ export function useGenerate() {
 
       let response;
 
+      const isGPTImageBatch = activeModelId.startsWith('gpt-image-');
+      const gptSizeBatch = isGPTImageBatch ? (config.gptImageSize || 'auto') : '';
+      // 规范化（防御老 persist 里的 undefined；强制 transparent → png）
+      const safeQualityBatch = config.imageQuality || 'auto';
+      const safeBackgroundBatch = config.imageBackground || 'auto';
+      let safeOutputFormatBatch = config.imageOutputFormat || 'png';
+      if (safeBackgroundBatch === 'transparent' && safeOutputFormatBatch === 'jpeg') safeOutputFormatBatch = 'png';
+      const safeOutputCompressionBatch = typeof config.imageOutputCompression === 'number' ? config.imageOutputCompression : 100;
+
       if (config.refFiles.length > 0) {
         // --- 场景 A: 图生图 (multipart/form-data) ---
         const formData = new FormData();
@@ -551,6 +581,11 @@ export function useGenerate() {
         formData.append('aspectRatio', config.aspectRatio);
         formData.append('imageSize', config.imageSize);
         formData.append('count', requestedCount.toString());
+        formData.append('imageQuality', safeQualityBatch);
+        formData.append('imageBackground', safeBackgroundBatch);
+        formData.append('output_format', safeOutputFormatBatch);
+        formData.append('output_compression', String(safeOutputCompressionBatch));
+        if (gptSizeBatch) formData.append('size', gptSizeBatch);
 
         // 添加所有参考图片
         config.refFiles.forEach((file) => {
@@ -568,6 +603,11 @@ export function useGenerate() {
             count: requestedCount,
             aspectRatio: config.aspectRatio,
             imageSize: config.imageSize,
+            imageQuality: safeQualityBatch,
+            imageBackground: safeBackgroundBatch,
+            output_format: safeOutputFormatBatch,
+            output_compression: safeOutputCompressionBatch,
+            ...(gptSizeBatch ? { size: gptSizeBatch } : {}),
           }
         } as any);
       }

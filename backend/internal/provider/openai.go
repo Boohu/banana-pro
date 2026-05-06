@@ -368,6 +368,7 @@ func (p *OpenAIProvider) extractImagesFromData(ctx context.Context, data []inter
 				log.Printf("[OpenAI] base64解码失败，跳过此图: err=%v", err)
 				continue
 			}
+			log.Printf("[OpenAI] b64_json 解码: size=%d bytes, magic=%X", len(imgBytes), peekMagic(imgBytes))
 			images = append(images, imgBytes)
 			continue
 		}
@@ -377,6 +378,7 @@ func (p *OpenAIProvider) extractImagesFromData(ctx context.Context, data []inter
 				log.Printf("[OpenAI] 下载图片失败，跳过此图: url=%s, err=%v", url, err)
 				continue
 			}
+			log.Printf("[OpenAI] url 下载: size=%d bytes, magic=%X", len(imgBytes), peekMagic(imgBytes))
 			images = append(images, imgBytes)
 		}
 	}
@@ -674,20 +676,37 @@ func (p *OpenAIProvider) generateViaImagesAPI(ctx context.Context, params map[st
 	hasRef := len(refs) > 0
 
 	size := resolveGPTImageSize(params, hasRef)
-	quality := firstString(params, "quality", "imageQuality")
-	format := firstString(params, "format", "imageFormat", "output_format")
-	log.Printf("[OpenAI-Images] 参数解析: aspectRatio=%v imageSize=%v hasRef=%v → 发送 size=%q quality=%q format=%q",
-		params["aspectRatio"], params["imageSize"], hasRef, size, quality, format)
+	// 对齐 OpenAI gpt-image-* 系列官方参数（参考 openai-python image_generate_params.py）
+	// quality: low/medium/high/auto（GPT image 模型）
+	// background: transparent/opaque/auto（仅 GPT image 模型，transparent 需配 png/webp）
+	// output_format: png/jpeg/webp（仅 GPT image 模型）
+	// output_compression: 0-100（仅 webp/jpeg）
+	// moderation: low/auto（仅 GPT image 模型）
+	imgOpts := gptImageOptions{
+		quality:           firstString(params, "quality", "imageQuality"),
+		background:        firstString(params, "background", "imageBackground"),
+		outputFormat:      strings.ToLower(firstString(params, "output_format", "outputFormat", "format", "imageFormat")),
+		outputCompression: firstNumber(params, "output_compression", "outputCompression"),
+		moderation:        firstString(params, "moderation", "imageModeration"),
+	}
+	// JPG → jpeg（OpenAI 只认 png/jpeg/webp 三种字面量）
+	if imgOpts.outputFormat == "jpg" {
+		imgOpts.outputFormat = "jpeg"
+	}
+	log.Printf("[OpenAI-Images] 参数解析: aspectRatio=%v imageSize=%v hasRef=%v → 发送 size=%q quality=%q background=%q output_format=%q output_compression=%v moderation=%q",
+		params["aspectRatio"], params["imageSize"], hasRef, size,
+		imgOpts.quality, imgOpts.background, imgOpts.outputFormat, imgOpts.outputCompression, imgOpts.moderation)
 
 	diagnostic.Logf(params, "request_prepare",
-		"provider=%s model=%s endpoint=%s count=%d size=%s quality=%s format=%s ref_count=%d prompt_hash=%s prompt_preview=%q",
+		"provider=%s model=%s endpoint=%s count=%d size=%s quality=%s background=%s output_format=%s ref_count=%d prompt_hash=%s prompt_preview=%q",
 		p.Name(),
 		modelID,
 		map[bool]string{true: "/v1/images/edits", false: "/v1/images/generations"}[hasRef],
 		count,
 		size,
-		quality,
-		format,
+		imgOpts.quality,
+		imgOpts.background,
+		imgOpts.outputFormat,
 		len(refs),
 		diagnostic.PromptHash(prompt),
 		diagnostic.Preview(prompt, 160),
@@ -696,9 +715,9 @@ func (p *OpenAIProvider) generateViaImagesAPI(ctx context.Context, params map[st
 	var respBytes []byte
 	var headers http.Header
 	if hasRef {
-		respBytes, headers, err = p.doImagesEdits(ctx, params, modelID, prompt, refs, count, size, quality)
+		respBytes, headers, err = p.doImagesEdits(ctx, params, modelID, prompt, refs, count, size, imgOpts)
 	} else {
-		respBytes, headers, err = p.doImagesGenerations(ctx, params, modelID, prompt, count, size, quality, format)
+		respBytes, headers, err = p.doImagesGenerations(ctx, params, modelID, prompt, count, size, imgOpts)
 	}
 	if err != nil {
 		return nil, err
@@ -734,8 +753,27 @@ func (p *OpenAIProvider) generateViaImagesAPI(ctx context.Context, params map[st
 	}, nil
 }
 
+// gptImageOptions 集中表达 gpt-image-* 系列的可选请求参数
+// 字段命名对齐 OpenAI 官方（snake_case 用作 body key）
+type gptImageOptions struct {
+	quality           string  // low/medium/high/auto
+	background        string  // transparent/opaque/auto
+	outputFormat      string  // png/jpeg/webp
+	outputCompression float64 // 0-100，仅 webp/jpeg
+	moderation        string  // low/auto
+}
+
+// shouldSendOutputCompression 仅 webp/jpeg 才发 output_compression（OpenAI 文档明确）
+func (o gptImageOptions) shouldSendOutputCompression() bool {
+	if o.outputCompression <= 0 || o.outputCompression > 100 {
+		return false
+	}
+	f := strings.ToLower(o.outputFormat)
+	return f == "webp" || f == "jpeg"
+}
+
 // doImagesGenerations 文生图：POST /v1/images/generations （JSON body）
-func (p *OpenAIProvider) doImagesGenerations(ctx context.Context, params map[string]interface{}, modelID, prompt string, count int, size, quality, format string) ([]byte, http.Header, error) {
+func (p *OpenAIProvider) doImagesGenerations(ctx context.Context, params map[string]interface{}, modelID, prompt string, count int, size string, opts gptImageOptions) ([]byte, http.Header, error) {
 	body := map[string]interface{}{
 		"model":  modelID,
 		"prompt": prompt,
@@ -744,11 +782,20 @@ func (p *OpenAIProvider) doImagesGenerations(ctx context.Context, params map[str
 	if size != "" {
 		body["size"] = size
 	}
-	if quality != "" {
-		body["quality"] = quality
+	if opts.quality != "" {
+		body["quality"] = opts.quality
 	}
-	if format != "" {
-		body["format"] = format
+	if opts.background != "" {
+		body["background"] = opts.background
+	}
+	if opts.outputFormat != "" {
+		body["output_format"] = opts.outputFormat
+	}
+	if opts.shouldSendOutputCompression() {
+		body["output_compression"] = int(opts.outputCompression)
+	}
+	if opts.moderation != "" {
+		body["moderation"] = opts.moderation
 	}
 
 	payloadBytes, err := json.Marshal(body)
@@ -761,7 +808,7 @@ func (p *OpenAIProvider) doImagesGenerations(ctx context.Context, params map[str
 }
 
 // doImagesEdits 图生图：POST /v1/images/edits （multipart/form-data，多张图都用 name=image）
-func (p *OpenAIProvider) doImagesEdits(ctx context.Context, params map[string]interface{}, modelID, prompt string, refs [][]byte, count int, size, quality string) ([]byte, http.Header, error) {
+func (p *OpenAIProvider) doImagesEdits(ctx context.Context, params map[string]interface{}, modelID, prompt string, refs [][]byte, count int, size string, opts gptImageOptions) ([]byte, http.Header, error) {
 	var buf bytes.Buffer
 	mw := multipart.NewWriter(&buf)
 
@@ -790,8 +837,20 @@ func (p *OpenAIProvider) doImagesEdits(ctx context.Context, params map[string]in
 	if size != "" {
 		_ = mw.WriteField("size", size)
 	}
-	if quality != "" {
-		_ = mw.WriteField("quality", quality)
+	if opts.quality != "" {
+		_ = mw.WriteField("quality", opts.quality)
+	}
+	if opts.background != "" {
+		_ = mw.WriteField("background", opts.background)
+	}
+	if opts.outputFormat != "" {
+		_ = mw.WriteField("output_format", opts.outputFormat)
+	}
+	if opts.shouldSendOutputCompression() {
+		_ = mw.WriteField("output_compression", strconv.Itoa(int(opts.outputCompression)))
+	}
+	if opts.moderation != "" {
+		_ = mw.WriteField("moderation", opts.moderation)
 	}
 	if err := mw.Close(); err != nil {
 		return nil, nil, fmt.Errorf("关闭 multipart 失败: %w", err)
@@ -955,6 +1014,14 @@ func extractRefImageBytes(raw interface{}) ([][]byte, error) {
 	return out, nil
 }
 
+// peekMagic 取首 8 字节用于日志/格式识别
+func peekMagic(b []byte) []byte {
+	if len(b) > 8 {
+		return b[:8]
+	}
+	return b
+}
+
 func firstString(params map[string]interface{}, keys ...string) string {
 	for _, k := range keys {
 		if s, _ := params[k].(string); strings.TrimSpace(s) != "" {
@@ -962,4 +1029,42 @@ func firstString(params map[string]interface{}, keys ...string) string {
 		}
 	}
 	return ""
+}
+
+// firstNumber 从 params 中按 key 顺序取第一个有效数值（支持 float64 / int / 字符串数字）
+// 0 视为未设置（为了兼容 zero-value 场景）
+func firstNumber(params map[string]interface{}, keys ...string) float64 {
+	for _, k := range keys {
+		v, ok := params[k]
+		if !ok || v == nil {
+			continue
+		}
+		switch n := v.(type) {
+		case float64:
+			if n != 0 {
+				return n
+			}
+		case float32:
+			if n != 0 {
+				return float64(n)
+			}
+		case int:
+			if n != 0 {
+				return float64(n)
+			}
+		case int64:
+			if n != 0 {
+				return float64(n)
+			}
+		case string:
+			s := strings.TrimSpace(n)
+			if s == "" {
+				continue
+			}
+			if f, err := strconv.ParseFloat(s, 64); err == nil && f != 0 {
+				return f
+			}
+		}
+	}
+	return 0
 }

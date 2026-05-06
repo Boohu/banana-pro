@@ -368,7 +368,23 @@
         "21_9": "21:9 (超宽屏)"
       }
     },
-    "apiKeyHint": "请先在左下角「设置」中配置生图 API Key"
+    "apiKeyHint": "请先在左下角「设置」中配置生图 API Key",
+    "imageQuality": "画质",
+    "imageQualityOptions": {
+      "auto": "自动",
+      "low": "低",
+      "medium": "中",
+      "high": "高"
+    },
+    "imageBackground": "背景",
+    "imageBackgroundOptions": {
+      "auto": "自动",
+      "opaque": "不透明",
+      "transparent": "透明"
+    },
+    "outputFormat": "输出格式",
+    "outputCompression": "压缩级别",
+    "count": "批量数量"
   },
   "errors": {
     "fileReadEmpty": "文件读取为空",
@@ -641,6 +657,7 @@
     "generate": "AI 绘图",
     "batch": "批量处理",
     "reversePrompt": "反推提示词",
+    "rembgTool": "一键抠图",
     "history": "生成记录",
     "templates": "灵感广场",
     "settings": "设置"
@@ -707,6 +724,20 @@
     "resolution": "分辨率",
     "outputFormat": "输出格式",
     "quality": "图片质量",
+    "outputCompression": "输出压缩",
+    "imageQuality": "画质",
+    "imageQualityOptions": {
+      "auto": "自动",
+      "low": "低",
+      "medium": "中",
+      "high": "高"
+    },
+    "imageBackground": "背景",
+    "imageBackgroundOptions": {
+      "auto": "自动",
+      "opaque": "不透明",
+      "transparent": "透明"
+    },
     "concurrency": "并发数量",
     "outputTo": "输出到",
     "outputDefault": "默认（当月文件夹）",
@@ -780,6 +811,7 @@
     "apiConfigDesc": "配置 AI 模型的 API 密钥和端点地址",
     "modelManage": "模型管理",
     "modelManageDesc": "管理可用的 AI 模型",
+    "rembgModels": "抠图模型",
     "appearance": "语言与外观",
     "about": "关于",
     "aboutTitle": "关于",

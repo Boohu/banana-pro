@@ -59,6 +59,29 @@ export const modelSupportsAutoRatio = (model: string): boolean => {
   return model.startsWith('gpt-image-');
 };
 
+// gpt-image-* 系列的尺寸预设（直接对应云雾代理的 size 字面量）
+// labelKey 用于 i18n（默认中文 fallback 见 GeneratePage / BatchPage）
+export interface GPTImageSizeOption {
+  value: string; // 'auto' / '1024x1024' / ...
+  label: string; // 默认中文展示
+}
+
+export const GPT_IMAGE_SIZE_OPTIONS: GPTImageSizeOption[] = [
+  { value: 'auto', label: '自动 (auto)' },
+  { value: '1024x1024', label: '1024 × 1024 · 方形' },
+  { value: '1536x1024', label: '1536 × 1024 · 横图 3:2' },
+  { value: '1024x1536', label: '1024 × 1536 · 竖图 2:3' },
+  { value: '2048x2048', label: '2048 × 2048 · 2K 方形' },
+  { value: '2048x1152', label: '2048 × 1152 · 2K 横图' },
+  { value: '3840x2160', label: '3840 × 2160 · 4K 横图' },
+  { value: '2160x3840', label: '2160 × 3840 · 4K 竖图' },
+];
+
+// 图生图（images/edits）模式下，云雾只支持 1K 三档 + auto，过滤掉 2K/4K
+export const GPT_IMAGE_SIZE_OPTIONS_EDIT: GPTImageSizeOption[] = GPT_IMAGE_SIZE_OPTIONS.filter(
+  (o) => o.value === 'auto' || o.value === '1024x1024' || o.value === '1536x1024' || o.value === '1024x1536',
+);
+
 export interface GPTImageSizeResolved {
   size: string;      // 实际 size 字符串，如 "1024x1024" 或 "auto"
   fallback: boolean; // 是否发生档位回落
@@ -145,6 +168,14 @@ interface ConfigState {
   count: number;
   imageSize: string;
   aspectRatio: string;
+  // OpenAI gpt-image-* 系列专属配置（其他模型透传后端会忽略）
+  imageQuality: 'low' | 'medium' | 'high' | 'auto';
+  imageBackground: 'transparent' | 'opaque' | 'auto';
+  imageOutputFormat: 'png' | 'jpeg' | 'webp';
+  imageOutputCompression: number; // 0-100，仅 webp/jpeg 生效
+  // gpt-image-* 系列尺寸预设（直接对应 OpenAI/云雾的 size 字面量）
+  // 'auto' / '1024x1024' / '1536x1024' / '1024x1536' / '2048x2048' / '2048x1152' / '3840x2160' / '2160x3840'
+  gptImageSize: string;
   refFiles: File[];
   refImageEntries: PersistedRefImage[];
   draftBatchId: string | null;
@@ -173,6 +204,11 @@ interface ConfigState {
   setCount: (count: number) => void;
   setImageSize: (size: string) => void;
   setAspectRatio: (ratio: string) => void;
+  setImageQuality: (q: 'low' | 'medium' | 'high' | 'auto') => void;
+  setImageBackground: (b: 'transparent' | 'opaque' | 'auto') => void;
+  setImageOutputFormat: (f: 'png' | 'jpeg' | 'webp') => void;
+  setImageOutputCompression: (n: number) => void;
+  setGptImageSize: (s: string) => void;
   setRefFiles: (files: File[]) => void;
   addRefFiles: (files: File[]) => void;
   removeRefFile: (index: number) => void;
@@ -214,6 +250,11 @@ export const useConfigStore = create<ConfigState>()(
       count: 1,
       imageSize: '2K',
       aspectRatio: '1:1',
+      imageQuality: 'auto',
+      imageBackground: 'auto',
+      imageOutputFormat: 'png',
+      imageOutputCompression: 100,
+      gptImageSize: 'auto',
       refFiles: [],
       refImageEntries: [],
       draftBatchId: null,
@@ -245,6 +286,11 @@ export const useConfigStore = create<ConfigState>()(
       setCount: (count) => set({ count }),
       setImageSize: (imageSize) => set({ imageSize }),
       setAspectRatio: (aspectRatio) => set({ aspectRatio }),
+      setImageQuality: (imageQuality) => set({ imageQuality }),
+      setImageBackground: (imageBackground) => set({ imageBackground }),
+      setImageOutputFormat: (imageOutputFormat) => set({ imageOutputFormat }),
+      setImageOutputCompression: (imageOutputCompression) => set({ imageOutputCompression }),
+      setGptImageSize: (gptImageSize) => set({ gptImageSize }),
       setRefFiles: (refFiles) => set({ refFiles }),
       setRefImageEntries: (refImageEntries) => set({ refImageEntries }),
       setDraftBatchId: (draftBatchId) => set({ draftBatchId }),
@@ -283,6 +329,11 @@ export const useConfigStore = create<ConfigState>()(
         count: 1,
         imageSize: '2K',
         aspectRatio: '1:1',
+        imageQuality: 'auto',
+        imageBackground: 'auto',
+        imageOutputFormat: 'png',
+        imageOutputCompression: 100,
+        gptImageSize: 'auto',
         refFiles: [],
         refImageEntries: [],
         draftBatchId: null,

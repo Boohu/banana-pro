@@ -1,4 +1,4 @@
-import { Image, Layers, Sparkles, FolderOpen, LayoutTemplate, Settings } from 'lucide-react';
+import { Image, Layers, Sparkles, Scissors, FolderOpen, LayoutTemplate, Settings } from 'lucide-react';
 import logoImg from '@/assets/logo.png';
 import { cn } from '@/lib/utils';
 import { useNavigationStore, type Page } from '@/store/navigationStore';
@@ -14,6 +14,7 @@ const mainNavItems: NavItem[] = [
   { id: 'generate', icon: Image, labelKey: 'sidebar.generate' },
   { id: 'batch', icon: Layers, labelKey: 'sidebar.batch' },
   { id: 'reverse-prompt', icon: Sparkles, labelKey: 'sidebar.reversePrompt' },
+  { id: 'rembg-tool', icon: Scissors, labelKey: 'sidebar.rembgTool' },
   { id: 'history', icon: FolderOpen, labelKey: 'sidebar.history' },
   { id: 'templates', icon: LayoutTemplate, labelKey: 'sidebar.templates' },
 ];

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Sparkles, Wand2, X, Plus, Loader2, AlertCircle, ImagePlus, ChevronDown, Info, Grid3X3, List, ChevronUp, FileJson, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useConfigStore, getModelAspectRatios, getModelResolutions, modelSupportsAutoRatio, resolveGPTImageSize } from '@/store/configStore';
+import { useConfigStore, getModelAspectRatios, getModelResolutions, modelSupportsAutoRatio, GPT_IMAGE_SIZE_OPTIONS, GPT_IMAGE_SIZE_OPTIONS_EDIT } from '@/store/configStore';
 import { useModelStore } from '@/store/modelStore';
 import { useApiKeyStore } from '@/store/apiKeyStore';
 import { useGenerateStore } from '@/store/generateStore';
@@ -30,6 +30,11 @@ function LeftConfigPanel() {
     refFiles, removeRefFile,
     enableRefImageCompression, setEnableRefImageCompression,
     selectedImageModelId, setSelectedImageModelId,
+    imageQuality, setImageQuality,
+    imageBackground, setImageBackground,
+    imageOutputFormat, setImageOutputFormat,
+    imageOutputCompression, setImageOutputCompression,
+    gptImageSize, setGptImageSize,
   } = useConfigStore(useShallow((s) => ({
     prompt: s.prompt,
     setPrompt: s.setPrompt,
@@ -48,6 +53,16 @@ function LeftConfigPanel() {
     setEnableRefImageCompression: s.setEnableRefImageCompression,
     selectedImageModelId: s.selectedImageModelId,
     setSelectedImageModelId: s.setSelectedImageModelId,
+    imageQuality: s.imageQuality,
+    setImageQuality: s.setImageQuality,
+    imageBackground: s.imageBackground,
+    setImageBackground: s.setImageBackground,
+    imageOutputFormat: s.imageOutputFormat,
+    setImageOutputFormat: s.setImageOutputFormat,
+    imageOutputCompression: s.imageOutputCompression,
+    setImageOutputCompression: s.setImageOutputCompression,
+    gptImageSize: s.gptImageSize,
+    setGptImageSize: s.setGptImageSize,
   })));
   // 订阅 chat 选择 + legacy 字段，让 chatReady 计算保持响应式
   const selectedChatModelId = useConfigStore((s) => s.selectedChatModelId);
@@ -91,12 +106,6 @@ function LeftConfigPanel() {
     return base;
   }, [aspectRatios, refFiles.length, activeModelName]);
 
-  // gpt-image-* 模型下的实际输出尺寸（含回落提示）
-  const gptImageSizeHint = useMemo(() => {
-    if (!activeModelName.startsWith('gpt-image-')) return null;
-    return resolveGPTImageSize(aspectRatio, imageSize, refFiles.length > 0);
-  }, [activeModelName, aspectRatio, imageSize, refFiles.length]);
-
   // 模型/参考图切换后，保证当前 aspectRatio/imageSize 在合法集合里
   useEffect(() => {
     if (!displayAspectRatios.includes(aspectRatio)) {
@@ -116,6 +125,13 @@ function LeftConfigPanel() {
     }
     prevHasRefRef.current = hasRef;
   }, [refFiles.length, activeModelName, setAspectRatio]);
+
+  // 选择透明背景时自动切到 PNG（JPEG 不支持透明，强制联动避免出空响应或白底图）
+  useEffect(() => {
+    if (imageBackground === 'transparent' && imageOutputFormat === 'jpeg') {
+      setImageOutputFormat('png');
+    }
+  }, [imageBackground, imageOutputFormat, setImageOutputFormat]);
 
   const handleSelectImageModel = (id: string) => {
     setSelectedImageModelId(id);
@@ -323,48 +339,120 @@ function LeftConfigPanel() {
           )}
         </div>
 
-        {/* Aspect Ratio */}
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-medium text-fg-secondary">{t('config.aspectRatio', '尺寸')}</label>
-          <select
-            value={aspectRatio}
-            onChange={(e) => setAspectRatio(e.target.value)}
-            className="w-full bg-surface-tertiary border border-border rounded-[10px] px-3 py-2.5 text-[13px] text-fg-primary outline-none appearance-none cursor-pointer focus:border-primary"
-            style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2371717A' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
-          >
-            {displayAspectRatios.map((ratio) => (
-              <option key={ratio} value={ratio}>{ratio === 'auto' ? 'auto（跟随参考图）' : ratio}</option>
-            ))}
-          </select>
-        </div>
-
-        {/* Resolution */}
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-medium text-fg-secondary">{t('config.resolution', '分辨率')}</label>
-          <select
-            value={imageSize}
-            onChange={(e) => setImageSize(e.target.value)}
-            className="w-full bg-surface-tertiary border border-border rounded-[10px] px-3 py-2.5 text-[13px] text-fg-primary font-mono outline-none appearance-none cursor-pointer focus:border-primary"
-            style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2371717A' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
-          >
-            {resolutions.map((r) => (
-              <option key={r} value={r}>
-                {r === '1K' ? '1K (1024 × 1024)' : r === '2K' ? '2K (2048 × 2048)' : r === '4K' ? '4K (3840 × 2160)' : r}
-              </option>
-            ))}
-          </select>
-          {gptImageSizeHint && (
-            <div className={cn(
-              'text-[10.5px] leading-snug mt-0.5 font-mono',
-              gptImageSizeHint.fallback ? 'text-warning' : 'text-fg-muted'
-            )}>
-              → 实际输出：{gptImageSizeHint.size === 'auto' ? 'auto（模型自选）' : gptImageSizeHint.size.replace('x', ' × ')}
-              {gptImageSizeHint.note && (
-                <span className="block text-[10px] opacity-90">{gptImageSizeHint.note}</span>
-              )}
+        {/* gpt-image-* 系列：尺寸预设（直接 OpenAI/云雾的 size 字面量，8 项） */}
+        {activeModelName.startsWith('gpt-image-') ? (
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-fg-secondary">{t('config.size', '尺寸')}</label>
+            <select
+              value={gptImageSize}
+              onChange={(e) => setGptImageSize(e.target.value)}
+              className="w-full bg-surface-tertiary border border-border rounded-[10px] px-3 py-2.5 text-[13px] text-fg-primary outline-none appearance-none cursor-pointer focus:border-primary"
+              style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2371717A' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
+            >
+              {(refFiles.length > 0 ? GPT_IMAGE_SIZE_OPTIONS_EDIT : GPT_IMAGE_SIZE_OPTIONS).map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+            {refFiles.length > 0 && (
+              <span className="text-[10px] text-fg-muted">图生图模式仅支持 1K 三档 + auto</span>
+            )}
+          </div>
+        ) : (
+          <>
+            {/* 非 gpt-image-* 模型：保留原有 aspectRatio + resolution 双选 */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-fg-secondary">{t('config.aspectRatio', '尺寸')}</label>
+              <select
+                value={aspectRatio}
+                onChange={(e) => setAspectRatio(e.target.value)}
+                className="w-full bg-surface-tertiary border border-border rounded-[10px] px-3 py-2.5 text-[13px] text-fg-primary outline-none appearance-none cursor-pointer focus:border-primary"
+                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2371717A' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
+              >
+                {displayAspectRatios.map((ratio) => (
+                  <option key={ratio} value={ratio}>{ratio === 'auto' ? 'auto（跟随参考图）' : ratio}</option>
+                ))}
+              </select>
             </div>
-          )}
-        </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-fg-secondary">{t('config.resolution', '分辨率')}</label>
+              <select
+                value={imageSize}
+                onChange={(e) => setImageSize(e.target.value)}
+                className="w-full bg-surface-tertiary border border-border rounded-[10px] px-3 py-2.5 text-[13px] text-fg-primary font-mono outline-none appearance-none cursor-pointer focus:border-primary"
+                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2371717A' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
+              >
+                {resolutions.map((r) => (
+                  <option key={r} value={r}>
+                    {r === '1K' ? '1K (1024 × 1024)' : r === '2K' ? '2K (2048 × 2048)' : r === '4K' ? '4K (3840 × 2160)' : r}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </>
+        )}
+
+        {/* GPT image 系列：画质 + 背景 一行两列 */}
+        {activeModelName.startsWith('gpt-image-') && (
+          <div className="grid grid-cols-2 gap-2">
+            <div className="flex flex-col gap-1.5 min-w-0">
+              <label className="text-xs font-medium text-fg-secondary">{t('config.imageQuality', '画质')}</label>
+              <select
+                value={imageQuality}
+                onChange={(e) => setImageQuality(e.target.value as any)}
+                className="w-full bg-surface-tertiary border border-border rounded-[10px] px-3 py-2.5 text-[13px] text-fg-primary outline-none appearance-none cursor-pointer focus:border-primary"
+                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2371717A' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
+              >
+                {(['auto', 'low', 'medium', 'high'] as const).map((q) => (
+                  <option key={q} value={q}>{t(`config.imageQualityOptions.${q}`, q)}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex flex-col gap-1.5 min-w-0">
+              <label className="text-xs font-medium text-fg-secondary">{t('config.imageBackground', '背景')}</label>
+              <select
+                value={imageBackground}
+                onChange={(e) => setImageBackground(e.target.value as any)}
+                className="w-full bg-surface-tertiary border border-border rounded-[10px] px-3 py-2.5 text-[13px] text-fg-primary outline-none appearance-none cursor-pointer focus:border-primary"
+                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2371717A' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
+              >
+                {(['auto', 'opaque', 'transparent'] as const).map((b) => (
+                  <option key={b} value={b}>{t(`config.imageBackgroundOptions.${b}`, b)}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )}
+
+        {/* GPT image 系列：输出格式（透明背景需 PNG/WebP） */}
+        {activeModelName.startsWith('gpt-image-') && (
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-fg-secondary">{t('config.outputFormat', '输出格式')}</label>
+            <select
+              value={imageOutputFormat}
+              onChange={(e) => setImageOutputFormat(e.target.value as any)}
+              className="w-full bg-surface-tertiary border border-border rounded-[10px] px-3 py-2.5 text-[13px] text-fg-primary outline-none appearance-none cursor-pointer focus:border-primary"
+              style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2371717A' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
+            >
+              <option value="png">PNG</option>
+              <option value="jpeg">JPEG</option>
+              <option value="webp">WebP</option>
+            </select>
+            {imageBackground === 'transparent' && imageOutputFormat === 'jpeg' && (
+              <span className="text-[10px] text-warning">透明背景需 PNG 或 WebP</span>
+            )}
+            {(imageOutputFormat === 'jpeg' || imageOutputFormat === 'webp') && (
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-[11px] text-fg-secondary shrink-0">{t('config.outputCompression', '压缩级别')}</span>
+                <input
+                  type="range" min={10} max={100} value={imageOutputCompression}
+                  onChange={(e) => setImageOutputCompression(Number(e.target.value))}
+                  className="flex-1 h-[5px] rounded-full bg-surface-tertiary appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary"
+                />
+                <span className="text-[11px] font-semibold text-primary font-mono w-9 text-right">{imageOutputCompression}%</span>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Batch count */}
         <div className="flex flex-col gap-1.5">

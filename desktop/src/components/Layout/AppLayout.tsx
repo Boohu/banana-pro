@@ -4,6 +4,7 @@ import { useTaskRecovery } from '@/hooks/useTaskRecovery';
 import { GeneratePage } from '@/pages/GeneratePage';
 import { BatchPage } from '@/pages/BatchPage';
 import { PromptReversePage } from '@/pages/PromptReversePage';
+import { RembgToolPage } from '@/pages/RembgToolPage';
 import { HistoryPage } from '@/pages/HistoryPage';
 import { TemplatesPage } from '@/pages/TemplatesPage';
 import { SettingsPage } from '@/pages/SettingsPage';
@@ -13,6 +14,7 @@ const pageComponents: Record<string, React.ComponentType> = {
   generate: GeneratePage,
   batch: BatchPage,
   'reverse-prompt': PromptReversePage,
+  'rembg-tool': RembgToolPage,
   history: HistoryPage,
   templates: TemplatesPage,
   settings: SettingsPage,

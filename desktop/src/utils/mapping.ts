@@ -4,6 +4,18 @@ import { getImageUrl } from '../services/api';
 /**
  * 将后端 Task 模型映射为前端 GenerationTask 模型
  */
+// 按文件名后缀推断 mimeType（storage 落地时已识别真实格式选用对应后缀）
+const mimeFromPath = (path: string): string => {
+  const m = /\.([a-z0-9]+)$/i.exec((path || '').trim());
+  if (!m) return 'image/png';
+  const ext = m[1].toLowerCase();
+  if (ext === 'jpg' || ext === 'jpeg') return 'image/jpeg';
+  if (ext === 'png') return 'image/png';
+  if (ext === 'webp') return 'image/webp';
+  if (ext === 'gif') return 'image/gif';
+  return 'image/' + ext;
+};
+
 export const mapBackendTaskToFrontend = (task: BackendTask): GenerationTask => {
   const getFullUrl = (path: string | undefined) => {
     return getImageUrl(path || '');
@@ -17,7 +29,7 @@ export const mapBackendTaskToFrontend = (task: BackendTask): GenerationTask => {
     fileSize: 0,
     width: task.width || 0,
     height: task.height || 0,
-    mimeType: 'image/jpeg',
+    mimeType: mimeFromPath(task.local_path || task.image_url || ''),
     createdAt: task.created_at,
     prompt: task.prompt,
     model: task.model_id || task.provider_name || '',

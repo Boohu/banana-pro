@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { Key, Box, Globe, Info, Eye, EyeOff, Plus, Trash2, Pencil, X, Check } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Key, Box, Globe, Info, Eye, EyeOff, Plus, Trash2, Pencil, X, Check, Scissors, Download, ExternalLink, FolderOpen, Loader2 } from 'lucide-react';
 import logoImg from '@/assets/logo.png';
 import { useAuthStore } from '@/store/authStore';
 import { cn } from '@/lib/utils';
@@ -10,12 +10,14 @@ import { toast } from '@/store/toastStore';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 import i18n from '@/i18n';
+import { listRembgModels, importRembgModel, deleteRembgModel, type RembgModel } from '@/services/rembgApi';
 
-type SettingsTab = 'api' | 'models' | 'language' | 'about';
+type SettingsTab = 'api' | 'models' | 'rembg' | 'language' | 'about';
 
 const tabKeys: { id: SettingsTab; icon: React.ElementType; labelKey: string }[] = [
   { id: 'api', icon: Key, labelKey: 'settingsPage.apiConfig' },
   { id: 'models', icon: Box, labelKey: 'settingsPage.modelManage' },
+  { id: 'rembg', icon: Scissors, labelKey: 'settingsPage.rembgModels' },
   { id: 'language', icon: Globe, labelKey: 'settingsPage.appearance' },
   { id: 'about', icon: Info, labelKey: 'settingsPage.about' },
 ];
@@ -659,13 +661,194 @@ function AboutSection() {
   );
 }
 
+function RembgModelSection() {
+  const { t } = useTranslation();
+  const [models, setModels] = useState<RembgModel[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [busyId, setBusyId] = useState<string | null>(null);
+
+  const refresh = async () => {
+    try {
+      const list = await listRembgModels();
+      setModels(list);
+    } catch (err: any) {
+      toast.error('加载抠图模型列表失败：' + (err?.message || err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { void refresh(); }, []);
+
+  const openLink = async (url: string) => {
+    const isTauri = typeof window !== 'undefined' && Boolean((window as any).__TAURI_INTERNALS__);
+    if (isTauri) {
+      try {
+        // @ts-ignore Tauri 运行时解析
+        const { openUrl } = await import(/* @vite-ignore */ '@tauri-apps/plugin-opener');
+        await openUrl(url);
+        return;
+      } catch (err) {
+        console.error('[Rembg] openUrl 失败', err);
+        toast.error('打开链接失败：' + ((err as any)?.message || err));
+        return;
+      }
+    }
+    window.open(url, '_blank');
+  };
+
+  const handleImport = async (preset: RembgModel) => {
+    setBusyId(preset.id);
+    try {
+      const isTauri = typeof window !== 'undefined' && Boolean((window as any).__TAURI_INTERNALS__);
+      if (!isTauri) {
+        toast.error('仅桌面端支持导入本地模型文件');
+        return;
+      }
+      // @ts-ignore Tauri 运行时解析
+      const { open } = await import(/* @vite-ignore */ '@tauri-apps/plugin-dialog');
+      const filePath = await open({
+        multiple: false,
+        filters: [{ name: 'ONNX Model', extensions: ['onnx'] }],
+        title: `选择 ${preset.name} 的 .onnx 文件`,
+      });
+      if (!filePath || typeof filePath !== 'string') return;
+
+      await importRembgModel(preset.id, filePath);
+      toast.success(`${preset.name} 导入成功`);
+      await refresh();
+    } catch (err: any) {
+      console.error('[Rembg] import failed', err);
+      toast.error('导入失败：' + (err?.message || err));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const handleDelete = async (preset: RembgModel) => {
+    if (!confirm(`确定删除 ${preset.name}？\n模型文件会从本地 models/ 目录移除，下次使用需重新导入。`)) return;
+    setBusyId(preset.id);
+    try {
+      await deleteRembgModel(preset.id);
+      toast.success(`${preset.name} 已删除`);
+      await refresh();
+    } catch (err: any) {
+      toast.error('删除失败：' + (err?.message || err));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="w-6 h-6 animate-spin text-fg-muted" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-5">
+      <div>
+        <h3 className="text-base font-semibold text-fg-primary mb-1">抠图模型管理</h3>
+        <p className="text-xs text-fg-muted leading-relaxed">
+          本应用<span className="text-warning font-medium">不分发模型文件</span>。请到对应模型的 HuggingFace 页面查阅许可协议（License）后下载 ONNX 文件，再点「导入文件」选择本地 .onnx 完成导入。
+          导入后所有抠图均在本机离线运行，不消耗网络与积分。
+        </p>
+      </div>
+
+      <div className="space-y-3">
+        {models.map((m) => (
+          <div key={m.id} className="bg-surface-secondary rounded-xl p-4 border border-border">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <h4 className="text-sm font-semibold text-fg-primary">{m.name}</h4>
+                  {m.installed ? (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-success/15 text-success font-medium flex items-center gap-1">
+                      <Check className="w-3 h-3" />已导入
+                    </span>
+                  ) : (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-surface-tertiary text-fg-muted">未导入</span>
+                  )}
+                </div>
+                <p className="text-xs text-fg-secondary mt-1">{m.tagline}</p>
+                <div className="flex items-center gap-3 text-[11px] text-fg-muted mt-2">
+                  <span>📦 约 {m.expected_mb} MB</span>
+                  <span>📐 {m.input_size}×{m.input_size}</span>
+                  <span className="text-warning/80">⚖️ {m.license}</span>
+                </div>
+                {m.installed && m.file_size ? (
+                  <div className="text-[10px] text-fg-muted/70 mt-1 font-mono truncate">
+                    {(m.file_size / 1024 / 1024).toFixed(1)} MB · {m.file_path}
+                  </div>
+                ) : null}
+              </div>
+
+              <div className="flex flex-col gap-1.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => openLink(m.hf_link)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-tertiary border border-border text-xs text-fg-secondary hover:text-fg-primary transition-colors"
+                  title="在浏览器中打开 HuggingFace 模型页"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  HuggingFace
+                </button>
+                {m.installed ? (
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(m)}
+                    disabled={busyId === m.id}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-500/10 border border-rose-500/30 text-xs text-rose-400 hover:bg-rose-500/20 transition-colors disabled:opacity-50"
+                  >
+                    {busyId === m.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                    删除
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => handleImport(m)}
+                    disabled={busyId === m.id}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+                  >
+                    {busyId === m.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FolderOpen className="w-3.5 h-3.5" />}
+                    导入文件
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="text-[11px] text-fg-muted/80 leading-relaxed bg-surface-secondary/50 rounded-lg p-3 border border-border/50">
+        💡 <span className="text-fg-secondary">使用说明</span>：
+        <br />1. 点「HuggingFace」打开模型页 → 在 <code className="text-fg-secondary">onnx/</code> 子目录下载 <code className="text-fg-secondary">model.onnx</code>（或类似命名的 .onnx 文件）
+        <br />2. 回来点「导入文件」选择刚下载的 .onnx → 自动复制到 sidecar 工作目录的 <code className="text-fg-secondary">models/</code>
+        <br />3. 导入完成后，去「工具 → 一键抠图」就能选择该模型
+      </div>
+    </div>
+  );
+}
+
+const SETTINGS_TAB_KEY = 'banana-settings-active-tab';
+
 export function SettingsPage() {
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState<SettingsTab>('api');
+  const [activeTab, setActiveTab] = useState<SettingsTab>(() => {
+    const saved = (typeof localStorage !== 'undefined' && localStorage.getItem(SETTINGS_TAB_KEY)) as SettingsTab | null;
+    if (saved && ['api', 'models', 'rembg', 'language', 'about'].includes(saved)) return saved;
+    return 'api';
+  });
+  useEffect(() => {
+    if (typeof localStorage !== 'undefined') localStorage.setItem(SETTINGS_TAB_KEY, activeTab);
+  }, [activeTab]);
 
   const tabContent: Record<SettingsTab, React.ReactNode> = {
     api: <ApiKeyListSection />,
     models: <ModelListSection />,
+    rembg: <RembgModelSection />,
     language: <LanguageSection />,
     about: <AboutSection />,
   };
@@ -680,6 +863,7 @@ export function SettingsPage() {
           return (
             <button
               key={tab.id}
+              type="button"
               onClick={() => setActiveTab(tab.id)}
               className={cn(
                 'w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-lg text-sm transition-colors text-left',

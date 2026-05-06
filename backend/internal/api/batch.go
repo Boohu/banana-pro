@@ -460,18 +460,26 @@ func ProcessBatchHandler(c *gin.Context) {
 	aspectRatio := c.PostForm("aspectRatio")
 	imageSize := c.PostForm("imageSize")
 	promptOptimizeMode := c.PostForm("prompt_optimize_mode")
-	outputFormat := c.PostForm("outputFormat")       // PNG/JPG/WebP
-	qualityStr := c.PostForm("quality")              // 10-100
-	concurrencyStr := c.PostForm("concurrency")      // 1-6
-	namingRule := c.PostForm("namingRule")            // 命名规则
-	keepOriginalSize := c.PostForm("keepOriginalSize") // true/false
-	autoRetry := c.PostForm("autoRetry")             // true/false
-	outputDir := c.PostForm("outputDir")             // 输出目录（桌面端）
-	folderId := c.PostForm("folderId")               // 指定文件夹 ID
+	outputFormat := c.PostForm("outputFormat")          // PNG/JPG/WebP（用户输出本地文件用）
+	outputCompressionStr := c.PostForm("outputCompression") // 10-100，仅 jpeg/webp
+	concurrencyStr := c.PostForm("concurrency")         // 1-6
+	namingRule := c.PostForm("namingRule")              // 命名规则
+	keepOriginalSize := c.PostForm("keepOriginalSize")  // true/false
+	autoRetry := c.PostForm("autoRetry")                // true/false
+	outputDir := c.PostForm("outputDir")                // 输出目录（桌面端）
+	folderId := c.PostForm("folderId")                  // 指定文件夹 ID
+	// OpenAI gpt-image-* 系列专属
+	imageQuality := c.PostForm("imageQuality")       // low/medium/high/auto
+	imageBackground := c.PostForm("imageBackground") // transparent/opaque/auto
+	gptSize := strings.TrimSpace(c.PostForm("size")) // OpenAI/云雾的 size 字面量
 
-	quality := 90
-	if v, err := strconv.Atoi(qualityStr); err == nil && v >= 10 && v <= 100 {
-		quality = v
+	// outputCompression 兼容旧 quality 字段名（前端有可能还在传旧的）
+	outputCompression := 100
+	if outputCompressionStr == "" {
+		outputCompressionStr = c.PostForm("quality")
+	}
+	if v, err := strconv.Atoi(outputCompressionStr); err == nil && v >= 10 && v <= 100 {
+		outputCompression = v
 	}
 	concurrency := 3
 	if v, err := strconv.Atoi(concurrencyStr); err == nil && v >= 1 && v <= 6 {
@@ -500,15 +508,17 @@ func ProcessBatchHandler(c *gin.Context) {
 
 	// 构建配置快照
 	configParams := map[string]interface{}{
-		"aspectRatio":      aspectRatio,
-		"imageSize":        imageSize,
-		"count":            1,
-		"output_format":    outputFormat,
-		"quality":          quality,
-		"concurrency":      concurrency,
-		"naming_rule":      namingRule,
+		"aspectRatio":        aspectRatio,
+		"imageSize":          imageSize,
+		"count":              1,
+		"output_format":      outputFormat,
+		"output_compression": outputCompression,
+		"image_quality":      imageQuality,
+		"image_background":   imageBackground,
+		"concurrency":        concurrency,
+		"naming_rule":        namingRule,
 		"keep_original_size": keepOriginalSize == "true",
-		"auto_retry":       autoRetry == "true",
+		"auto_retry":         autoRetry == "true",
 	}
 	if promptOptimizeMode != "" {
 		configParams["prompt_optimize_mode"] = promptOptimizeMode
@@ -636,12 +646,16 @@ func ProcessBatchHandler(c *gin.Context) {
 			"count":              1,
 			"reference_images":   []interface{}{fileContents[i]},
 			"output_format":      outputFormat,
-			"quality":            quality,
+			"output_compression": outputCompression,
+			// OpenAI gpt-image-* 系列专属（其他 provider 会忽略）
+			"imageQuality":       imageQuality,
+			"imageBackground":    imageBackground,
+			"size":               gptSize, // 显式 size 字面量优先于 aspectRatio + resolution_level 推导
 			"naming_rule":        namingRule,
 			"original_file_name": taskModel.OriginalFileName,
 			"keep_original_size": keepOriginalSize == "true",
-			"auto_retry":        autoRetry == "true",
-			"output_dir":        outputDir,
+			"auto_retry":         autoRetry == "true",
+			"output_dir":         outputDir,
 			"batch_concurrency":  concurrency,
 		}
 		if promptOptimizeMode != "" {
